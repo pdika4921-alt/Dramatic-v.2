@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pembersih Cache & Service Worker — Sistem Eviden Rekonsiliasi</title>
+  <link rel="icon" type="image/png" href="assets/img/favicon-ta.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-sans);
+      background: #060b1a; color: #e2e8f0; min-height: 100vh;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .box {
+      max-width: 520px; width: 100%;
+      background: rgba(10,16,36,0.85); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius-lg); padding: 28px 26px; text-align: center;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+    h1 { font-size: 14px; font-weight: 500; color: #fff; margin-bottom: 6px; }
+    p { font-size: 11px; color: #94a3b8; line-height: 1.6; margin-bottom: 18px; }
+    .status {
+      font-size: 10px; font-family: var(--font-mono); color: #38bdf8;
+      background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.25);
+      border-radius: var(--radius-sm); padding: 12px; margin-bottom: 18px; text-align: left;
+      white-space: pre-wrap; word-break: break-word; min-height: 52px;
+    }
+    .btn {
+      display: inline-block; border: none; cursor: pointer;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff;
+      font-size: 11px; font-weight: 500; border-radius: var(--radius-sm); padding: 12px 22px;
+      min-height: var(--touch-min);
+      text-decoration: none;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn.ghost { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); margin-left: 8px; }
+    .ok { color: #4ade80; }
+    .err { color: #fb7185; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Pembersih Cache &amp; Service Worker Lama</h1>
+    <p>
+      Halaman ini otomatis menghapus semua cache (termasuk cache aplikasi lama
+      seperti <b>BOP Konstruksi</b>) dan membatalkan registrasi service worker,
+      lalu mengarahkan Anda ke halaman masuk Sistem Eviden Rekonsiliasi.
+    </p>
+    <div class="status" id="status">Memulai…</div>
+    <button class="btn" onclick="location.replace('/login.html')">Lanjut ke Login</button>
+    <a class="btn ghost" href="/login.html">Langsung ke halaman login</a>
+  </div>
+
+  <script>
+    (async function () {
+      const st = document.getElementById('status');
+      const lines = [];
+      try {
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          for (const k of keys) { await caches.delete(k); lines.push('Cache dihapus: ' + k); }
+          if (!keys.length) lines.push('Tidak ada cache.');
+        }
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const r of regs) { await r.unregister(); lines.push('Service worker dibatalkan: ' + (r.scope || 'scope')); }
+          if (!regs.length) lines.push('Tidak ada service worker.');
+        }
+        st.innerHTML = (lines.join('\n') || 'Selesai.') + '\n<span class="ok">✔ Selesai — mengalihkan…</span>';
+        setTimeout(() => location.replace('/login.html'), 1200);
+      } catch (e) {
+        st.innerHTML = '<span class="err">Gagal: ' + e.message + '</span>';
+      }
+    })();
+  </script>
+</body>
+</html>

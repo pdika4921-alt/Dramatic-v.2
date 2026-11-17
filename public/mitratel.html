@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MITRATEL — OPM Report</title>
+  <link rel="icon" type="image/png" href="/assets/img/favicon-ta.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/assets/css/admin.tw.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link rel="stylesheet" href="/assets/css/theme.css">
+  <style>
+    *{box-sizing:border-box} body{margin:0;background:#f1f5f9;color:#172033;font:11px Inter,Arial,sans-serif}
+        .app-shell{display:flex;height:100vh;width:100vw;overflow:hidden;position:relative;z-index:1}
+    .app-bg{position:absolute;inset:0;z-index:0;pointer-events:none;background:#E9EDF2}
+    .app-main{flex:1 1 auto;min-width:0;overflow-y:auto;padding:16px 22px 28px}
+    .app-main::-webkit-scrollbar{width:8px}
+    .app-main::-webkit-scrollbar-track{background:transparent}
+    .app-main::-webkit-scrollbar-thumb{background:rgba(99,102,241,.35);border-radius:99px}
+    .app-sidebar{width:170px;flex-shrink:0;background:linear-gradient(180deg,#B71C1C 0%,#D32F2F 46%,#A31515 100%);color:#fff;display:flex;flex-direction:column;position:relative;z-index:200;overflow:hidden}
+    .app-sidebar::before{content:'';position:absolute;inset:0;z-index:-1;background:url('/sidebar.jpg') 0 0 / 100% 100% no-repeat;pointer-events:none;animation:sideArtDrift 36s ease-in-out infinite alternate}
+    @keyframes sideArtDrift{from{transform:scale(1.05) translate3d(0,-1.8%,0)}to{transform:scale(1.05) translate3d(0,1.8%,0)}}
+    @keyframes headArtDrift{from{transform:scale(1.04) translate3d(-1.2%,0,0)}to{transform:scale(1.04) translate3d(1.2%,0,0)}}
+    @media (prefers-reduced-motion:reduce){.app-sidebar::before,.app-topbar::before{animation:none}}
+    .app-sidebar-inner{display:flex;flex-direction:column;height:100%;padding:16px 12px 14px;overflow-y:auto}
+    .app-sidebar-inner::-webkit-scrollbar{width:5px}
+    .app-sidebar-inner::-webkit-scrollbar-thumb{background:rgba(255,255,255,.45);border-radius:99px}
+    .app-brand{display:flex;align-items:center;gap:11px;padding:2px 4px 14px;margin-bottom:8px}
+    .brand-logo{position:relative;width:100%;height:3.2rem;flex:0 0 auto;border-radius:0;overflow:hidden;background:transparent;border:none;box-shadow:none;display:flex;align-items:center;justify-content:center;padding:2px 0}
+    .brand-logo img{display:block;width:100%;height:100%;object-fit:contain;background:transparent;filter:brightness(0) invert(1)}
+    .brand-logo i{display:none;font-size:1.15rem;color:#fff}
+    .brand-logo.no-img img{display:none}
+    .brand-logo.no-img i{display:block;color:#fff}
+    .app-nav{display:flex;flex-direction:column;gap:3px;flex:1}
+    .app-nav-label{font-size:7px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.7);padding:10px 10px 4px}
+    .nav-btn{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:9px 11px;border-radius:8px;font-size:10px;font-weight:500;color:#fff;background:transparent;border:none;cursor:pointer;text-decoration:none;transition:background .15s ease,color .15s ease}
+    .nav-btn i{width:18px;text-align:center;color:#fff;font-size:11px}
+    .nav-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+    .nav-btn.active{background:#fff;color:#263238}
+    .nav-btn.active i{color:#C62828}
+    .app-nav-foot{margin-top:14px;border-top:1px solid rgba(255,255,255,.18);padding-top:12px;display:flex;flex-direction:column;gap:3px}
+    .app-ver{font-size:7px;color:rgba(255,255,255,.6);text-align:center;padding-top:10px}
+    .hamburger{display:none;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;cursor:pointer;align-items:center;justify-content:center;font-size:11px}
+    .app-sidebar-bg{display:none}
+    .app-topbar{box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:space-between;gap:.75rem;background:linear-gradient(180deg,#B71C1C 0%,#C62828 100%);border:none;border-radius:0;box-shadow:0 10px 26px rgba(15,23,42,.18);margin:-16px -22px 0;min-height:150px;padding:18px 26px 44px;overflow:hidden;color:#fff}
+    .app-topbar::before{content:'';position:absolute;inset:0;z-index:0;background:url('/header.jpg') center bottom / 158% auto no-repeat;pointer-events:none;animation:headArtDrift 28s ease-in-out infinite alternate}
+    .app-topbar > *{position:relative}
+    .topbar-brand-title{font-size:12px;font-weight:600;letter-spacing:.02em;color:#fff;line-height:1.1;white-space:nowrap}
+    .topbar-brand-sub{font-size:9px;color:rgba(255,255,255,.8);margin-top:2px;white-space:nowrap}
+    #live_clock{color:#fff;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.05em}
+    #live_date{color:rgba(255,255,255,.8);font-size:9px;margin-top:2px}
+    .topbar-title{font-size:16px;font-weight:800;color:#fff;letter-spacing:.02em;line-height:1.2}
+    .topbar-sub{font-size:9.5px;color:rgba(255,255,255,.85);margin-top:4px;max-width:640px}
+.content{padding:18px 22px;max-width:1600px}.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:18px}.card{background:#fff;border:1px solid #e2e8f0;border-radius:13px;box-shadow:0 1px 2px #0f172a09}.list-head{padding:16px;border-bottom:1px solid #e2e8f0}.list-head h2{font-size: 9px;margin:0;font-weight: 600}.list-head p{font-size: 7px;margin:5px 0 0;color:#64748b;line-height:1.5}.search{width:100%;padding:10px 11px;border:1px solid #cbd5e1;border-radius:8px;margin-top:11px;outline:0;font:10px Inter}.search:focus,.field input:focus,.field select:focus{border-color:#D32F2F;box-shadow:0 0 0 3px #d32f2f22}.loc-list{max-height:200px;overflow:auto}.loc{padding:12px 14px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:.14s}.loc:hover,.loc.on{background:#fff1f2}.loc b{font-size: 7px;line-height:1.45;display:block;color:#1e293b}.loc.on b{color:#b91c1c}.loc span{color:#64748b;font-size: 7px;margin-top:4px;display:block}.empty{padding:48px 18px;text-align:center;color:#94a3b8;font-size: 8px}.welcome{padding:100px 25px;text-align:center;color:#64748b}.welcome .wi{margin:auto;display:grid;place-items:center;width:60px;height:60px;border-radius:18px;background:#eef2ff;color:#6366f1;font-size: 20px}.welcome h2{font-size: 11px;color:#334155;margin:15px 0 6px}.welcome p{font-size: 8px}.project{padding:16px 19px;display:flex;align-items:center;gap:11px;border-bottom:1px solid #e2e8f0}.project .icon{background:#fff1f2;color:#D32F2F;border-radius:10px;width:36px;height:36px;display:grid;place-items:center}.project h2{font-size: 9px;margin:0}.project p{font-size: 7px;color:#64748b;margin:4px 0 0}.tabs{display:flex;gap:5px;padding:10px 15px;border-bottom:1px solid #e2e8f0}.tab{border:0;background:transparent;padding:8px 10px;border-radius:7px;color:#64748b;cursor:pointer;font-weight: 600;font-size: 7px}.tab i{margin-right:4px}.tab.on{background:#fee2e2;color:#b91c1c}.pane-title{font-size: 10px;font-weight: 700;color:#1e293b;margin:0 0 4px}.pane-intro{font-size: 7px;line-height:1.55;color:#64748b;margin:0 0 16px}.pane{padding:19px}.hidden{display:none!important}.section{border:1px solid #e2e8f0;border-radius:10px;margin-bottom:15px;overflow:hidden}.section h3{margin:0;background:#f8fafc;padding:10px 13px;font-size: 7px;text-transform:uppercase;letter-spacing:.07em;color:#475569}.section h3 i{color:#D32F2F;margin-right:6px}.section-desc{padding:8px 13px;border-bottom:1px solid #f1f5f9;background:#fff;font-size: 7px;line-height:1.55;color:#64748b}.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;padding:13px}.field{min-width:0}.field label{display:flex;align-items:center;gap:5px;font-size: 7px;color:#475569;font-weight: 700;margin-bottom:5px;text-transform:uppercase;letter-spacing:.025em}.field label i{color:#D32F2F;font-size: 7px}.field .hint{display:block;min-height:23px;font-size: 7px;line-height:1.35;color:#94a3b8;margin:5px 1px 0}.field input,.field select{width:100%;border:1px solid #cbd5e1;border-radius:7px;padding:9px;font:10px Inter;outline:0;background:#fff}.field input::placeholder{color:#cbd5e1}.wide{grid-column:span 3}.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:11px}.btn{border:0;border-radius:8px;padding:10px 12px;font:800 9px Inter;cursor:pointer}.primary{background:#D32F2F;color:#fff;box-shadow:0 4px 11px #d32f2f44}.primary:hover{background:#b91c1c}.plain{background:#fff;color:#475569;border:1px solid #cbd5e1}.notice{font-size: 7px;line-height:1.65;color:#92400e;background:#fffbeb;border:1px solid #fde68a;padding:10px 12px;border-radius:8px;margin-bottom:13px}.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}.cores{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.drop{position:relative;border:1.5px dashed #cbd5e1;border-radius:9px;min-height:154px;padding:8px;background:#fafcff;cursor:pointer;outline:0;transition:.15s}.drop:hover,.drop:focus,.drop.target{border-color:#E53935;background:#fff1f2}.drop.over{border-color:#D32F2F;background:#fee2e2;box-shadow:0 0 0 3px #d32f2f22}.drop b{font-size: 7px;display:block;color:#334155}.drop img{display:block;width:100%;height:91px;object-fit:cover;border-radius:6px;margin:7px 0}.photo-actions{display:flex;gap:4px;margin:3px 0 5px}.photo-action{border:1px solid #fecaca;background:#fff;color:#b91c1c;border-radius:5px;padding:4px 5px;font:800 7px Inter;cursor:pointer;flex:1;text-align:center}.photo-action:hover{background:#fff1f2}.photo-action.edit{border-color:#fed7aa;color:#c2410c}.photo-action.edit:hover{background:#fff7ed}.drop-empty{height:91px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size: 7px;text-align:center;line-height:1.5;gap:6px}.drop-empty i{font-size: 14px;color:#f87171}.drop small{font-size: 7px;color:#64748b;display:block}.scan{font-size: 7px;color:#047857;font-weight: 600;padding-top:2px}
+.scan.ok{display:flex;align-items:center;gap:6px;margin-top:6px;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;border-radius:8px;padding:6px 8px;font-size: 8px;line-height:1.35}
+.scan.ok i{color:#16a34a;font-size: 10px;flex:none}
+.scan.ok b{font:700 12px 'JetBrains Mono',monospace;color:#065f46}
+.scan.warn{display:flex;align-items:center;gap:6px;margin-top:6px;background:#fffbeb;border:1px solid #fde68a;color:#b45309;border-radius:8px;padding:6px 8px;font-size: 7.5px;line-height:1.4;font-weight:600}
+.scan.warn i{color:#f59e0b;font-size: 10px;flex:none}
+.scan.warn b{color:#92400e}
+.drop input{display:none}.core.drop{min-height:128px}.core.drop img{height:60px;margin:6px 0}.core .drop-empty{height:60px;font-size: 7px}.core .drop-empty i{font-size: 11px}.help{padding:9px 12px;background:#fff1f2;color:#b91c1c;border:1px solid #fecaca;border-radius:8px;font-size: 7px;line-height:1.6;margin-bottom:13px}.report{padding:20px;border:1px dashed #a5b4fc;border-radius:11px;background:#fafaff}.report h3{margin:0 0 7px;font-size: 10px}.report p{color:#64748b;font-size: 7px;line-height:1.65}.links a{display:inline-block;margin:9px 7px 0 0;color:#fff;background:#0f766e;padding:9px 11px;border-radius:7px;text-decoration:none;font-size: 7px;font-weight: 600}.toast.err{background:#be123c}.tag-row{display:flex;align-items:center;gap:6px;margin:6px 0 2px}.tag-label{font-size: 7px;font-weight: 600;color:#64748b;text-transform:uppercase;letter-spacing:.05em}.tag-input{flex:1;border:1px solid #cbd5e1;border-radius:6px;padding:5px 7px;font:9px Inter;outline:0;background:#fafcff}.tag-input:focus{border-color:#D32F2F;box-shadow:0 0 0 3px #d32f2f22}.pp-modal{position:fixed;inset:0;z-index:300;background:rgba(15,10,12,.7);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px}
+    .pp-modal.hidden{display:none!important}
+    .pp-box{width:min(1180px,98vw);height:min(880px,94vh);background:#fff;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 26px 70px rgba(0,0,0,.45)}
+    .pp-head{background:linear-gradient(115deg,#D32F2F,#E53935);color:#fff;padding:12px 15px;display:flex;align-items:center;gap:10px}
+    .pp-head h3{margin:0;font-size:14.5px;font-weight:800}
+    .pp-head p{margin:2px 0 0;font-size:9.5px;color:#ffe4e6}
+    .pp-head button{margin-left:auto;background:#ffffff22;border:0;color:#fff;width:28px;height:28px;border-radius:7px;font-size:16px;cursor:pointer;line-height:1}
+    .pp-head button:hover{background:#ffffff33}
+    .pp-body{flex:1;position:relative;background:#0f172a;min-height:0}
+    .pp-body iframe{width:100%;height:100%;border:0;display:block;background:#fff}
+    .pp-loading{position:absolute;inset:0;display:grid;place-items:center;color:#e2e8f0;font-size:11.5px;font-weight:500;text-align:center;z-index:2;padding:16px;background:#0f172a}
+    .pp-loading.hidden{display:none}
+    .pp-foot{display:flex;align-items:center;gap:8px;padding:9px 13px;border-top:1px solid #e2e8f0;background:#f8fafc}
+    .pp-foot #pp-status{flex:1;font-size:9.5px;font-weight:500;color:#475569;line-height:1.4}
+    .pp-btn{border:1px solid #e2e8f0;background:#fff;color:#334155;border-radius:7px;padding:8px 13px;font:700 10px Inter,Arial,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+    .pp-btn:hover{background:#f1f5f9}
+    .pp-btn.primary{background:#D32F2F;border-color:#D32F2F;color:#fff}
+    .pp-btn.primary:hover{background:#b91c1c}
+    .pp-btn:disabled{opacity:.5;cursor:not-allowed}.foto-preview-modal{position:fixed;inset:0;background:#00000090;display:flex;align-items:center;justify-content:center;z-index:200}
+.foto-preview-modal.hidden{display:none}
+.foto-preview-modal img{max-width:92vw;max-height:82vh;border-radius:10px;box-shadow:0 18px 60px #00000055;background:#111}
+.foto-preview-close{position:absolute;top:14px;right:16px;background:#ffffff22;color:#fff;border:0;border-radius:8px;width:34px;height:34px;font-size: 16px;cursor:pointer}
+.foto-preview-tag{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:#000000b3;color:#fff;padding:6px 14px;border-radius:7px;font-size: 9px;max-width:86vw;text-align:center}
+
+/* ── Overlay progress Generate OPM ─────────────────────────────────────── */
+.gen-overlay{position:fixed;inset:0;z-index:90;background:rgba(15,10,12,.62);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:18px}
+.gen-overlay.hidden,#gen-spin-wrap.hidden,#gen-done-ico.hidden{display:none!important}
+.gen-box{width:min(430px,96vw);background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 26px 70px rgba(0,0,0,.4);animation:genPop .18s ease-out}
+@keyframes genPop{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+.gen-head{background:linear-gradient(115deg,#D32F2F,#E53935);color:#fff;padding:15px 18px;display:flex;gap:12px;align-items:center}
+.gen-head .gh-ico{width:36px;height:36px;border-radius:10px;background:#ffffff26;display:grid;place-items:center;flex:none;font-size:15px}
+.gen-head h3{margin:0;font-size:14px}
+.gen-head p{margin:2px 0 0;font-size:10.5px;color:#ffe4e6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px}
+.gen-body{padding:18px}
+.gen-spin{width:46px;height:46px;margin:0 auto 12px;border-radius:50%;border:4px solid #fecaca;border-top-color:#D32F2F;animation:genSpin .8s linear infinite}
+@keyframes genSpin{to{transform:rotate(360deg)}}
+.gen-state{text-align:center;font-size:12.5px;color:#334155;min-height:18px}
+.gen-time{text-align:center;font:600 11px 'JetBrains Mono',monospace;color:#64748b;margin-top:6px}
+.gen-steps{list-style:none;margin:14px 0 0;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;font-size:11.5px}
+.gen-steps li{display:flex;align-items:center;gap:9px;padding:5px 0;color:#94a3b8}
+.gen-steps li i{width:15px;text-align:center;flex:none}
+.gen-steps li.on{color:#0f172a;font-weight:600}
+.gen-steps li.done{color:#16a34a}
+.gen-done-ico{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;margin:0 auto 12px;font-size:26px}
+.gen-done-ico.ok{background:#dcfce7;color:#16a34a}
+.gen-done-ico.err{background:#fee2e2;color:#dc2626}
+.gen-links{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.gen-links a{display:flex;align-items:center;gap:9px;padding:11px 13px;border-radius:10px;text-decoration:none;font-weight:600;font-size:12px;border:1px solid #e2e8f0;background:#f8fafc;color:#0f172a}
+.gen-links a:hover{background:#f1f5f9}
+.gen-links a.x{border-color:#bbf7d0;background:#f0fdf4;color:#15803d}
+.gen-links a.p{border-color:#fecaca;background:#fff1f2;color:#b91c1c}
+.gen-err{background:#fff1f2;border:1px solid #fecaca;color:#9f1239;padding:10px 12px;border-radius:10px;font-size:11.5px;max-height:130px;overflow:auto;word-break:break-word;text-align:left;margin-top:14px}
+.gen-note{font-size:10.5px;color:#94a3b8;text-align:center;margin-top:12px;line-height:1.5}
+.gen-foot{display:flex;justify-content:flex-end;gap:9px;padding:0 18px 18px}
+.gen-btn{border:1px solid #e2e8f0;background:#fff;color:#334155;border-radius:9px;padding:9px 15px;font:600 11.5px Inter,Arial,sans-serif;cursor:pointer}
+.gen-btn:hover{background:#f1f5f9}
+.gen-btn.primary{background:#D32F2F;border-color:#D32F2F;color:#fff}
+.gen-btn.primary:hover{background:#b91c1c}
+.gen-btn:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:520px){.gen-head p{max-width:200px}}
+
+/* ── Modal Tag Lokasi (sama seperti ATP) ──────────────────────────────── */
+.tag-modal{position:fixed;inset:0;z-index:300;background:rgba(15,10,12,.7);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px}
+.tag-modal.hidden{display:none!important}
+.tag-box{width:min(1000px,98vw);max-height:94vh;background:#fff;border-radius:16px;overflow:auto;box-shadow:0 26px 70px rgba(0,0,0,.45);font-family:Inter,Arial,sans-serif;text-align:left}
+.tag-head{background:linear-gradient(115deg,#D32F2F,#E53935);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:2}
+.tag-head h3{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em}
+.tag-head button{margin-left:auto;background:#ffffff22;border:0;color:#fff;width:32px;height:32px;border-radius:9px;font-size:19px;cursor:pointer;line-height:1}
+.tag-head button:hover{background:#ffffff33}
+.tag-body{padding:16px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px}
+.tag-preview-wrap{background:#0f172a;border-radius:12px;padding:8px;display:grid;place-items:center;min-height:280px;overflow:hidden}
+.tag-preview-wrap canvas{max-width:100%;max-height:62vh;border-radius:6px;display:block}
+.tag-form{display:flex;flex-direction:column;gap:11px;font-size:12px;color:#334155}
+.tag-form label{font-weight:700;font-size:11.5px;display:block;margin-bottom:4px;color:#334155}
+.tag-form textarea,.tag-form input[type=text],.tag-form select{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:9px 10px;font:500 12.5px Inter,Arial,sans-serif;color:#0f172a;background:#fff;outline:0}
+.tag-form textarea:focus,.tag-form input[type=text]:focus,.tag-form select:focus{border-color:#D32F2F;box-shadow:0 0 0 3px #d32f2f1f}
+.tag-form textarea{min-height:96px;resize:vertical;line-height:1.5}
+.tag-form input[type=range]{width:100%;accent-color:#D32F2F}
+.tag-row{display:flex;gap:9px;align-items:flex-end}
+.tag-row>div{flex:1;min-width:0}
+.tag-check{display:flex;align-items:center;gap:8px;font-weight:700;font-size:11.5px;margin:0;color:#334155}
+.tag-check input{flex:none;margin:0;accent-color:#D32F2F}
+.tag-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:2px;flex-wrap:wrap}
+.tag-actions.start{justify-content:flex-start}
+.tag-box .pp-btn{border:1px solid #e2e8f0;background:#fff;color:#334155;border-radius:9px;padding:9px 15px;font:700 12px Inter,Arial,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.tag-box .pp-btn:hover{background:#f1f5f9}
+.tag-box .pp-btn.primary{background:#D32F2F;border-color:#D32F2F;color:#fff}
+.tag-box .pp-btn.primary:hover{background:#b91c1c}
+.tag-box .pp-btn:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:760px){.tag-body{grid-template-columns:1fr}.tag-preview-wrap canvas{max-height:38vh}}
+@media(max-width:1023px){.app-shell{display:block;height:auto;min-height:100vh;width:100%;overflow:visible}.app-bg{display:none}.app-sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-105%);transition:transform .25s ease;box-shadow:0 0 60px rgba(0,0,0,.5)}.app-sidebar.open{transform:translateX(0)}.app-sidebar-bg{display:block;position:fixed;inset:0;background:rgba(2,6,23,.6);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:150}.app-sidebar-bg.show{opacity:1;pointer-events:auto}.hamburger{display:inline-flex}.app-main{padding:14px 14px 24px;overflow:visible}.app-topbar{margin:-14px -14px 0;min-height:auto;padding:14px 16px 34px;flex-wrap:wrap}.layout{grid-template-columns:1fr}.loc-list{max-height:260px}.content{padding:0}.fields{grid-template-columns:1fr}.wide{grid-column:span 1}.photo-grid{grid-template-columns:1fr}.cores{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head><body>
+<div class="app-bg" aria-hidden="true"></div>
+<div class="app-shell">
+  <aside class="app-sidebar" id="app_sidebar" aria-label="Navigasi utama">
+    <div class="app-sidebar-inner">
+      <div class="app-brand">
+        <div class="brand-logo" id="brand_logo">
+          <img src="/assets/img/logo-ta.png" alt="Telkom Akses" onerror="document.getElementById('brand_logo').classList.add('no-img')">
+          <i class="fa-solid fa-chart-network"></i>
+        </div>
+      </div>
+      <nav class="app-nav">
+        <p class="app-nav-label">Menu Utama</p>
+        <a href="/admin.html" class="nav-btn"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a>
+        <a href="/admin.html" class="nav-btn"><i class="fa-solid fa-map-location-dot"></i><span>Master Lokasi</span></a>
+        <a href="/mitratel" class="nav-btn active"><i class="fa-solid fa-tower-cell"></i><span>Input MITRATEL – OPM</span></a>
+        <a href="/mitratel/atp" class="nav-btn"><i class="fa-solid fa-tower-broadcast"></i><span>ATP MITRATEL</span></a>
+        <a href="/mitratel/report" class="nav-btn"><i class="fa-solid fa-chart-pie"></i><span>Laporan M-tel</span></a>
+      </nav>
+      <div class="app-nav-foot">
+        <a href="/login.html" class="nav-btn" title="Keluar dari sistem"><i class="fa-solid fa-right-from-bracket"></i><span>Keluar Sistem</span></a>
+        <p class="app-ver">v2026 · PT Telkom Akses</p>
+      </div>
+    </div>
+  </aside>
+  <div class="app-sidebar-bg" id="sidebar_backdrop" onclick="toggleSidebar(false)"></div>
+  <div class="app-main">
+    <nav class="app-topbar">
+      <button type="button" class="hamburger" onclick="toggleSidebar()" aria-label="Buka menu sidebar"><i class="fa-solid fa-bars"></i></button>
+      <div class="min-w-0 flex items-center gap-3.5" style="display:flex;align-items:center;gap:.9rem;min-width:0;">
+        <div style="display:flex;flex-direction:column;flex-shrink:0;">
+          <span class="topbar-brand-title">DRAMATIC</span>
+          <span class="topbar-brand-sub">Telkom Akses Regional 2</span>
+        </div>
+        <div style="width:1px;height:34px;background:rgba(255,255,255,.25);flex-shrink:0;"></div>
+        <div style="min-width:0;">
+          <div class="topbar-title">MITRATEL — OPM REPORT</div>
+          <div class="topbar-sub">Input Site NE / FE · Foto OPM · Generate Excel Report</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.6rem;flex-shrink:0;">
+        <div style="display:flex;flex-direction:column;align-items:flex-end;">
+          <span id="live_clock" class="font-mono">--:--:--</span>
+          <span id="live_date">—</span>
+        </div>
+        <span style="background:#fff;color:#b91c1c;border:1px solid #fecaca;border-radius:99px;padding:5px 10px;font-size:9px;font-weight:700;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;"><i class="fa-solid fa-shield-halved"></i> ADMIN</span>
+      </div>
+    </nav>
+    <div style="padding-top:14px;"><div class="content"><div class="layout"><aside class="card"><div class="list-head"><h2><i class="fa-solid fa-list"></i> Lokasi M-tel</h2><p>Pilih lokasi untuk memasukkan data OPM MITRATEL.</p><input id="q" class="search" placeholder="Cari nama lokasi atau PID..." oninput="loadList()"></div><div id="list" class="loc-list"><div class="empty">Memuat lokasi…</div></div></aside><section class="card" id="main"><div class="welcome"><div class="wi"><i class="fa-solid fa-file-circle-plus"></i></div><h2>Pilih lokasi M-tel</h2><p>Mulai pengisian Site NE, Site FE, foto OPM, lalu buat report OPM.</p></div></section></div></div></div>
+  </div><!-- /app-main -->
+</div><!-- /app-shell --><div class="pp-modal hidden" id="pp-modal" role="dialog" aria-modal="true" aria-labelledby="pp-title">
+  <div class="pp-box">
+    <div class="pp-head">
+      <i class="fa-solid fa-wand-magic-sparkles"></i>
+      <div><h3 id="pp-title">Edit Foto — Photopea</h3><p id="pp-sub">—</p></div>
+      <button type="button" onclick="closePhotopea()" title="Tutup">&times;</button>
+    </div>
+    <div class="pp-body">
+      <div id="pp-loading" class="pp-loading"><div><i class="fa-solid fa-spinner fa-spin" style="font-size:22px"></i><div style="margin-top:8px">Menyiapkan Photopea…</div></div></div>
+      <iframe id="pp-frame" title="Photopea" allow="clipboard-read; clipboard-write"></iframe>
+    </div>
+    <div class="pp-foot">
+      <span id="pp-status">Memuat Photopea…</span>
+      <button type="button" class="pp-btn" onclick="closePhotopea()">Batal</button>
+      <button type="button" class="pp-btn primary" id="pp-save" onclick="photopeaSave()" disabled><i class="fa-solid fa-floppy-disk"></i> Simpan ke slot</button>
+    </div>
+  </div>
+</div>
+<div id="foto-preview-modal" class="foto-preview-modal hidden">
+  <button type="button" class="foto-preview-close" onclick="closeFotoPreview()">&times;</button>
+  <img id="foto-preview-img" src="" alt="Foto preview" />
+  <div id="foto-preview-tag" class="foto-preview-tag"></div>
+</div>
+<div id="gen-overlay" class="gen-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="gen-title">
+  <div class="gen-box">
+    <div class="gen-head">
+      <div class="gh-ico"><i class="fa-solid fa-file-excel"></i></div>
+      <div>
+        <h3 id="gen-title">Generate OPM MITRATEL</h3>
+        <p id="gen-sub">Sedang memproses…</p>
+      </div>
+    </div>
+    <div class="gen-body">
+      <div id="gen-spin-wrap"><div class="gen-spin"></div></div>
+      <div id="gen-done-ico" class="gen-done-ico ok hidden"><i class="fa-solid fa-check"></i></div>
+      <div id="gen-state" class="gen-state">Menyiapkan template &amp; data lokasi…</div>
+      <div id="gen-time" class="gen-time">00:00</div>
+      <ul id="gen-steps" class="gen-steps">
+        <li data-i="0"><i class="fa-regular fa-circle"></i> Menyiapkan template &amp; data lokasi</li>
+        <li data-i="1"><i class="fa-regular fa-circle"></i> Mengisi Sheet3 &amp; hasil kalibrasi OPM</li>
+        <li data-i="2"><i class="fa-regular fa-circle"></i> Menyisipkan foto eviden (kalibrasi, NE &amp; FE)</li>
+        <li data-i="3"><i class="fa-regular fa-circle"></i> Menyimpan file Excel</li>
+      </ul>
+      <div id="gen-result"></div>
+      <div class="gen-note">Proses berjalan di server dan biasanya memakan waktu <b>5–30 detik</b> (Excel). Jangan tutup halaman ini selama masih berproses. Hasil berupa file <b>XLSX</b>.</div>
+    </div>
+    <div class="gen-foot">
+      <button id="gen-close" class="gen-btn" onclick="genClose()" disabled>Tutup</button>
+      <button id="gen-again" class="gen-btn primary hidden" onclick="generate()"><i class="fa-solid fa-rotate-right"></i> Coba lagi</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast" hidden></div>
+<!-- Tag lokasi pada foto -->
+<div id="tag-modal" class="tag-modal hidden" role="dialog" aria-modal="true" aria-labelledby="tag-title">
+  <div class="tag-box">
+    <div class="tag-head">
+      <i class="fa-solid fa-location-dot"></i>
+      <h3 id="tag-title">Tag Lokasi Foto</h3>
+      <button type="button" onclick="closeTag()" title="Tutup">&times;</button>
+    </div>
+    <div class="tag-body">
+      <div class="tag-preview-wrap"><canvas id="tag-canvas"></canvas></div>
+      <div class="tag-form">
+        <div>
+          <label for="tag-text">Teks tag (boleh beberapa baris)</label>
+          <textarea id="tag-text" oninput="tagPreview()" placeholder="Nama lokasi / PID / koordinat…"></textarea>
+        </div>
+        <div class="tag-row">
+          <div><label for="tag-pos">Posisi</label>
+            <select id="tag-pos" onchange="tagPreview()">
+              <option value="bl">Kiri bawah</option><option value="br">Kanan bawah</option>
+              <option value="tl">Kiri atas</option><option value="tr">Kanan atas</option>
+            </select>
+          </div>
+          <div><label for="tag-size">Ukuran teks</label><input type="range" id="tag-size" min="1.5" max="6" step="0.25" value="3" oninput="tagPreview()"></div>
+        </div>
+        <label class="tag-check"><input type="checkbox" id="tag-time" checked onchange="tagPreview()"> Sertakan tanggal &amp; waktu</label>
+        <div class="tag-actions start">
+          <button type="button" class="pp-btn" onclick="tagGps()"><i class="fa-solid fa-location-crosshairs"></i> Ambil GPS</button>
+          <button type="button" class="pp-btn" onclick="tagReset()"><i class="fa-solid fa-rotate-left"></i> Isi otomatis</button>
+        </div>
+        <div class="tag-actions">
+          <button type="button" class="pp-btn" onclick="closeTag()">Batal</button>
+          <button type="button" class="pp-btn primary" id="tag-save" onclick="tagSave()"><i class="fa-solid fa-check"></i> Simpan ke slot</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function toggleSidebar(force) {
+  const s = document.getElementById('app_sidebar'), b = document.getElementById('sidebar_backdrop');
+  const buka = force === undefined ? !s.classList.contains('open') : force;
+  s.classList.toggle('open', buka); if (b) b.classList.toggle('show', buka);
+}
+function jam() {
+  const d = new Date();
+  const c = document.getElementById('live_clock'), dt = document.getElementById('live_date');
+  if (c) c.textContent = d.toLocaleTimeString('id-ID', { hour12: false });
+  if (dt) dt.textContent = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+setInterval(jam, 1000); jam();
+
+let current=null,state=null,timer=null,activePasteSlot=null,aktifTab='data';
+const $=id=>document.getElementById(id);
+function msg(t,err=false){const e=$('toast');if(!e)return console.warn('MITRATEL_TOAST_MISSING');e.textContent=t;e.className='toast'+(err?' err':'');e.hidden=false;clearTimeout(timer);timer=setTimeout(()=>e.hidden=true,4000)}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function url(f){return '/api/mitratel/foto/'+current+'/'+encodeURIComponent(f)}
+function findPhoto(slot){return(state.fotos||[]).find(a=>a.slot===slot)}
+async function loadList(){try{const r=await fetch('/api/mitratel/lokasi?q='+encodeURIComponent($('q').value));const d=await r.json();$('list').innerHTML=d.rows.length?d.rows.map(x=>`<div class="loc ${current==x.id?'on':''}" onclick="openLoc(${x.id})"><b>${esc(x.nama_lokasi)}</b><span>${esc(x.pid||'Tanpa PID')} ${x.updated_at?'· data OPM tersimpan':''}</span></div>`).join(''):'<div class="empty">Lokasi tidak ditemukan.</div>'}catch(e){$('list').innerHTML='<div class="empty">Gagal mengambil lokasi.</div>'}}
+async function openLoc(id){
+  try{
+    const r=await fetch('/api/mitratel/data/'+id);
+    state=await r.json();
+    if(!r.ok)throw Error(state.message);
+    current=id;
+    loadList();
+    render();
+    
+    // Set timeout to wait for DOM to be ready, then auto-generate tag from coordinates
+    setTimeout(() => {
+      try {
+        // Cek input tag yang masih kosong di DOM
+        const inputsTag = document.querySelectorAll('.tag-input');
+        const adaKosong = Array.from(inputsTag).find(inp => !inp.value || String(inp.value).trim() === '');
+        
+        if (adaKosong && state.data.tikor_ne_lat !== undefined && state.data.tikor_ne_lat !== null) {
+          // Auto-generate tag from NE coordinates
+          const lat = Number(state.data.tikor_ne_lat);
+          const lng = Number(state.data.tikor_ne_long);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng) + '&zoom=18&addressdetails=1&accept-language=id', {
+              headers: { 'User-Agent': 'webbogor-mitratel/1.0' }
+            })
+            .then(resp => resp.json())
+            .then(data => {
+              if (data && data.display_name) {
+                const address = data.address || {};
+                const parts = [];
+                const jalan = address.road || address.street || address.name || '';
+                const kec = address.city || address.municipality || address.suburb || '';
+                const kel = address.village || address.ham || '';
+                
+                if (jalan) parts.push('Jalan ' + jalan);
+                if (kec) parts.push('Kec. ' + kec);
+                if (kel) parts.push('Kel. ' + kel);
+                
+                const tagAwal = parts.join(' - ') || data.display_name;
+                
+                // Isi input tag dan kirim ke server
+                adaKosong.value = tagAwal;
+                const slot = adaKosong.id.replace('tag_', '');
+                const r2 = fetch('/api/mitratel/tag/' + current + '/' + slot, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ tag: tagAwal })
+                });
+                if (!r2.ok) throw new Error('Gagal simpan tag');
+                msg('Tag lokasi otomatis dari koordinat NE ditambahkan: ' + tagAwal);
+              }
+            })
+            .catch(e => {
+              console.warn('Reverse geocoding error:', e.message);
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Auto-tag error:', e.message);
+      }
+    }, 500);
+  }catch(e){msg(e.message,true)}}
+const fieldMeta={
+  insert_new_ring:['fa-code-branch','Tentukan apakah pekerjaan berupa insert atau pembangunan ring baru.'],
+  id_span_existing:['fa-link','Nomor / identitas span eksisting yang terhubung dengan pekerjaan ini.'],
+  nama_ring:['fa-circle-nodes','Nama ring sesuai data desain, ATP, atau nomenklatur proyek.'],
+  id_span:['fa-fingerprint','Identitas span baru yang akan tampil pada report OPM.'],
+  panjang_kabel_n_to_n:['fa-ruler-horizontal','Panjang FO antar node / node-to-node sesuai desain (meter atau km).'],
+  panjang_kabel_baru:['fa-ruler-combined','Total panjang kabel baru yang direalisasikan.'],
+  jumlah_core:['fa-grip','Pilih jumlah core yang digunakan dalam pekerjaan ini.'],
+  tanggal_submit_atp:['fa-calendar-check','Tanggal pengajuan / submit ATP pada report.'],
+  id_site_ne:['fa-tower-cell','ID Site A / sisi NE sesuai sistem atau nomenklatur proyek.'],
+  nama_site_ne:['fa-location-dot','Nama lengkap Site A / Near End.'],
+  tikor_ne_lat:['fa-location-crosshairs','Koordinat latitude Site NE. Contoh: -6.200000'],
+  tikor_ne_long:['fa-location-crosshairs','Koordinat longitude Site NE. Contoh: 106.816666'],
+  optical_length_ne:['fa-ruler','Simpan nilai OTDR NE untuk kebutuhan report ATP berikutnya.'],
+  id_site_fe:['fa-tower-cell','ID Site B / sisi FE sesuai sistem atau nomenklatur proyek.'],
+  nama_site_fe:['fa-location-dot','Nama lengkap Site B / Far End.'],
+  tikor_fe_lat:['fa-location-crosshairs','Koordinat latitude Site FE. Contoh: -6.210000'],
+  tikor_fe_long:['fa-location-crosshairs','Koordinat longitude Site FE. Contoh: 106.826666'],
+  optical_length_fe:['fa-ruler','Simpan nilai OTDR FE untuk kebutuhan report ATP berikutnya.']
+};
+function field(label,key,type='text',cls=''){let v=state.data[key]||'', meta=fieldMeta[key]||['fa-pen','Isi data sesuai dokumen proyek.'];let control;if(type==='ring')control=`<select id="f_${key}"><option value="" ${!v?'selected':''}>— Pilih jenis pekerjaan —</option><option value="INSERT" ${v==='INSERT'?'selected':''}>INSERT</option><option value="NEW RING" ${v==='NEW RING'?'selected':''}>NEW RING</option></select>`;else if(type==='core')control=`<select id="f_${key}"><option value="2" ${v==='2'?'selected':''}>2 Core</option><option value="4" ${v==='4'?'selected':''}>4 Core</option></select>`;else control=`<input id="f_${key}" type="${type}" value="${esc(v)}" placeholder="${type==='date'?'Pilih tanggal':esc(label)}">`;return `<div class="field ${cls}"><label><i class="fa-solid ${meta[0]}"></i>${label}</label>${control}<small class="hint">${meta[1]}</small></div>`}
+/* ── Tag lokasi pada foto (modal, sama seperti ATP) ─────────────────────── */
+let tagState={slot:null,img:null};
+function tagDefaultText(slot){
+  const l=(state&&state.lokasi)||{};
+  const d=(state&&state.data)||{};
+  const lines=['MITRATEL OPM'];
+  if(l.nama_lokasi)lines.push(String(l.nama_lokasi));
+  if(l.pid)lines.push('PID: '+l.pid);
+  const s=String(slot||'');
+  const koord=function(la,lo){
+    if(la===undefined||la===null||lo===undefined||lo===null)return '';
+    if(String(la).trim()===''||String(lo).trim()==='')return '';
+    const a=Number(la),b=Number(lo);
+    if(!isFinite(a)||!isFinite(b))return '';
+    return a.toFixed(6)+', '+b.toFixed(6);
+  };
+  if(/^ne_/.test(s)){
+    lines.push('NE CORE ' + s.replace('ne_', ''));
+    if(d.nama_site_ne)lines.push('Site NE: '+d.nama_site_ne);
+    if(d.id_site_ne)lines.push('Site ID: '+d.id_site_ne);
+    const k=koord(d.tikor_ne_lat,d.tikor_ne_long);if(k)lines.push('Lokasi: '+k);
+  }else if(/^fe_/.test(s)){
+    lines.push('FE CORE ' + s.replace('fe_', ''));
+    if(d.nama_site_fe)lines.push('Site FE: '+d.nama_site_fe);
+    if(d.id_site_fe)lines.push('Site ID: '+d.id_site_fe);
+    const k=koord(d.tikor_fe_lat,d.tikor_fe_long);if(k)lines.push('Lokasi: '+k);
+  }else if(/^kalibrasi_/.test(s)){
+    lines.push('KALIBRASI ' + s.replace('kalibrasi_', ''));
+    if(d.nama_site_ne)lines.push('Site NE: '+d.nama_site_ne);
+    if(d.nama_site_fe)lines.push('Site FE: '+d.nama_site_fe);
+  }else{
+    if(d.nama_site_ne)lines.push('Site NE: '+d.nama_site_ne);
+    if(d.nama_site_fe)lines.push('Site FE: '+d.nama_site_fe);
+  }
+  return lines.join('\n');
+}
+async function openTag(event,slot){
+  if(event){event.preventDefault();event.stopPropagation()}
+  if(!current){msg('Pilih lokasi terlebih dahulu.',true);return}
+  const x=findPhoto(slot);if(!x)return;
+  try{
+    if(typeof closePhotopea==='function')closePhotopea();
+    msg('Menyiapkan foto…');
+    const r=await fetch(url(x.file_name),{cache:'no-store'});
+    if(!r.ok)throw Error('Gagal mengambil gambar dari server.');
+    const blob=await r.blob();
+    const obj=URL.createObjectURL(blob);
+    let img;
+    try{
+      img=await new Promise(function(res,rej){
+        const im=new Image();
+        im.onload=function(){res(im)};
+        im.onerror=function(){rej(Error('Gambar tidak bisa dibuka.'))};
+        im.src=obj;
+      });
+    }finally{setTimeout(function(){URL.revokeObjectURL(obj)},4000)}
+    tagState={slot:slot,img:img};
+    $('tag-text').value=(x&&x.tag&&String(x.tag).trim())?x.tag:tagDefaultText(slot);
+    $('tag-pos').value='bl';
+    $('tag-size').value='3';
+    $('tag-time').checked=true;
+    $('tag-modal').classList.remove('hidden');
+    $('tag-save').disabled=false;
+    tagPreview();
+    $('tag-text').focus();
+  }catch(e){msg(e.message||String(e),true)}
+}
+function closeTag(){
+  const m=$('tag-modal');if(m)m.classList.add('hidden');
+  tagState={slot:null,img:null};
+}
+function tagReset(){
+  if(!tagState.slot)return;
+  $('tag-text').value=tagDefaultText(tagState.slot);
+  tagPreview();
+}
+function tagGps(){
+  const tambahBarisLokasi=function(txt){
+    const ta=$('tag-text');
+    const baris='Lokasi: '+txt;
+    ta.value=/Lokasi:/.test(ta.value)?ta.value.replace(/Lokasi:.*/g,baris):(ta.value.trimEnd()+'\n'+baris);
+    tagPreview();
+  };
+  // Cadangan bila GPS browser tidak tersedia/ditolak: pakai koordinat data site.
+  const pakaiSite=function(){
+    const d=(state&&state.data)||{},s=String(tagState.slot||'');
+    const fe=/^fe_/.test(s);
+    const la=fe?d.tikor_fe_lat:d.tikor_ne_lat;
+    const lo=fe?d.tikor_fe_long:d.tikor_ne_long;
+    if(la===undefined||la===null||lo===undefined||lo===null)return false;
+    if(String(la).trim()===''||String(lo).trim()==='')return false;
+    const a=Number(la),b=Number(lo);
+    if(!isFinite(a)||!isFinite(b))return false;
+    tambahBarisLokasi(a.toFixed(6)+', '+b.toFixed(6));
+    msg('Koordinat dari data site ditambahkan ke tag.');
+    return true;
+  };
+  if(!navigator.geolocation){if(!pakaiSite())msg('Perangkat tidak mendukung GPS.',true);return}
+  msg('Mengambil koordinat lokasi…');
+  navigator.geolocation.getCurrentPosition(function(p){
+    tambahBarisLokasi(Number(p.coords.latitude).toFixed(6)+', '+Number(p.coords.longitude).toFixed(6));
+    msg('Koordinat ditambahkan ke tag.');
+  },function(e){
+    if(!pakaiSite())msg('Gagal mengambil koordinat: '+(e.message||'izin ditolak'),true);
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+}
+function tagPreview(){
+  if(!tagState.img)return;
+  const c=$('tag-canvas');
+  const wrap=c.parentElement;
+  const maxW=Math.max(240,wrap.clientWidth-16);
+  const maxH=Math.max(180,Math.min(window.innerHeight*0.62,640));
+  const scale=Math.min(maxW/tagState.img.width,maxH/tagState.img.height,1);
+  drawTag(c,tagState.img,scale);
+}
+function drawTag(canvas,img,scale){
+  const W=Math.max(1,Math.round(img.width*scale)),H=Math.max(1,Math.round(img.height*scale));
+  canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  ctx.drawImage(img,0,0,W,H);
+  const pct=Number($('tag-size').value)||3;
+  const fs=Math.max(10,Math.round(img.width*pct/100)*scale);
+  const pos=$('tag-pos').value||'bl';
+  let lines=String($('tag-text').value||'').split('\n').map(function(s){return s.trim()}).filter(Boolean);
+  if($('tag-time').checked){
+    const d=new Date();
+    lines.push(d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}));
+  }
+  if(!lines.length)lines=[' '];
+  ctx.font='600 '+fs+'px Inter, Arial, sans-serif';
+  const maxTextW=W*0.78,wrapped=[];
+  for(const ln of lines){
+    const words=ln.split(/\s+/);let cur='';
+    for(const w of words){
+      const test=cur?cur+' '+w:w;
+      if(ctx.measureText(test).width>maxTextW&&cur){wrapped.push(cur);cur=w}
+      else cur=test;
+    }
+    wrapped.push(cur||' ');
+  }
+  const pad=Math.round(fs*0.7),lineH=Math.round(fs*1.32);
+  const textW=Math.max.apply(null,wrapped.map(function(t){return ctx.measureText(t).width}));
+  const bar=Math.max(3,Math.round(fs*0.22));
+  const boxW=Math.min(W-2*Math.max(4,Math.round(fs*0.2)),Math.ceil(textW+pad*2+bar+Math.round(fs*0.5)));
+  const boxH=wrapped.length*lineH+pad*2;
+  const margin=Math.max(8,Math.round(Math.min(W,H)*0.018));
+  const x=pos.indexOf('r')>=0?W-boxW-margin:margin;
+  const y=pos.indexOf('t')>=0?margin:H-boxH-margin;
+  const r=Math.max(2,Math.round(fs*0.35));
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+boxW,y,x+boxW,y+boxH,r);ctx.arcTo(x+boxW,y+boxH,x,y+boxH,r);ctx.arcTo(x,y+boxH,x,y,r);ctx.arcTo(x,y,x+boxW,y,r);ctx.closePath();
+  ctx.fillStyle='rgba(15,23,42,.78)';ctx.fill();
+  ctx.fillStyle='#D32F2F';ctx.fillRect(x,y,bar,boxH);
+  ctx.fillStyle='#fff';ctx.textBaseline='top';
+  wrapped.forEach(function(t,i){ctx.fillText(t,x+bar+pad,y+pad+i*lineH)});
+  ctx.restore();
+}
+function tagTeks(){
+  return String($('tag-text').value||'').split('\n').map(function(s){return s.trim()}).filter(Boolean).join('\n');
+}
+async function tagSave(){
+  if(!tagState.img||!tagState.slot)return;
+  const btn=$('tag-save');
+  const labelAsli=btn.innerHTML;
+  btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan…';
+  try{
+    // Batasi dimensi hasil tag agar berkas tidak melebihi batas unggah server.
+    const MAX=2600;
+    const skala=Math.min(1,MAX/tagState.img.width,MAX/tagState.img.height);
+    const c=document.createElement('canvas');
+    drawTag(c,tagState.img,skala);
+    const slot=tagState.slot;
+    const teks=tagTeks();
+    const file=await kanvasKeFile(c,slot+'_tag_'+Date.now(),{maxBytes:6*1024*1024});
+    const ok=await uploadFile(file,slot);
+    if(ok){
+      if(teks)await updateTag(slot,teks);
+      closeTag();
+      msg('Tag lokasi tersimpan pada foto.');
+    }
+  }catch(e){msg(e.message||String(e),true)}
+  finally{btn.disabled=false;btn.innerHTML=labelAsli}
+}
+window.addEventListener('resize',function(){const m=$('tag-modal');if(m&&!m.classList.contains('hidden'))tagPreview()});
+function viewPhoto(event,slot){event.preventDefault();event.stopPropagation();const x=findPhoto(slot);if(!x)return;const m=document.getElementById('foto-preview-modal');const im=document.getElementById('foto-preview-img');im.src=url(x.file_name);const tg=document.getElementById('foto-preview-tag');tg.textContent=x.tag||'Foto tersimpan';m.classList.remove('hidden')}
+function closeFotoPreview(){document.getElementById('foto-preview-modal').classList.add('hidden')}
+function drop(slot,label,core=false){const x=findPhoto(slot);return `<div class="drop ${core?'core':''}" tabindex="0" role="button" title="Arahkan kursor lalu Ctrl+V, atau tarik foto ke sini" data-slot="${slot}" onclick="pick(event,'${slot}')" onmouseenter="setPasteTarget('${slot}')" onfocus="setPasteTarget('${slot}')" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event,'${slot}')"><b>${label}</b>${x?`<img src="${url(x.file_name)}" alt="${label}" onclick="viewPhoto(event,'${slot}')"><div class="photo-actions"><button type="button" class="photo-action tag" onclick="openTag(event,'${slot}')" title="Beri tag lokasi pada foto (teks, posisi, ukuran, tanggal/waktu, GPS)"><i class="fa-solid fa-location-dot"></i> Tag Lokasi</button><button type="button" class="photo-action edit" onclick="editPhoto(event,'${slot}')" title="Download foto untuk diedit manual di Photoshop/GIMP"><i class="fa-solid fa-pen-to-square"></i> Edit</button><button type="button" class="photo-action" onclick="removePhoto(event,'${slot}')" title="Hapus foto dari slot ini"><i class="fa-solid fa-trash"></i> Hapus</button></div><div class="scan ${slot.startsWith('kalibrasi')?(x.hasil_scan?'ok':'warn'):''}">${slot.startsWith('kalibrasi')?(x.hasil_scan?`<i class="fa-solid fa-circle-check"></i><span>Redaman terbaca: <b>${esc(x.hasil_scan)} dB</b> — akan diisi ke EQUIPMENT CALIBRATION (First/Second/Third)</span>`:`<i class="fa-solid fa-triangle-exclamation"></i><span>Hasil scan belum ada — klik <b>Scan 3 Foto Kalibrasi</b>; foto harus memuat layar/tampilan alat</span>`):'Foto tersimpan'}</div><div class="tag-row"><span class="tag-label">Tag Lokasi</span><input id="tag_${slot}" class="tag-input" type="text" value="${esc(x.tag||'')}" placeholder="Otomatis dari data site/core…" onchange="updateTag('${slot}', this.value)"></div>`:`<div class="drop-empty"><i class="fa-solid fa-images"></i><span>Arahkan kursor + Ctrl+V<br>atau drag foto Telegram</span></div>`}<small><i class="fa-solid fa-paperclip"></i> JPG / PNG / WEBP</small><input id="up_${slot}" type="file" accept="image/*" onchange="uploadInput(this,'${slot}')"></div>`}
+function render(){const l=state.lokasi;$('main').innerHTML=`<div class="project"><div class="icon"><i class="fa-solid fa-tower-cell"></i></div><div><h2>${esc(l.nama_lokasi)}</h2><p>PID: ${esc(l.pid||'—')} · Tematik: M-tel</p></div></div><div class="tabs"><button class="tab ${aktifTab==='data'?'on':''}" onclick="tab('data',this)"><i class="fa-solid fa-pen-to-square"></i>1. Data Sheet3</button><button class="tab ${aktifTab==='foto'?'on':''}" onclick="tab('foto',this)"><i class="fa-solid fa-images"></i>2. Foto OPM</button><button class="tab ${aktifTab==='report'?'on':''}" onclick="tab('report',this)"><i class="fa-solid fa-file-export"></i>3. Report OPM</button></div><div id="pane_data" class="pane ${aktifTab==='data'?'':'hidden'}"><h3 class="pane-title">Data dasar pekerjaan MITRATEL</h3><p class="pane-intro">Lengkapi data ini berdasarkan desain, dokumen pekerjaan, dan informasi site. Seluruh nilai akan dipindahkan otomatis ke <b>Sheet3</b> pada template OPM.</p><div class="section"><h3><i class="fa-solid fa-diagram-project"></i>Informasi Ring & Span</h3><div class="section-desc">Identitas ring, span, panjang kabel, jumlah core, dan tanggal pengajuan dokumen.</div><div class="fields">${field('Scope / Insert-New Ring','insert_new_ring','ring')}${field('ID Span Existing','id_span_existing')}${field('Nama Ring','nama_ring')}${field('ID Span','id_span')}${field('Panjang Kabel N to N','panjang_kabel_n_to_n')}${field('Panjang Kabel Baru','panjang_kabel_baru')}${field('Jumlah Core','jumlah_core','core')}${field('Tanggal Submit ATP','tanggal_submit_atp','date')}</div></div><div class="section"><h3><i class="fa-solid fa-tower-broadcast"></i>Site NE — Near End / Site A</h3><div class="section-desc">Masukkan identitas dan titik koordinat sisi awal link. Gunakan format koordinat desimal.</div><div class="fields">${field('ID Site NE','id_site_ne')}${field('Nama Site NE','nama_site_ne','text','wide')}${field('Tikor NE Latitude','tikor_ne_lat')}${field('Tikor NE Longitude','tikor_ne_long')}${field('Optical Length NE (km) — data ATP','optical_length_ne')}</div></div><div class="section"><h3><i class="fa-solid fa-tower-broadcast"></i>Site FE — Far End / Site B</h3><div class="section-desc">Masukkan identitas dan titik koordinat sisi akhir link. Gunakan format koordinat desimal.</div><div class="fields">${field('ID Site FE','id_site_fe')}${field('Nama Site FE','nama_site_fe','text','wide')}${field('Tikor FE Latitude','tikor_fe_lat')}${field('Tikor FE Longitude','tikor_fe_long')}${field('Optical Length FE (km) — data ATP','optical_length_fe')}</div></div><div class="actions"><button class="btn primary" onclick="save()"><i class="fa-solid fa-floppy-disk"></i> Simpan Data Sheet3</button></div></div><div id="pane_foto" class="pane ${aktifTab==='foto'?'':'hidden'}"><h3 class="pane-title">Upload eviden foto OPM</h3><p class="pane-intro">Upload tiga foto kalibrasi untuk dibaca otomatis. Foto kegiatan dapat dipasang pada core NE atau FE yang benar sesuai kebutuhan pekerjaan.</p><div class="help"><b><i class="fa-brands fa-telegram"></i> Paste langsung dari Telegram Desktop:</b> klik foto di Telegram → <b>Copy Image</b> → cukup <b>arahkan cursor</b> ke kotak tujuan → tekan <b>Ctrl+V</b>. Tidak perlu klik kotak dan tidak akan membuka folder. Untuk foto yang sudah masuk, gunakan tombol <b>Edit</b> (Photopea) atau <b>Hapus</b> sebelum generate report.</div><div class="section"><h3><i class="fa-solid fa-gauge-high"></i>3 Foto Kalibrasi OPM</h3><div class="section-desc">Urutkan foto sesuai pembacaan alat: foto pertama menjadi First (dB), kedua Second (dB), dan ketiga Third (dB).</div><div class="fields"><div class="wide photo-grid">${drop('kalibrasi_1','Kalibrasi 1 — First (dB)')}${drop('kalibrasi_2','Kalibrasi 2 — Second (dB)')}${drop('kalibrasi_3','Kalibrasi 3 — Third (dB)')}</div></div></div><div class="actions"><button id="scan-btn" class="btn plain" onclick="scan()"><i class="fa-solid fa-wand-magic-sparkles"></i> Scan 3 Foto Kalibrasi</button><button id="scan-opm-btn" class="btn plain" onclick="scanOpm()"><i class="fa-solid fa-wand-magic-sparkles"></i> Scan Foto NE/FE (OPM Test)</button></div><div class="section"><h3><i class="fa-solid fa-arrow-right-to-bracket"></i>Foto Kegiatan NE — Near End</h3><div class="section-desc">Pilih nomor core NE, lalu upload/edit foto untuk core tersebut.</div><div class="fields"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><label style="font:700 8px Inter,Arial,sans-serif;color:#475569">Core NE:</label><select onchange="selNeCore=Number(this.value);render()" style="border:1px solid #cbd5e1;border-radius:6px;padding:4px 8px;font:600 8px Inter,Arial,sans-serif">${Array.from({length:14},(_,i)=>'<option value="'+(i+1)+'"'+(selNeCore===(i+1)?' selected':'')+'>'+(i+1)+'</option>').join('')}</select><span class="tag-count">${(state.fotos||[]).filter(f=>f.slot&&f.slot.startsWith('ne_')&&f.file_name).length}/14 terisi</span></div><div class="wide cores">${drop('ne_'+selNeCore,'NE — CORE '+selNeCore,true)}</div><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><label style="font:700 8px Inter,Arial,sans-serif;color:#475569">Redaman (dB) NE core ${selNeCore}:</label><input id="redam-ne" type="text" value="${esc((state.fotos||[]).find(f=>f.slot==='ne_'+selNeCore)?.hasil_scan||'')}" placeholder="mis. -07,22" style="border:1px solid #cbd5e1;border-radius:6px;padding:4px 8px;font:600 8px Inter,Arial,sans-serif;width:120px" onchange="updateScanVal('ne_'+selNeCore,this.value)"><button class="btn plain" onclick="updateScanVal('ne_'+selNeCore,document.getElementById('redam-ne').value)" style="padding:4px 8px;font-size:8px">Simpan</button></div></div></div><div class="section"><h3><i class="fa-solid fa-arrow-right-from-bracket"></i>Foto Kegiatan FE — Far End</h3><div class="section-desc">Pilih nomor core FE, lalu upload/edit foto untuk core tersebut.</div><div class="fields"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><label style="font:700 8px Inter,Arial,sans-serif;color:#475569">Core FE:</label><select onchange="selFeCore=Number(this.value);render()" style="border:1px solid #cbd5e1;border-radius:6px;padding:4px 8px;font:600 8px Inter,Arial,sans-serif">${Array.from({length:14},(_,i)=>'<option value="'+(i+1)+'"'+(selFeCore===(i+1)?' selected':'')+'>'+(i+1)+'</option>').join('')}</select><span class="tag-count">${(state.fotos||[]).filter(f=>f.slot&&f.slot.startsWith('fe_')&&f.file_name).length}/14 terisi</span></div><div class="wide cores">${drop('fe_'+selFeCore,'FE — CORE '+selFeCore,true)}</div><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><label style="font:700 8px Inter,Arial,sans-serif;color:#475569">Redaman (dB) FE core ${selFeCore}:</label><input id="redam-fe" type="text" value="${esc((state.fotos||[]).find(f=>f.slot==='fe_'+selFeCore)?.hasil_scan||'')}" placeholder="mis. -07,22" style="border:1px solid #cbd5e1;border-radius:6px;padding:4px 8px;font:600 8px Inter,Arial,sans-serif;width:120px" onchange="updateScanVal('fe_'+selFeCore,this.value)"><button class="btn plain" onclick="updateScanVal('fe_'+selFeCore,document.getElementById('redam-fe').value)" style="padding:4px 8px;font-size:8px">Simpan</button></div></div></div></div><div id="pane_report" class="pane ${aktifTab==='report'?'':'hidden'}"><h3 class="pane-title">Buat dan unduh report OPM</h3><p class="pane-intro">Pastikan data Sheet3 dan foto yang diperlukan sudah tersimpan sebelum membuat report.</p><div class="report"><h3><i class="fa-solid fa-file-excel" style="color:#16a34a"></i> Generate OPM MITRATEL</h3><p>Hasil dibuat dari template asli. Sistem mengisi Sheet3, memasukkan hasil kalibrasi OPM, dan menempatkan foto sesuai core. Formula PASS/FAILED pada template tetap dipertahankan.</p><button class="btn primary" onclick="generate()"><i class="fa-solid fa-file-arrow-down"></i> Generate OPM (XLSX)</button><div id="links" class="links"></div></div><div class="notice" style="margin-top:14px"><b>ATP MITRATEL:</b> akan dilanjutkan setelah file template ATP tersedia di folder <code>templates</code>.</div></div>`}
+async function updateTag(slot,tag){try{
+const r=await fetch('/api/mitratel/tag/'+current+'/'+slot,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tag})});
+const d=await r.json();if(!r.ok)throw Error(d.message);state=await(await fetch('/api/mitratel/data/'+current)).json();render();tab(aktifTab,document.querySelectorAll('.tab')[['data','foto','report'].indexOf(aktifTab)]);
+}catch(e){msg(e.message,true)}}
+function tab(n,el){aktifTab=n;document.querySelectorAll('.pane').forEach(x=>x.classList.add('hidden'));$('pane_'+n).classList.remove('hidden');document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));el.classList.add('on')}
+function setPasteTarget(slot){
+  activePasteSlot=slot;
+  document.querySelectorAll('.drop.target').forEach(x=>x.classList.remove('target'));
+  document.querySelector('.drop[data-slot="'+slot+'"]')?.classList.add('target');
+}
+function pick(event,slot){if(event.target.closest('input')||event.target.tagName==='IMG')return; $('up_'+slot).click()}
+function dragOver(e){e.preventDefault();setPasteTarget(e.currentTarget.dataset.slot);e.currentTarget.classList.add('over')} function dragLeave(e){e.currentTarget.classList.remove('over')}
+function dropFile(e,slot){e.preventDefault();e.currentTarget.classList.remove('over');const f=[...e.dataTransfer.files].find(x=>x.type.startsWith('image/'));if(!f)return msg('Tarik foto gambar (JPG/PNG/WEBP), bukan dokumen.',true);uploadFile(f,slot)}
+function pasteFile(e,slot){const items=[...(e.clipboardData?.items||[])];const item=items.find(x=>x.type.startsWith('image/'));if(!item)return; e.preventDefault();uploadFile(item.getAsFile(),slot)}
+// Ctrl+V global: tujuan ditentukan cukup dengan posisi cursor terakhir pada kotak foto.
+document.addEventListener('paste',function(e){
+  // Jangan ganggu saat modal tag terbuka atau sedang mengetik di kolom teks.
+  const tm=document.getElementById('tag-modal');
+  if(tm&&!tm.classList.contains('hidden'))return;
+  const ae=document.activeElement;
+  if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.isContentEditable))return;
+  const items=[...(e.clipboardData?.items||[])]; const item=items.find(x=>x.type.startsWith('image/'));
+  if(!item || !activePasteSlot)return;
+  e.preventDefault(); uploadFile(item.getAsFile(),activePasteSlot);
+});
+function uploadInput(el,slot){if(el.files[0])uploadFile(el.files[0],slot)}
+async function removePhoto(event,slot){
+  event.preventDefault();event.stopPropagation();
+  if(!confirm('Hapus foto pada slot ini? Foto tidak akan masuk ke report OPM.'))return;
+  try{const r=await fetch('/api/mitratel/foto/'+current+'/'+slot,{method:'DELETE'});const d=await r.json();if(!r.ok)throw Error(d.message);state=await(await fetch('/api/mitratel/data/'+current)).json();render();tab('foto',document.querySelectorAll('.tab')[1]);msg('Foto berhasil dihapus.')}catch(e){msg(e.message,true)}
+}
+/* ── Edit foto via Photopea (identik ATP — postMessage + ArrayBuffer) ─────── */
+let ppState={slot:null,ab:null,loaded:false,ready:false,busy:false,timer:null};
+async function editPhoto(event,slot){
+  if(event){event.preventDefault();event.stopPropagation()}
+  if(!current){msg('Pilih lokasi terlebih dahulu.',true);return}
+  const x=findPhoto(slot);if(!x)return;
+  ppState={slot:slot,ab:null,loaded:false,ready:false,busy:false,timer:null};
+  $('pp-sub').textContent=slot;
+  $('pp-status').textContent='Mengambil gambar dari server…';
+  $('pp-save').disabled=true;
+  $('pp-loading').classList.remove('hidden');
+  $('pp-loading').innerHTML='<div><i class="fa-solid fa-spinner fa-spin" style="font-size:22px"></i><div style="margin-top:8px">Menyiapkan Photopea…</div></div>';
+  $('pp-modal').classList.remove('hidden');
+  const frame=$('pp-frame');frame.src='about:blank';
+  try{
+    const r=await fetch(url(x.file_name));
+    if(!r.ok)throw Error('Gagal mengambil gambar dari server.');
+    ppState.ab=await r.arrayBuffer();
+  }catch(e){
+    if(ppState.slot!==slot)return;
+    $('pp-status').textContent=e.message||'Gagal mengambil gambar.';
+    $('pp-loading').innerHTML='<div style="color:#fecaca">'+esc(e.message||'Gagal mengambil gambar.')+'</div>';
+    return;
+  }
+  if(ppState.slot!==slot||$('pp-modal').classList.contains('hidden'))return;
+  frame.src='https://www.photopea.com';
+  clearTimeout(ppState.timer);
+  ppState.timer=setTimeout(function(){
+    if(!ppState.ready&&!$('pp-modal').classList.contains('hidden')){
+      $('pp-status').textContent='Photopea lambat/tidak dapat dimuat — periksa koneksi internet.';
+      $('pp-loading').innerHTML='<div style="color:#fecaca">Photopea lambat atau tidak dapat dimuat.<br>Periksa koneksi internet, lalu tutup dan coba lagi.</div>';
+    }
+  },25000);
+}
+function closePhotopea(){
+  clearTimeout(ppState.timer);
+  const f=$('pp-frame');if(f)f.src='about:blank';
+  $('pp-modal').classList.add('hidden');
+  ppState={slot:null,ab:null,loaded:false,ready:false,busy:false,timer:null};
+}
+function photopeaSave(){
+  if(!ppState.ready||ppState.busy)return;
+  ppState.busy=true;$('pp-save').disabled=true;
+  $('pp-status').textContent='Mengekspor gambar dari Photopea…';
+  try{$('pp-frame').contentWindow.postMessage('app.activeDocument.saveToOE("png");','*')}
+  catch(e){ppState.busy=false;$('pp-save').disabled=false;$('pp-status').textContent='Gagal menghubungi Photopea.'}
+}
+window.addEventListener('message',async function(e){
+  const f=$('pp-frame');
+  if(!f||e.source!==f.contentWindow)return;
+  if(e.data==='done'){
+    if(!ppState.loaded){
+      ppState.loaded=true;
+      $('pp-status').textContent='Memuat gambar ke Photopea…';
+      if(ppState.ab){f.contentWindow.postMessage(ppState.ab,'*');ppState.ab=null}
+      else{ppState.ready=true;$('pp-loading').classList.add('hidden');$('pp-save').disabled=false;$('pp-status').textContent='Siap diedit.'}
+    }else if(!ppState.ready){
+      ppState.ready=true;
+      $('pp-loading').classList.add('hidden');
+      $('pp-save').disabled=false;
+      $('pp-status').textContent='Siap diedit — setelah selesai tekan "Simpan ke slot".';
+    }
+    return;
+  }
+  const buf=e.data;
+  if(!(buf instanceof ArrayBuffer)&&!(typeof Blob!=='undefined'&&buf instanceof Blob))return;
+  if(!ppState.slot)return;
+  const slot=ppState.slot;
+  ppState.busy=false;
+  const blob=buf instanceof Blob?buf:new Blob([buf],{type:'image/png'});
+  if(!blob.size){$('pp-status').textContent='Photopea tidak mengirim gambar.';ppState.busy=false;$('pp-save').disabled=false;return}
+  $('pp-status').textContent='Menyimpan hasil edit ke slot…';
+  const namaDasar=slot+'_photopea_'+Date.now();
+  let file;
+  try{
+    const sumber=new File([blob],namaDasar+'.'+extDariMime(blob.type||'image/png'),{type:blob.type||'image/png'});
+    file=await kompresGambar(sumber,{maxSide:3000,maxBytes:BATAS_GAMBAR});
+  }catch(_){
+    file=new File([blob],namaDasar+'.png',{type:'image/png'});
+  }
+  const ok=await uploadFile(file,slot);
+  if(ok)closePhotopea();
+  else{ppState.busy=false;$('pp-save').disabled=false;$('pp-status').textContent='Gagal menyimpan hasil edit. Coba lagi.'}
+});
+
+/* ── Optimasi gambar sebelum unggah (cegah "ukuran file melebihi batas") ── */
+const BATAS_GAMBAR=8*1024*1024; // target aman; server menerima sampai 30 MB
+function extDariMime(t){
+  return({'image/jpeg':'jpg','image/jpg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif','image/bmp':'bmp','image/svg+xml':'svg','application/pdf':'pdf'})[String(t||'').toLowerCase().split(';')[0]]||'png';
+}
+function blobDariKanvas(canvas,tipe,kualitas){
+  return new Promise(function(res){canvas.toBlob(res,tipe,kualitas)});
+}
+function muatGambarFile(file){
+  return new Promise(function(res,rej){
+    const u=URL.createObjectURL(file);
+    const im=new Image();
+    im.onload=function(){URL.revokeObjectURL(u);res(im)};
+    im.onerror=function(){URL.revokeObjectURL(u);rej(Error('Gambar tidak bisa dibuka.'))};
+    im.src=u;
+  });
+}
+// Ekspor kanvas: coba PNG dulu; bila terlalu besar, JPEG kualitas bertahap.
+async function kanvasKeFile(canvas,nama,opts){
+  opts=opts||{};
+  const maks=opts.maxBytes||BATAS_GAMBAR;
+  let blob=await blobDariKanvas(canvas,'image/png');
+  if(blob&&blob.size<=maks)return new File([blob],nama+'.png',{type:'image/png'});
+  const c2=document.createElement('canvas');
+  c2.width=canvas.width;c2.height=canvas.height;
+  const x=c2.getContext('2d');
+  x.fillStyle='#fff';x.fillRect(0,0,c2.width,c2.height);x.drawImage(canvas,0,0);
+  for(const q of [0.92,0.86,0.8,0.72,0.64]){
+    blob=await blobDariKanvas(c2,'image/jpeg',q);
+    if(blob&&blob.size<=maks)break;
+  }
+  return new File([blob],nama+'.jpg',{type:'image/jpeg'});
+}
+// Kecilkan dimensi + turunkan ukuran berkas gambar yang terlalu besar.
+async function kompresGambar(file,opts){
+  opts=opts||{};
+  const maks=opts.maxBytes||BATAS_GAMBAR;
+  if(!/^image\//i.test(file.type||'')||/svg/i.test(file.type||''))return file;
+  if(file.size<=maks&&!opts.paksa)return file;
+  let img;
+  try{img=await muatGambarFile(file)}catch(_){return file}
+  const maxSide=opts.maxSide||2600;
+  const skala=Math.min(1,maxSide/img.width,maxSide/img.height);
+  const c=document.createElement('canvas');
+  c.width=Math.max(1,Math.round(img.width*skala));
+  c.height=Math.max(1,Math.round(img.height*skala));
+  const x=c.getContext('2d');
+  x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
+  x.drawImage(img,0,0,c.width,c.height);
+  const nama=(String(file.name||'gambar').replace(/\.[a-z0-9]+$/i,'')||'gambar');
+  return kanvasKeFile(c,nama,{maxBytes:maks});
+}
+async function uploadFile(file,slot){
+  if(!file||!/^image\//i.test(file.type||''))return msg('File harus berupa gambar.',true);
+  if(!current){msg('Pilih lokasi terlebih dahulu.',true);return false}
+  let kirim=file;
+  if(/^image\//i.test(file.type||'')&&file.size>BATAS_GAMBAR){
+    msg('Mengoptimalkan ukuran gambar…');
+    try{kirim=await kompresGambar(file,{maxSide:2600})}catch(_){kirim=file}
+  }
+  if(kirim.size>29*1024*1024){msg('Gambar masih terlalu besar setelah dikompres. Silakan pilih gambar lain.',true);return false}
+  const fd=new FormData;
+  const nama=String(kirim.name||slot);
+  fd.append('file',kirim,/\.[a-z0-9]+$/i.test(nama)?nama:nama+'.'+extDariMime(kirim.type||'image/png'));
+  msg('Mengunggah foto…');
+  try{
+    const r=await fetch('/api/mitratel/upload/'+current+'/'+slot,{method:'POST',body:fd});
+    const d=await r.json();
+    if(!r.ok)throw Error(d.message);
+    state=await(await fetch('/api/mitratel/data/'+current)).json();
+    render();
+    tab('foto',document.querySelectorAll('.tab')[1]);
+    msg('Foto berhasil diunggah.');
+    return true;
+  }catch(e){msg(e.message,true);return false}
+}
+async function save(){const keys=['insert_new_ring','id_span_existing','nama_ring','id_span','id_site_ne','nama_site_ne','tikor_ne_lat','tikor_ne_long','id_site_fe','nama_site_fe','tikor_fe_lat','tikor_fe_long','panjang_kabel_n_to_n','panjang_kabel_baru','jumlah_core','tanggal_submit_atp','optical_length_ne','optical_length_fe'];let body={};keys.forEach(k=>body[k]=$('f_'+k).value);if(!confirm('Yakin data Sheet3 ini sudah benar dan ingin disimpan ke dashboard MITRATEL?'))return;try{const r=await fetch('/api/mitratel/data/'+current,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw Error(d.message);state=d;msg('Data Sheet3 berhasil disimpan di dashboard MITRATEL.');loadList();}catch(e){msg(e.message,true)}}
+/* Scan 3 foto kalibrasi (AI vision) → hasil_scan per slot, tampil di bawah foto
+   dan dipindahkan ke EQUIPMENT CALIBRATION (First/Second/Third dB) saat generate. */
+let scanBusy=false, scanTimer=null; let selNeCore=1, selFeCore=1;
+async function scan(){
+  if(scanBusy)return;
+  const slots=['kalibrasi_1','kalibrasi_2','kalibrasi_3'];
+  const ada=slots.filter(s=>findPhoto(s));
+  if(!ada.length){msg('Belum ada foto kalibrasi yang di-upload. Upload 3 foto dulu di atas.',true);return;}
+  scanBusy=true;
+  const btn=$('scan-btn');
+  const labelAsli=btn?btn.innerHTML:'';
+  const t0=Date.now();
+  const paint=()=>{const b=$('scan-btn');if(b)b.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> AI membaca '+Math.round((Date.now()-t0)/1000)+'s…';};
+  if(btn){btn.disabled=true;paint();scanTimer=setInterval(paint,1000);}
+  msg('AI sedang membaca redaman dari '+ada.length+' foto kalibrasi…');
+  try{
+    const r=await fetch('/api/mitratel/scan-kalibrasi/'+current,{method:'POST'});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok)throw Error(d.message||('HTTP '+r.status));
+    state=await(await fetch('/api/mitratel/data/'+current)).json();
+    render();tab('foto',document.querySelectorAll('.tab')[1]);
+    const hasil=d.hasil||{},gagal=d.gagal||{};
+    const ok=slots.filter(s=>hasil[s]);
+    const gagalTxt=Object.keys(gagal).map(s=>s.replace('kalibrasi_','Foto ')+': '+gagal[s]);
+    if(ok.length&&!gagalTxt.length)msg('Scan selesai — '+ok.map(s=>hasil[s]+' dB').join(' · ')+'  (sudah masuk EQUIPMENT CALIBRATION).');
+    else if(ok.length)msg('Terbaca '+ok.length+'/3 — '+ok.map(s=>hasil[s]+' dB').join(' · ')+'. Belum terbaca: '+gagalTxt.join(' | '),true);
+    else msg('Tidak ada angka yang terbaca. '+gagalTxt.join(' | '),true);
+  }catch(e){msg(e.message,true);}
+  finally{scanBusy=false;clearInterval(scanTimer);const b=$('scan-btn');if(b){b.disabled=false;b.innerHTML=labelAsli||'<i class="fa-solid fa-wand-magic-sparkles"></i> Scan 3 Foto Kalibrasi';}}
+}
+async function scanOpm(){
+  if(scanBusy)return;
+  scanBusy=true;
+  const btn=$('scan-opm-btn');
+  const labelAsli=btn?btn.innerHTML:'';
+  const t0=Date.now();
+  const paint=()=>{const b=$('scan-opm-btn');if(b)b.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> AI membaca '+Math.round((Date.now()-t0)/1000)+'s…';};
+  if(btn){btn.disabled=true;paint();scanTimer=setInterval(paint,1000);}
+  try{
+    const r=await fetch('/api/mitratel/scan-opm/'+current,{method:'POST'});
+    const j=await r.json();
+    if(!r.ok)throw Error(j.message||'Gagal scan.');
+    const hasil=j.hasil||{},gagal=j.gagal||{};
+    const ok=Object.keys(hasil).filter(k=>hasil[k]);
+    const gagalTxt=Object.keys(gagal);
+    if(ok.length)msg('Scan selesai — '+ok.length+' foto terbaca (masuk OPM Test).');
+    if(gagalTxt.length)msg('Sebagian foto tidak terbaca: '+gagalTxt.join(', '),true);
+    await openLoc(current);
+  }catch(e){msg(e.message||String(e),true);}
+  finally{scanBusy=false;clearInterval(scanTimer);const b=$('scan-opm-btn');if(b){b.disabled=false;b.innerHTML=labelAsli||'<i class="fa-solid fa-wand-magic-sparkles"></i> Scan Foto NE/FE (OPM Test)';}
+async function updateScanVal(slot,val){try{const r=await fetch('/api/mitratel/update-scan/'+current+'/'+slot,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:val})});const j=await r.json();if(!r.ok)throw Error(j.message||'Gagal menyimpan.');msg('Redaman '+slot+' tersimpan: '+val);await openLoc(current);}catch(e){msg(e.message||String(e),true);}}}
+}
+/* ── Progress popup untuk Generate OPM ─────────────────────────────────── */
+const GEN_LABEL = ['Menyiapkan template & data lokasi…', 'Mengisi Sheet3 & hasil kalibrasi OPM…', 'Menyisipkan foto eviden ke core NE/FE…', 'Menyimpan file Excel…'];
+let genTimer = null, genPhase = -1, genT0 = 0;
+function genPaint(i, selesai = false) {
+  document.querySelectorAll('#gen-steps li').forEach(li => {
+    const n = Number(li.dataset.i), ic = li.querySelector('i');
+    li.classList.remove('on', 'done');
+    if (selesai || n < i) { li.classList.add('done'); ic.className = 'fa-solid fa-circle-check'; }
+    else if (n === i) { li.classList.add('on'); ic.className = 'fa-solid fa-spinner fa-spin'; }
+    else ic.className = 'fa-regular fa-circle';
+  });
+  if (!selesai) $('gen-state').textContent = GEN_LABEL[i] || '';
+}
+function genOpen(nama) {
+  genT0 = Date.now(); genPhase = 0;
+  $('gen-overlay').classList.remove('hidden');
+  $('gen-spin-wrap').classList.remove('hidden');
+  $('gen-done-ico').classList.add('hidden');
+  $('gen-close').disabled = true;
+  $('gen-again').classList.add('hidden');
+  $('gen-result').innerHTML = '';
+  $('gen-time').textContent = '00:00';
+  $('gen-title').textContent = 'Generate OPM MITRATEL';
+  $('gen-sub').textContent = nama || 'Memproses…';
+  genPaint(0);
+  clearInterval(genTimer);
+  genTimer = setInterval(() => {
+    const s = Math.floor((Date.now() - genT0) / 1000);
+    $('gen-time').textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    const p = s >= 20 ? 3 : s >= 10 ? 2 : s >= 4 ? 1 : 0;
+    if (p > genPhase) { genPhase = p; genPaint(p); }
+  }, 250);
+}
+function genSelesai(d) {
+  clearInterval(genTimer);
+  $('gen-spin-wrap').classList.add('hidden');
+  const ico = $('gen-done-ico');
+  ico.classList.remove('hidden', 'err'); ico.classList.add('ok');
+  ico.innerHTML = '<i class="fa-solid fa-check"></i>';
+  genPaint(3, true);
+  $('gen-state').textContent = 'Selesai — file berhasil dibuat.';
+  $('gen-title').textContent = 'Generate selesai ✓';
+  $('gen-sub').textContent = (d.xlsx || 'OPM_MITRATEL') + (d.pdf ? ' + PDF' : '');
+  $('gen-result').innerHTML = '<div class="gen-links">' +
+    '<a class="x" href="' + d.baseUrl + encodeURIComponent(d.xlsx) + '"><i class="fa-solid fa-file-excel"></i> Unduh XLSX</a>' +
+    (d.pdf ? '<a class="p" href="' + d.baseUrl + encodeURIComponent(d.pdf) + '"><i class="fa-solid fa-file-pdf"></i> Unduh PDF</a>' : '') +
+    '</div>';
+  $('gen-close').disabled = false;
+}
+function genGagal(pesan) {
+  clearInterval(genTimer);
+  $('gen-spin-wrap').classList.add('hidden');
+  const ico = $('gen-done-ico');
+  ico.classList.remove('hidden', 'ok'); ico.classList.add('err');
+  ico.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+  document.querySelectorAll('#gen-steps li').forEach(li => { li.classList.remove('on', 'done'); li.querySelector('i').className = 'fa-regular fa-circle'; });
+  $('gen-state').textContent = 'Generate gagal.';
+  $('gen-title').textContent = 'Generate gagal';
+  $('gen-sub').textContent = 'Baca pesan di bawah, perbaiki lalu coba lagi.';
+  $('gen-result').innerHTML = '<div class="gen-err"></div>';
+  $('gen-result').querySelector('.gen-err').textContent = pesan || 'Terjadi kesalahan tanpa keterangan.';
+  $('gen-close').disabled = false;
+  $('gen-again').classList.remove('hidden');
+}
+function genClose() { clearInterval(genTimer); $('gen-overlay').classList.add('hidden'); }
+
+async function generate(){
+  if(!current){const m='Belum ada lokasi yang dipilih. Pilih lokasi terlebih dahulu.';genOpen('');genGagal(m);msg(m,true);return;}
+  const nama=(state&&state.lokasi)?state.lokasi.nama_lokasi:'';
+  genOpen(nama);
+  try{
+    console.log('Fetching: /api/mitratel/generate/otp/'+current);
+    const r=await fetch('/api/mitratel/generate/otp/'+current,{method:'POST'});
+    const d=await r.json().catch(()=>({}));
+    console.log('Response status:',r.status);console.log('Response data:',d);
+    if(!r.ok)throw Error(d.message||('HTTP '+r.status));
+    genSelesai(d);
+    $('links').innerHTML=`<a href="${d.baseUrl+encodeURIComponent(d.xlsx)}"><i class="fa-solid fa-file-excel"></i> Download XLSX</a>${d.pdf?`<a href="${d.baseUrl+encodeURIComponent(d.pdf)}"><i class="fa-solid fa-file-pdf"></i> Download PDF</a>`:''}`;
+    msg('Report OPM berhasil dibuat.');
+  }catch(e){console.error('Generate error:',e);genGagal(e.message);msg(e.message,true);}
+}
+// Bila gambar dari Telegram sudah di-copy, cukup arahkan cursor ke kotak foto tujuan lalu tekan Ctrl+V.
+loadList();
+</script></body></html>

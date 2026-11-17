@@ -1,0 +1,19 @@
+# Rahasia — jangan pernah di-commit / di-push
+.env
+
+# Dependensi pihak ketiga (pasang ulang dengan `npm install`)
+node_modules/
+
+# Backup database & arsip (hanya lokal)
+backups/
+
+# Berkas runtime server
+server.lock
+*.tmp.*
+
+# Cache render yang dibuat ulang otomatis oleh server
+uploads/_pdfcache/
+uploads/_dwgcache/
+
+# File sementara Office
+templates/~$*

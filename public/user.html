@@ -1,0 +1,2495 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Eviden Lapangan</title>
+  <link rel="icon" type="image/png" href="assets/img/favicon-ta.png">
+  <meta name="theme-color" content="#d32f2f">
+  <meta name="application-name" content="Sistem Rekonsiliasi Konstruksi">
+  <meta name="description" content="Upload Eviden Lapangan — dokumentasi foto rekonsiliasi konstruksi proyek PT Telkom Akses (ODP, OPM, Cut Over, dst).">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/user.css">
+  <!-- ═══ TOOLBAR POPUP: INPUT PROJECT PLAN | UPLOAD EVIDEN ═══ -->
+  <style>
+    /* body memakai flex-row (user.css) → wadah kolom supaya toolbar + kartu menumpuk & terpusat */
+    .pp-main {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .pp-brand {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+    /* Logo Telkom Akses — transparan tanpa kotak (sama dgn .logo-wrap login & .brand-logo dashboard) */
+    .pp-brand-ico {
+      width: 120px;
+      height: 40px;
+      flex-shrink: 0;
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 15px;
+      padding: 0;
+      box-sizing: border-box;
+      box-shadow: none;
+    }
+    .pp-brand-ico img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .pp-brand-t { font-size: 12px; font-weight: 600; color: #1F2937; letter-spacing: -.2px; }
+    .pp-brand-t span { color: #D32F2F; }
+    .pp-brand-s { font-size: 9px; font-weight: 500; color: #64748B; margin-top: 2px; }
+    /* Indikator LOGIN TEMATIK — tematik mana saja yang boleh dibuka akun ini */
+    .pp-brand-a {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 6px; padding: 4px 9px;
+      font-size: 9px; font-weight: 500; color: #0E7490;
+      background: rgba(8,145,178,.10); border: 1px solid rgba(8,145,178,.25);
+      border-radius: 999px; width: fit-content; max-width: 100%;
+    }
+    .pp-brand-a[hidden] { display: none; }
+    .pp-brand-a.pp-terkunci {
+      color: #B91C1C; background: rgba(211,47,47,.08); border-color: rgba(211,47,47,.28);
+    }
+    .pp-toolbar {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .pp-tbtn {
+      flex: 1 1 220px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 16px;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      color: #fff;
+      border: 0;
+      border-radius: 11px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(211, 47, 47, .30);
+      transition: background .15s, transform .05s;
+    }
+    .pp-tbtn:hover { background: #E53935; }
+    .pp-tbtn:active { transform: translateY(1px); }
+    .pp-tbtn-plan { background: #D32F2F; border: 1px solid #B71C1C; }
+    .pp-tbtn-eviden { background: #D32F2F; border: 1px solid #B71C1C; }
+    .pp-tbtn i { font-size: 12px; }
+    @media (max-width: 480px) { .pp-tbtn { flex: 1 1 100%; } }
+
+    /* ── POPUP: FORM UPLOAD EVIDEN LAMA (kartu user.html dibuka lewat tombol) ── */
+    .oldev-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9990;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 54px 16px 48px;
+      overflow-y: auto;
+      background: rgba(2, 6, 23, .68);
+      backdrop-filter: blur(3px);
+      animation: oldevFade .16s ease-out;
+    }
+    .oldev-overlay[hidden] { display: none; }
+    @keyframes oldevFade { from { opacity: 0; } to { opacity: 1; } }
+    .oldev-col {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    .oldev-col .user-card { width: 100%; max-width: 560px; }
+    .oldev-col .card-baco { width: 100%; max-width: 640px; margin-top: 0; }
+    .oldev-close {
+      position: fixed;
+      top: 8px;
+      right: 14px;
+      z-index: 7;
+      width: 38px;
+      height: 38px;
+      border: 1px solid rgba(255, 255, 255, .3);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .14);
+      color: #fff;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .oldev-close:hover { background: rgba(255, 255, 255, .3); }
+    @media (max-width: 600px) {
+      .oldev-overlay { padding: 54px 8px 40px; }
+      .oldev-col .user-card, .oldev-col .card-baco { max-width: none; }
+    }
+  </style>
+  <script src="assets/js/util.js"></script>
+</head>
+<body class="user-body">
+  <div id="toasts"></div>
+
+  <!-- ── MODAL EDIT DATA TERSIMPAN (INPUT RFC / BON MATERIAL) ── -->
+  <div id="ik-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.62);backdrop-filter:blur(3px);z-index:99999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#fff;border-radius:18px;width:100%;max-width:440px;box-shadow:0 24px 60px rgba(15,23,42,.35);overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#111827,#1f2937);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+        <div style="min-width:0;">
+          <div style="font-size: 11px;font-weight: 700;letter-spacing:.05em;text-transform:uppercase;display:flex;align-items:center;gap:8px;">
+            <i class="fa-solid fa-pen-to-square" style="color:#67e8f9;"></i> Edit Data Tersimpan
+          </div>
+          <div id="ik-sub" style="font-size: 9px;color:#94a3b8;margin-top:3px;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</div>
+        </div>
+        <button type="button" onclick="ikTutup()" aria-label="Tutup form edit" style="background:none;border:none;color:#94a3b8;font-size: 15px;cursor:pointer;line-height:1;flex-shrink:0;">✕</button>
+      </div>
+      <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label for="ik-judul" style="font-size: 8px;font-weight: 600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Nama / Judul</label>
+          <input type="text" id="ik-judul" placeholder="Contoh: Kabel DC 48 Core" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size: 10px;font-weight: 400;outline:none;color:#1e293b;">
+        </div>
+        <div id="ik-vol-wrap">
+          <label for="ik-volume" style="font-size: 8px;font-weight: 600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Volume</label>
+          <input type="text" id="ik-volume" placeholder="Contoh: 250 m / 4 pcs" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size: 10px;font-weight: 400;outline:none;color:#1e293b;">
+        </div>
+        <div id="ik-isi-wrap">
+          <label for="ik-isi" style="font-size: 8px;font-weight: 600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Uraian / Isi</label>
+          <textarea id="ik-isi" rows="4" placeholder="Keterangan tambahan (opsional)" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:12px;font-size: 9px;font-weight: 400;font-family:'JetBrains Mono',monospace;background:#f8fafc;outline:none;color:#1e293b;resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div style="padding:12px 18px 16px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid #f1f5f9;">
+        <button type="button" onclick="ikTutup()" style="background:#fff;border:1.5px solid #e2e8f0;color:#475569;border-radius:12px;padding:10px 16px;font-size: 9px;font-weight: 600;cursor:pointer;">Batal</button>
+        <button type="button" id="ik-btn" onclick="ikSimpan()" style="background:linear-gradient(135deg,#e53935,#d32f2f);color:#fff;border:none;border-radius:12px;padding:10px 16px;font-size: 9px;font-weight: 600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;box-shadow:0 6px 16px rgba(211,47,47,.28);"><i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pp-main">
+  <div class="pp-brand">
+    <div class="pp-brand-ico"><img src="assets/img/logo-ta.png" alt="Telkom Akses"></div>
+    <div>
+      <div class="pp-brand-t">Rekonsiliasi <span>Konstruksi</span></div>
+      <div class="pp-brand-s">PT Telkom Akses · Upload Eviden &amp; Project Plan</div>
+      <!-- LOGIN TEMATIK — batas akses akun yang sedang login -->
+      <div class="pp-brand-a" id="pp_akses" hidden></div>
+    </div>
+  </div>
+  <!-- ═══ TOOLBAR: 2 TOMBOL POPUP (Project Plan + Eviden Lapangan) ═══ -->
+  <div class="pp-toolbar">
+    <button type="button" class="pp-tbtn pp-tbtn-eviden" id="btnUploadEviden"
+      onclick="window.openEvidenModal && openEvidenModal()">
+      <i class="fa-solid fa-cloud-arrow-up"></i> Upload Eviden Lapangan
+    </button>
+  </div>
+  </div><!-- /pp-main -->
+
+  <!-- ═══ POPUP: FORM UPLOAD EVIDEN LAMA (muncul saat tombol hijau diklik) ═══ -->
+  <div class="oldev-overlay" id="oldEvOverlay" hidden>
+    <button type="button" class="oldev-close" id="oldEvClose" aria-label="Tutup">&times;</button>
+    <div class="oldev-col">
+
+  <!-- ═══ KARTU UPLOAD EVIDEN ═══ -->
+  <div class="user-card">
+
+    <!-- HEADER -->
+    <div class="user-hdr">
+      <div class="hdr-top">
+        <div class="hdr-icon"><i class="fa-solid fa-camera-retro"></i></div>
+        <div>
+          <div class="hdr-title">Upload Eviden Lapangan</div>
+          <div class="hdr-sub">Dokumentasi foto rekonsiliasi konstruksi proyek</div>
+        </div>
+      </div>
+
+      <div class="pills">
+        <div class="pill" id="p1"></div>
+        <div class="pill" id="p2"></div>
+        <div class="pill" id="p3"></div>
+        <div class="pill" id="p4"></div>
+      </div>
+    </div>
+
+    <!-- TEMATIK STRIP -->
+    <div id="tematik-strip">
+      <span class="strip-label">Tematik</span>
+      <span id="strip-pill" class="strip-tpill"></span>
+      <span id="strip-nama" class="strip-nama"></span>
+      <span id="strip-pid"  class="strip-pid"></span>
+    </div>
+
+    <!-- FORM BODY -->
+    <div class="user-body-inner">
+      <form id="form" autocomplete="off">
+
+        <!-- ① LOKASI — custom search dropdown -->
+        <div>
+          <div class="lbl"><i class="fa-solid fa-location-dot"></i> Lokasi Kerja</div>
+          <div id="lok-wrap">
+
+            <!-- Trigger -->
+            <button type="button" id="lok-trigger" onclick="lokToggle()">
+              <i class="fa-solid fa-magnifying-glass trg-loc-ico"></i>
+              <span id="trg-label">Cari atau pilih lokasi proyek…</span>
+              <span id="trg-badge"></span>
+              <i class="fa-solid fa-chevron-down trg-arrow"></i>
+            </button>
+
+            <!-- Panel dropdown -->
+            <div id="lok-panel">
+
+              <!-- Search input -->
+              <div class="lok-srch-row">
+                <i class="fa-solid fa-magnifying-glass lok-srch-ico"></i>
+                <input type="text" id="lok-search"
+                  placeholder="Ketik nama lokasi atau PID…"
+                  oninput="lokFilter()" autocomplete="off" spellcheck="false">
+                <button type="button" id="lok-srch-clr" onclick="lokClearSearch()" aria-label="Hapus pencarian">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+
+              <!-- Meta bar -->
+              <div class="lok-meta">
+                <span class="lok-meta-count" id="lok-meta-count">Semua lokasi</span>
+                <button type="button" id="lok-meta-clr" onclick="lokClearSel()">Hapus pilihan</button>
+              </div>
+
+              <!-- List -->
+              <div id="lok-list"></div>
+
+              <!-- Empty -->
+              <div id="lok-empty">
+                <i class="fa-solid fa-circle-xmark"></i>
+                <p>Tidak ada lokasi yang cocok</p>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ② KATEGORI -->
+        <div>
+          <div class="lbl"><i class="fa-solid fa-folder-open"></i> Kategori Berkas</div>
+          <div class="sel-wrap">
+            <select id="sel-kategori" onchange="onKategori(this.value)" disabled>
+              <option value="">— Pilih lokasi terlebih dahulu —</option>
+            </select>
+            <span class="sel-arrow"><i class="fa-solid fa-chevron-down"></i></span>
+          </div>
+          <div id="status-kategori"></div>
+        </div>
+
+        <!-- ③ INPUT DINAMIS -->
+        <div id="box-dinamis">
+          <div class="din-hint"><i class="fa-solid fa-tag"></i><span id="lbl-din">Nama tambahan</span></div>
+          <input type="text" id="input-sub" placeholder="Contoh: FAT A05" oninput="onInputSub(this)">
+        </div>
+
+        <!-- ③d INPUT VOLUME (khusus EVIDEN BON MATERIAL) -->
+        <div id="box-vol" style="display:none;">
+          <div class="din-hint"><i class="fa-solid fa-weight-hanging"></i><span>Volume Material</span></div>
+          <input type="text" id="input-vol" placeholder="Contoh: 250 m / 4 pcs" oninput="onInputVol(this)">
+        </div>
+
+        <!-- ③g DATA TERSIMPAN (INPUT RFC / BON MATERIAL) — bisa diubah lalu disimpan ulang -->
+        <div id="box-teks" style="display:none;">
+          <div class="din-hint"><i class="fa-solid fa-list-check"></i><span>Data tersimpan — klik <b>Edit</b> untuk mengubah, hasil ubahan tersimpan ulang di tempat yang sama</span></div>
+          <div id="teks-list"></div>
+        </div>
+
+        <!-- ③e INPUT BOQ AKTUAL (paste Excel seperti input RAB, tanpa upload foto) -->
+        <div id="box-boq" style="display:none;">
+          <div class="din-hint"><i class="fa-solid fa-file-excel"></i><span>BOQ Aktual — Paste dari Excel (format sama seperti input RAB)</span></div>
+          <textarea id="input-boq-paste" rows="6" placeholder="Paste dari Excel (Tab-separated):&#10;designator&#9;uraian pekerjaan&#9;satuan&#9;material&#9;jasa&#9;volume(TOTAL)&#10;M-DC-OF-SM-48D&#9;Pengadaan dan pemasangan kabel duct fiber optik&#9;meter&#9;12100&#9;&#9;870" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:12px;font-size: 10px;font-weight: 400;font-family:'JetBrains Mono',monospace;background:#f8fafc;box-sizing:border-box;resize:vertical;outline:none;color:#1e293b;"></textarea>
+          <button type="button" onclick="boqProsesPaste()" style="margin-top:9px;width:100%;background:linear-gradient(135deg,#e53935,#d32f2f);color:#fff;border:none;border-radius:12px;padding:12px;font-size: 10px;font-weight: 600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;box-shadow:0 6px 16px rgba(211,47,47,.3);"><i class="fa-solid fa-table-list" style="font-size: 9px;"></i> Parsing Data</button>
+          <div id="boq-preview" style="margin-top:12px;"></div>
+        </div>
+
+        <!-- ③f INPUT BOQ BARANG TIBA (khusus TEMATIK Node B / LACT — paste Excel seperti BOQ Aktual) -->
+        <div id="box-barang-tiba" style="display:none;">
+          <div class="din-hint"><i class="fa-solid fa-file-excel"></i><span>BOQ Barang Tiba — Paste dari Excel (format sama seperti tabel di laporan)</span></div>
+          <textarea id="input-bt-paste" rows="6" placeholder="Paste dari Excel (Tab-separated):&#10;jenis material&#9;satuan&#9;volume&#9;keterangan&#10;ODP CBT 4 Port&#9;UNIT&#9;3&#9;BAIK&#10;Kabel FO 24C&#9;meter&#9;450&#9;BAIK" style="width:100%;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:12px;font-size: 10px;font-weight: 400;font-family:'JetBrains Mono',monospace;background:#f8fafc;box-sizing:border-box;resize:vertical;outline:none;color:#1e293b;"></textarea>
+          <button type="button" onclick="btProsesPaste()" style="margin-top:9px;width:100%;background:linear-gradient(135deg,#6d28d9,#5b21b6);color:#fff;border:none;border-radius:12px;padding:12px;font-size: 10px;font-weight: 600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;box-shadow:0 6px 16px rgba(109,40,217,.3);"><i class="fa-solid fa-table-list" style="font-size: 9px;"></i> Parsing Data</button>
+          <div id="bt-preview" style="margin-top:12px;"></div>
+        </div>
+
+        <!-- ③b INPUT KATEGORI MANUAL (untuk eviden yang tidak ada di daftar) -->
+        <div id="box-manual">
+          <div class="din-hint"><i class="fa-solid fa-pen"></i><span>Nama Eviden Pekerjaan (manual)</span></div>
+          <input type="text" id="input-manual-kat" placeholder="Contoh: Eviden Perbaikan Tiang Miring" oninput="onManualKat(this)">
+        </div>
+
+        <!-- ③c WIZARD PORT OPM (hanya untuk kategori hasil ukur OPM) -->
+        <div id="opm-wizard" style="display:none;">
+          <!-- Step 1: pilih kapasitas ODP -->
+          <div id="opm-step-kap">
+            <div class="lbl" id="opm-kap-title" style="margin-bottom:10px;"><i class="fa-solid fa-plug-circle-bolt"></i> Kapasitas Port untuk ODP: <b id="opm-nama-kap" style="color:#b91c1c;"></b></div>
+            <div style="display:flex;gap:10px;">
+              <button type="button" onclick="opmPilihKap(8)" class="opm-kap-btn" id="opm-kap-8">
+                <i class="fa-solid fa-network-wired"></i>
+                <span class="opm-kap-big">8</span>
+                <span class="opm-kap-lbl">PORT</span>
+              </button>
+              <button type="button" onclick="opmPilihKap(16)" class="opm-kap-btn" id="opm-kap-16">
+                <i class="fa-solid fa-server"></i>
+                <span class="opm-kap-big">16</span>
+                <span class="opm-kap-lbl">PORT</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 2: isi tiap port -->
+          <div id="opm-step-2" style="display:none;">
+            <div class="lbl" style="margin-bottom:8px;"><i class="fa-solid fa-plug-circle-bolt"></i> Isi Port satu per satu — ODP: <b id="opm-nama-isi" style="color:#b91c1c;"></b></div>
+
+            <!-- Preview chip grid -->
+            <div id="opm-grid-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+
+            <!-- Kartu port aktif -->
+            <div id="opm-card" style="background:linear-gradient(135deg,#fffafa,#f8fafc);border:1.5px solid #fca5a5;border-radius:14px;padding:14px 16px;box-shadow:0 8px 24px rgba(211,47,47,.10);">
+              <div class="opm-card-head" style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <span style="background:rgba(211,47,47,.12);color:#b91c1c;font-weight: 700;font-size: 11px;padding:5px 12px;border-radius:8px;" id="opm-port-num">PORT 1</span>
+                <span style="font-size: 9px;color:#64748b;font-weight: 400;" id="opm-port-sub">Port 1 / 8</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                <button type="button" class="opm-choice" id="opm-choice-isi" onclick="opmPilihPort('isi')">
+                  <i class="fa-solid fa-user-check"></i>
+                  <div>
+                    <div class="opm-choice-t">ADA USER (ISI)</div>
+                    <div class="opm-choice-s">Port terisi / tidak kosong — lanjut port berikutnya</div>
+                  </div>
+                </button>
+                <button type="button" class="opm-choice" id="opm-choice-ukur" onclick="opmPilihPort('ukur')">
+                  <i class="fa-solid fa-wave-square"></i>
+                  <div>
+                    <div class="opm-choice-t">UKUR OPM (KOSONG)</div>
+                    <div class="opm-choice-s">Port kosong — masukkan foto eviden hasil ukur</div>
+                  </div>
+                </button>
+              </div>
+              <!-- Input foto untuk port yang dipilih (hanya JPG/PNG — hindari HEIC/PDF yang tidak didukung server) -->
+              <div id="opm-ukur-box" style="display:none;margin-top:12px;">
+                <div class="lbl" style="margin-bottom:7px;"><i class="fa-solid fa-camera"></i> Foto eviden port ini</div>
+                <div style="display:none" id="opm-heic-warn"></div>
+                <input type="file" id="opm-file-port" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="opmAwasFile(this)">
+                <label id="opm-drop-port" for="opm-file-port" style="border:2px dashed #fca5a5;border-radius:12px;background:#fef2f2;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;font-size: 10px;font-weight: 500;color:#d32f2f;cursor:pointer;">📷 Klik untuk pilih foto port ini</label>
+                <div id="opm-file-info" style="display:none;margin-top:7px;font-size: 9px;font-weight: 500;color:#065f46;background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:8px 12px;"></div>
+              </div>
+            </div>
+              <div id="opm-footer" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap;">
+              <span id="opm-count" style="font-size: 9px;font-weight: 500;color:#64748b;">0/8 port selesai</span>
+              <button id="opm-save" type="button" onclick="opmSimpanPort()" style="flex:1;background:linear-gradient(135deg,#e53935,#d32f2f);color:#fff;border:none;border-radius:12px;padding:12px;font-size: 10px;font-weight: 600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;box-shadow:0 6px 16px rgba(211,47,47,.3);">Kirim Port Ini</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ③d WIZARD EVIDEN PEMASANGAN ODP (SEBELUM → PROGRES → SESUDAH) -->
+        <div id="epodp-wizard" style="display:none;">
+          <div class="lbl" id="epodp-title" style="margin-bottom:10px;"><i class="fa-solid fa-plug-circle-bolt"></i> Eviden Pemasangan ODP — ODP: <b id="epodp-nama" style="color:#b91c1c;"></b></div>
+
+          <!-- Jenis Closure (khusus CUT OVER) -->
+          <div id="epodp-closure-box" style="display:none;margin-bottom:12px;background:linear-gradient(135deg,#fef2f2,#fff7f7);border:1.5px solid #fca5a5;border-radius:14px;padding:12px 14px;">
+            <div style="font-size: 9px;font-weight: 600;color:#b91c1c;margin-bottom:8px;"><i class="fa-solid fa-box"></i> Jenis Closure</div>
+            <select id="epodp-jenis" onchange="epodpJenisChange()" style="width:100%;padding:10px 12px;border:1px solid #fca5a5;border-radius:10px;background:#fff;font-size: 10px;font-weight: 500;color:#7f1d1d;">
+              <option value="">— Pilih Jenis Closure —</option>
+              <option value="24">Closure 24</option>
+              <option value="48">Closure 48</option>
+              <option value="96">Closure 96</option>
+              <option value="144">Closure 144</option>
+              <option value="288">Closure 288</option>
+              <option value="576">Closure 576</option>
+              <option value="__lainnya__">Lainnya…</option>
+            </select>
+            <input type="text" id="epodp-jenis-lain" oninput="epodpJenisLainInput(this)" style="display:none;margin-top:8px;width:100%;padding:9px 12px;border:1px solid #fca5a5;border-radius:10px;font-size: 10px;font-weight: 400;box-sizing:border-box;" placeholder="Tulis jenis closure lain (misal: 120, 720)">
+          </div>
+
+          <!-- Step pills -->
+          <div style="display:flex;gap:6px;margin-bottom:12px;" id="epodp-pills">
+            <div class="epodp-pill" data-step="SBL"><i class="fa-solid fa-hourglass-start"></i> Sebelum</div>
+            <div class="epodp-pill" data-step="PRG"><i class="fa-solid fa-arrows-spin"></i> Progres</div>
+            <div class="epodp-pill" data-step="SDH"><i class="fa-solid fa-circle-check"></i> Sesudah</div>
+          </div>
+
+          <!-- Kartu step aktif -->
+          <div id="epodp-card" style="background:linear-gradient(135deg,#fffafa,#f8fafc);border:1.5px solid #fca5a5;border-radius:14px;padding:14px 16px;box-shadow:0 8px 24px rgba(211,47,47,.10);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <span style="background:rgba(211,47,47,.12);color:#b91c1c;font-weight: 700;font-size: 11px;padding:5px 12px;border-radius:8px;" id="epodp-step-label">SEBELUM</span>
+              <span style="font-size: 9px;color:#64748b;font-weight: 400;" id="epodp-step-sub">Step 1 / 3</span>
+              <span id="epodp-heic-warn" style="display:none;margin-left:auto;font-size: 8px;font-weight: 500;color:#b45309;"></span>
+            </div>
+            <div id="epodp-warn-lengkap" style="display:none;margin-bottom:10px;font-size: 9px;font-weight: 500;color:#92400e;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.25);border-radius:8px;padding:8px 12px;"></div>
+            <input type="file" id="epodp-file" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="epodpPilihFile(this)">
+            <label id="epodp-drop" for="epodp-file">📷 Klik untuk pilih foto eviden SEBELUM</label>
+            <div id="epodp-file-info" style="display:none;margin-top:8px;font-size: 9px;font-weight: 500;color:#065f46;background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:8px 12px;"></div>
+          </div>
+
+          <div id="epodp-footer" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap;">
+            <span id="epodp-count" style="font-size: 9px;font-weight: 500;color:#64748b;">0/3 step selesai</span>
+            <button id="epodp-lanjut" type="button" onclick="epodpLanjut()" disabled
+              style="flex:1;background:linear-gradient(135deg,#e53935,#d32f2f);color:#fff;border:none;border-radius:12px;padding:12px;font-size: 10px;font-weight: 600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;box-shadow:0 6px 16px rgba(211,47,47,.3);opacity:.45;">
+              Lanjut ke PROGRES
+            </button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- ④ FOTO -->
+        <div id="foto-section">
+          <div class="lbl"><i class="fa-solid fa-images"></i> Foto Eviden</div>
+          <label class="drop" id="drop"
+  ondragover="onDragOver(event)" ondragleave="onDragLeave()" ondrop="onDrop(event)">
+  <!-- Tambahkan application/pdf di dalam accept -->
+  <input type="file" id="inp-files" multiple accept="image/*,application/pdf,.kml,.kmz" onchange="onFiles(this)">
+  <div class="drop-inner">
+    <div class="drop-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+    <div class="drop-t1">Drag &amp; drop foto, PDF, atau KML/KMZ ke sini</div>
+    <div class="drop-t2">atau klik untuk buka galeri · <b>Ctrl+V</b> untuk tempel langsung dari Telegram / WA</div>
+    <!-- Perbarui teks keterangan -->
+    <div class="drop-fmt"><i class="fa-solid fa-image"></i> JPG · PNG · WEBP · PDF · KML/KMZ (kategori Peta)</div>
+  </div>
+</label>
+          <div id="file-badge">
+            <div class="fbadge-row">
+              <div class="fbadge-ico"><i class="fa-solid fa-check-double"></i></div>
+              <div>
+                <div class="fbadge-count" id="fbadge-n">0 foto</div>
+                <div class="fbadge-lbl">siap diupload</div>
+              </div>
+            </div>
+            <div class="fbadge-names" id="fbadge-names"></div>
+          </div>
+          <div id="validasi-foto">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span id="validasi-txt"></span>
+          </div>
+        </div>
+
+        <!-- SUBMIT -->
+        <button type="submit" id="btn-upload">
+          <i class="fa-solid fa-rocket ico" id="btn-ico"></i>
+          <span id="btn-txt">Kirim Eviden</span>
+        </button>
+
+      </form>
+    </div>
+  </div><!-- /user-card -->
+
+  <!-- ═══ CARD BA CO (Laporan Cut Over) ═══ -->
+  <div class="card-baco" id="card-baco">
+    <div class="baco-hdr">
+      <div class="baco-hdr-icon"><i class="fa-solid fa-file-signature"></i></div>
+      <div class="baco-hdr-t">
+        <h2>Input BA CO — Laporan Cut Over</h2>
+        <p>Isi data pelaksanaan CO untuk masuk ke Laporan (LACT)</p>
+      </div>
+    </div>
+    <div class="baco-body">
+      <div class="lbl"><i class="fa-solid fa-location-dot"></i> Lokasi CO: <b id="baco-lok" style="color:#b91c1c;"></b></div>
+      <div class="lbl" style="font-size: 8px;color:#94a3b8;"><i class="fa-solid fa-calendar-check"></i> Hari / Tanggal / Bulan CO diisi oleh <b style="color:#047857;">Admin</b> pada form berkas lokasi.</div>
+
+      <div id="baco-sesis">
+        <!-- 4 sesi sambungan dibuat JS -->
+      </div>
+
+      <div class="baco-actions">
+        <button type="button" class="baco-btn baco-btn-save" id="baco-save" onclick="simpanBAco()">
+          <i class="fa-solid fa-floppy-disk"></i> Simpan BA CO
+        </button>
+        <button type="button" class="baco-btn baco-btn-gen" id="baco-gen" onclick="generateLact()">
+          <i class="fa-solid fa-file-export"></i> Generate LACT
+        </button>
+        <label style="display:inline-flex;align-items:center;gap:5px;font-size: 8px;font-weight: 600;color:#cbd5e1;cursor:pointer;background:#1e293b;border:1px solid #334155;border-radius:6px;padding:6px 9px;white-space:nowrap;">
+          <input type="checkbox" id="baco-pdf" style="accent-color:#22d3ee;cursor:pointer;"> PDF
+        </label>
+        <span id="baco-status"></span>
+      </div>
+    </div>
+  </div><!-- /card-baco -->
+    </div><!-- /oldev-col -->
+  </div><!-- /oldEvOverlay -->
+
+  <!-- MODAL CONTOH FORMAT SAMBUNGAN -->
+  <div class="baco-modal-overlay" id="baco-modal">
+    <div class="baco-modal">
+      <h3><i class="fa-solid fa-lightbulb"></i> Contoh Format 1 Sesi Sambungan</h3>
+      <div class="baco-sample">1. Sambung di Bastray MINI OLT:
+- Uplink 12*2 = 24 Core
+- Distribusi 12*10 = 120
+  TOTAL = 144 Core
+ * Sambungan Sisi Closure
+- SC-OF-SM-24 2*2 = 2 Core
+- SC-OF-SM-48  12*4 = 48 Core
+- SC-OF-SM-48(eksisting)  12*5 = 72 Core
+
+  TOTAL = 122 Core</div>
+      <button type="button" class="baco-btn" onclick="document.getElementById('baco-modal').classList.remove('show')">Tutup</button>
+    </div>
+  </div>
+
+  <script>
+    /* ═══════════════════════════════════════════════
+       DATA & CONFIG
+    ═══════════════════════════════════════════════ */
+    let cacheLokasi  = [];
+    let selLokasiId  = null;
+    let selLokasiObj = null;
+    let ddOpen       = false;
+
+    const T_STYLE = {
+      'MyRepublik':   { bg:'rgba(37,99,235,.1)',  color:'#1d4ed8', bdr:'rgba(37,99,235,.25)',  icon:'fa-wifi',             pill:'rgba(37,99,235,.12)'  },
+      'Node B':       { bg:'rgba(109,40,217,.1)', color:'#6d28d9', bdr:'rgba(109,40,217,.25)', icon:'fa-tower-cell',        pill:'rgba(109,40,217,.12)' },
+      'Relokasi':     { bg:'rgba(190,18,60,.1)',  color:'#be123c', bdr:'rgba(190,18,60,.25)',  icon:'fa-arrows-left-right', pill:'rgba(190,18,60,.12)'  },
+      'Jlm':          { bg:'rgba(4,120,87,.1)',   color:'#047857', bdr:'rgba(4,120,87,.25)',   icon:'fa-road',              pill:'rgba(4,120,87,.12)'   },
+      'M-tel':        { bg:'rgba(180,83,9,.1)',   color:'#b45309', bdr:'rgba(180,83,9,.25)',   icon:'fa-satellite-dish',    pill:'rgba(180,83,9,.12)'   },
+      'HEM':          { bg:'rgba(5,150,105,.1)',  color:'#047857', bdr:'rgba(5,150,105,.25)',  icon:'fa-bolt',              pill:'rgba(5,150,105,.12)'  },
+      'MICRODEMAND':  { bg:'rgba(8,145,178,.1)',  color:'#0e7490', bdr:'rgba(8,145,178,.25)',  icon:'fa-microchip',         pill:'rgba(8,145,178,.12)'  },
+    };
+    const T_DEFAULT = { bg:'rgba(100,116,139,.1)', color:'#475569', bdr:'rgba(100,116,139,.2)', icon:'fa-tag', pill:'rgba(100,116,139,.1)' };
+
+    const RULES_FOTO = { '-Istalasi Per FAT':3, '-Instalasi Pole':3 };
+    const KATEGORI_PETA = '-PETA RUTE (KML/KMZ)';
+    // ── KATEGORI TEMATIK HEM / MICRODEMAND ──
+    const KATEGORI_ABD     = 'ABD (PDF/DWG/DXF)';
+    const KATEGORI_KML     = 'KML (KML)';
+    const KATEGORI_BOQ     = 'BOQ AKTUAL';
+    const KATEGORI_RFC     = 'INPUT RFC';
+    const KATEGORI_BONMAT  = 'EVIDEN BON MATERIAL';
+    // ── KATEGORI TEMATIK NODE B (LACT) ──
+    const KATEGORI_BT      = 'BOQ BARANG TIBA';
+    const KATEGORI_OPMFORM = 'FORM PENGUKURAN OPM';
+    const KATEGORI_SOR     = 'OTDR (.SOR)';
+    const KATEGORI_EOTDR   = 'EVIDEN OTDR';
+    // Tematik yang TIDAK memakai input "Volume Material" pada EVIDEN BON MATERIAL
+    const BONMAT_TANPA_VOLUME = ['Node B', 'HEM', 'MICRODEMAND'];
+    // Kategori yang input "Nama titik/trayek"-nya dihapus — langsung upload tanpa sub-nama
+    const DIN_SKBUNYI = [
+      'EVIDEN PENARIKAN KABEL', 'EVIDEN PEMASANGAN ACC', 'EVIDEN PEMASANGAN TIANG',
+      'EVIDEN JUMPER', 'EVIDEN HDPE', 'EVIDEN OTDR', 'EVIDEN GALIAN',
+      'EVIDEN HH AKSES', 'EVIDEN HH ODP',
+    ];
+    const KATEGORI_TEKS    = [];
+    const DIN_CFG = {
+      '-EVIDENT HASIL UKUR OPM': { label:'Nama ODP (wajib)', ph:'Contoh: ODP-BOG-01' },
+      '-EVIDEN PEMASANGAN ODP':  { label:'Nama ODP (wajib)', ph:'Contoh: ODP-BOG-01' },
+      '-EVIDEN COLUSER':        { label:'Nama Closure (wajib)', ph:'Contoh: CL-01 / CO-ODP-01' },
+      '-Istalasi Per FAT':       { label:'Nama FAT — wajib 3 foto', ph:'Contoh: FAT A05' },
+      '-Instalasi Pole':         { label:'Nama Pole/Tiang — wajib 3 foto', ph:'Contoh: PL-02' },
+      [KATEGORI_PETA]:           { label:'Nama Peta (opsional)', ph:'Contoh: Jalur Penarikan Utama' },
+      [KATEGORI_KML]:            { label:'Nama Peta (opsional)', ph:'Contoh: Jalur Penarikan Utama' },
+      [KATEGORI_BONMAT]:         { label:'Nama Material (wajib)', ph:'Contoh: Kabel DC 48 Core' },
+      'EVIDEN INSTALASI ODP/OTB':{ label:'Nama ODP/OTB (wajib)', ph:'Contoh: ODP-BOG-01' },
+      'EVIDEN REDAMAN ODP/OTB':  { label:'Nama ODP/OTB (wajib)', ph:'Contoh: ODP-BOG-01' },
+      'EVIDEN PENARIKAN KABEL':  { label:'Nama titik/trayek (opsional)', ph:'Contoh: Trayek A' },
+      'EVIDEN PEMASANGAN ACC':   { label:'Nama ACC (opsional)', ph:'Contoh: ACC-01' },
+      'EVIDEN PEMASANGAN TIANG': { label:'Nama tiang (opsional)', ph:'Contoh: TG-12' },
+      'EVIDEN JUMPER':           { label:'Nama titik (opsional)', ph:'Contoh: JUMP-01' },
+      'EVIDEN HDPE':             { label:'Nama titik (opsional)', ph:'Contoh: HDPE-01' },
+      'EVIDEN OTDR':             { label:'Nama titik (opsional)', ph:'Contoh: OTDR-01' },
+      'EVIDEN GALIAN':           { label:'Nama titik galian (opsional)', ph:'Contoh: GAL-01' },
+      'EVIDEN HH AKSES':         { label:'Nama HH akses (opsional)', ph:'Contoh: HHA-01' },
+      'EVIDEN HH ODP':           { label:'Nama HH ODP (opsional)', ph:'Contoh: HHO-01' },
+      'MASUKAN EVIDEN PEKERJAAN': { label:'Nama Eviden (wajib)', ph:'Contoh: Grounding, Galian, Penarikan, dll' },
+    };
+
+    /* ═══════════════════════════════════════════════
+       TOAST
+    ═══════════════════════════════════════════════ */
+    function toast(msg, type='ok', dur=3800) {
+      const icons = { ok:'fa-circle-check', err:'fa-circle-xmark', wrn:'fa-triangle-exclamation' };
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.innerHTML = esc`<i class="fa-solid ${icons[type]} ti ${type}"></i><span>${msg}</span>`;
+      document.getElementById('toasts').appendChild(el);
+      setTimeout(() => {
+        el.style.transition='all .22s ease'; el.style.opacity=0; el.style.transform='translateX(14px)';
+        setTimeout(()=>el.remove(),240);
+      }, dur);
+    }
+
+    /* ═══════════════════════════════════════════════
+       LOGIN TEMATIK — tampilkan batas akses akun ini
+    ═══════════════════════════════════════════════ */
+    async function muatSesiAkses() {
+      const el = document.getElementById('pp_akses');
+      try {
+        const r = await fetch('/api/sesi');
+        if (r.status === 401 || r.status === 403) {
+          if (el) {
+            el.hidden = false;
+            el.classList.add('pp-terkunci');
+            el.innerHTML = '<i class="fa-solid fa-lock"></i> Sesi berakhir — kembali ke halaman login…';
+          }
+          setTimeout(() => window.location.replace('/login.html'), 1500);
+          return;
+        }
+        const s = await r.json().catch(() => null);
+        if (!s || !s.ok || !el) return;
+        el.hidden = false;
+        if (s.role === 'admin') {
+          el.innerHTML = '<i class="fa-solid fa-shield-halved"></i> Akses penuh — seluruh tematik (admin)';
+          return;
+        }
+        const t = Array.isArray(s.tematik) ? s.tematik : [];
+        if (!t.length) {
+          el.classList.add('pp-terkunci');
+          el.innerHTML = '<i class="fa-solid fa-lock"></i> Akun ini belum memiliki tematik — hubungi admin';
+          return;
+        }
+        el.innerHTML = '<i class="fa-solid fa-layer-group"></i> Akses tematik: ' + escS(t.join(' · '));
+      } catch (e) { /* jaringan bermasalah → indikator tidak ditampilkan */ }
+    }
+
+    /* ═══════════════════════════════════════════════
+       STEP PILLS
+    ═══════════════════════════════════════════════ */
+    function updPills() {
+      const lokasi   = !!selLokasiId;
+      const kategori = !!document.getElementById('sel-kategori').value;
+      const dinShow  = document.getElementById('box-dinamis').classList.contains('show');
+      const dinVal   = !!document.getElementById('input-sub').value.trim();
+      const files    = document.getElementById('inp-files').files.length > 0;
+      const kategoriNow = document.getElementById('sel-kategori').value;
+      const boqDone = kategoriNow === KATEGORI_BOQ && boqRows.length > 0;
+      const btDone  = kategoriNow === KATEGORI_BT && btRows.length > 0;
+      const steps    = [lokasi, kategori, dinShow ? dinVal : kategori, boqDone || btDone || files];
+      steps.forEach((done, i) => {
+        const p = document.getElementById(`p${i+1}`);
+        const isNext = !done && steps.slice(0,i).every(Boolean);
+        p.className = 'pill ' + (done ? 'done' : isNext ? 'active' : '');
+      });
+    }
+
+    /* ═══════════════════════════════════════════════
+       TEMATIK STRIP
+    ═══════════════════════════════════════════════ */
+    function renderStrip(loc) {
+      const strip = document.getElementById('tematik-strip');
+      if (!loc) { strip.classList.remove('show'); return; }
+      const s = T_STYLE[loc.tematik] || T_DEFAULT;
+      const pill = document.getElementById('strip-pill');
+      pill.style.cssText = `background:${s.bg};color:${s.color};border:1.5px solid ${s.bdr};`;
+      pill.innerHTML = esc`<i class="fa-solid ${s.icon}"></i> ${loc.tematik||'—'}`;
+      document.getElementById('strip-nama').textContent = loc.nama_lokasi || '';
+      document.getElementById('strip-pid').textContent  = loc.pid || '';
+      strip.classList.add('show');
+    }
+
+    /* ═══════════════════════════════════════════════
+       MUAT LOKASI
+    ═══════════════════════════════════════════════ */
+    async function muatLokasi() {
+      try {
+        // Hanya LOP yang butuh eviden (AF = 03. MATDEV, 04. INSTALASI,
+        // FINISH INSTALASI / OA, GO LIVE, 07. TC, 08. UT, atau 09. REKON)
+        const res  = await fetch('/api/lokasi?trigger=1');
+        if (!res.ok) throw new Error();
+        cacheLokasi = await res.json();
+        lokRenderList(cacheLokasi, '');
+        const meta = document.getElementById('lok-meta-count');
+        if (meta) meta.textContent = `${cacheLokasi.length} lokasi tersedia`;
+        // Auto-select dari URL parameter ?lokasi=NamaLokasi
+        const urlParam = new URLSearchParams(window.location.search).get('lokasi');
+        if (urlParam && cacheLokasi.length) {
+          const found = cacheLokasi.find(l => (l.nama_lokasi || '').toLowerCase() === urlParam.toLowerCase());
+          if (found) lokSelect(found);
+        }
+      } catch {
+        toast('Gagal memuat daftar lokasi dari server.', 'err');
+      }
+    }
+
+    /* ═══════════════════════════════════════════════
+       DROPDOWN: OPEN / CLOSE / TOGGLE
+    ═══════════════════════════════════════════════ */
+    function lokToggle() { ddOpen ? lokClose() : lokOpen(); }
+
+    function lokOpen() {
+      ddOpen = true;
+      document.getElementById('lok-trigger').classList.add('open');
+      document.getElementById('lok-panel').classList.add('open');
+      const si = document.getElementById('lok-search');
+      si.value = '';
+      document.getElementById('lok-srch-clr').style.display = 'none';
+      lokRenderList(cacheLokasi, '');
+      setTimeout(() => si.focus(), 80);
+    }
+
+    function lokClose() {
+      ddOpen = false;
+      document.getElementById('lok-trigger').classList.remove('open');
+      document.getElementById('lok-panel').classList.remove('open');
+    }
+
+    /* Close on outside click */
+    document.addEventListener('click', e => {
+      const wrap = document.getElementById('lok-wrap');
+      if (wrap && !wrap.contains(e.target)) lokClose();
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') lokClose(); });
+
+    /* ═══════════════════════════════════════════════
+       DROPDOWN: FILTER
+    ═══════════════════════════════════════════════ */
+    function lokFilter() {
+      const kw  = document.getElementById('lok-search').value.toLowerCase().trim();
+      const clr = document.getElementById('lok-srch-clr');
+      clr.style.display = kw ? 'block' : 'none';
+      const filtered = kw
+        ? cacheLokasi.filter(l =>
+            (l.nama_lokasi||'').toLowerCase().includes(kw) ||
+            (l.pid||'').toLowerCase().includes(kw) ||
+            (l.tematik||'').toLowerCase().includes(kw))
+        : cacheLokasi;
+      lokRenderList(filtered, kw);
+    }
+
+    function lokClearSearch() {
+      document.getElementById('lok-search').value = '';
+      document.getElementById('lok-srch-clr').style.display = 'none';
+      lokRenderList(cacheLokasi, '');
+      document.getElementById('lok-search').focus();
+    }
+
+    /* ═══════════════════════════════════════════════
+       DROPDOWN: RENDER LIST
+    ═══════════════════════════════════════════════ */
+    function lokRenderList(list, kw) {
+      const container = document.getElementById('lok-list');
+      const emptyEl   = document.getElementById('lok-empty');
+      const metaCount = document.getElementById('lok-meta-count');
+
+      container.innerHTML = '';
+
+      if (!list || list.length === 0) {
+        container.style.display = 'none';
+        emptyEl.style.display   = 'block';
+        if (metaCount) metaCount.textContent = '0 lokasi ditemukan';
+        return;
+      }
+
+      container.style.display = '';
+      emptyEl.style.display   = 'none';
+      if (metaCount) metaCount.textContent = kw
+        ? `${list.length} dari ${cacheLokasi.length} lokasi`
+        : `${list.length} lokasi tersedia`;
+
+      /* Group by tematik */
+      const ORDER   = ['MyRepublik','Node B','Relokasi','Jlm','M-tel','HEM','MICRODEMAND'];
+      const grouped = {};
+      list.forEach(l => {
+        const t = l.tematik || 'Lainnya';
+        if (!grouped[t]) grouped[t] = [];
+        grouped[t].push(l);
+      });
+      const keys = Object.keys(grouped).sort((a,b)=>{
+        const ia=ORDER.indexOf(a), ib=ORDER.indexOf(b);
+        return (ia<0?99:ia)-(ib<0?99:ib);
+      });
+
+      keys.forEach(t => {
+        const s = T_STYLE[t] || T_DEFAULT;
+
+        /* Group header */
+        const ghdr = document.createElement('div');
+        ghdr.className = 'lok-ghdr';
+        ghdr.innerHTML = esc`
+          <span class="lok-ghdr-pill" style="background:${s.bg};color:${s.color};border:1px solid ${s.bdr};">
+            <i class="fa-solid ${s.icon}"></i> ${t}
+          </span>
+          <span class="lok-ghdr-line"></span>
+          <span class="lok-ghdr-n">${grouped[t].length}</span>`;
+        container.appendChild(ghdr);
+
+        grouped[t].forEach(loc => {
+          const isSel = String(loc.id) === String(selLokasiId);
+
+          /* highlight keyword */
+          let nama = escS(loc.nama_lokasi || '');
+          if (kw) {
+            const re = new RegExp(`(${kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+            nama = nama.replace(re, '<mark class="hl">$1</mark>');
+          }
+
+          const item = document.createElement('div');
+          item.className = 'lok-item' + (isSel ? ' sel' : '');
+
+          /* Icon */
+          const ico = document.createElement('div');
+          ico.className = 'lok-item-ico';
+          ico.style.cssText = `background:${isSel ? s.bg : 'rgba(241,245,249,.8)'};`;
+          ico.innerHTML = isSel
+            ? `<i class="fa-solid fa-check" style="color:${s.color};"></i>`
+            : `<i class="fa-solid ${s.icon}" style="color:${s.color};opacity:.6;"></i>`;
+
+          /* Text */
+          const body = document.createElement('div');
+          body.className = 'lok-item-body';
+          body.innerHTML = esc`
+            <div class="lok-item-nama">${raw(nama)}</div>
+            ${loc.pid ? raw(`<div class="lok-item-pid">${escS(loc.pid)}</div>`) : ''}`;
+
+          /* Tag */
+          const tag = document.createElement('span');
+          tag.className = 'lok-item-tag';
+          tag.style.cssText = `background:${s.bg};color:${s.color};border:1px solid ${s.bdr};`;
+          tag.textContent = t;
+
+          item.appendChild(ico);
+          item.appendChild(body);
+          item.appendChild(tag);
+          item.onclick = () => lokSelect(loc);
+
+          /* Hover effect */
+          item.addEventListener('mouseenter', () => {
+            if (!isSel) item.style.background = `rgba(${s.color.replace(/[^\d,]/g,'')},0)`;
+            item.style.background = '#fef4f4';
+          });
+          item.addEventListener('mouseleave', () => {
+            item.style.background = isSel
+              ? 'linear-gradient(90deg,rgba(211,47,47,.09),rgba(211,47,47,.03))'
+              : '';
+          });
+
+          container.appendChild(item);
+        });
+      });
+    }
+
+    /* ═══════════════════════════════════════════════
+       DROPDOWN: SELECT ITEM
+    ═══════════════════════════════════════════════ */
+    function lokSelect(loc) {
+      selLokasiId  = loc.id;
+      selLokasiObj = loc;
+      const s = T_STYLE[loc.tematik] || T_DEFAULT;
+
+      /* Update trigger */
+      const label = document.getElementById('trg-label');
+      label.textContent = loc.nama_lokasi;
+      label.classList.add('sel');
+
+      const badge = document.getElementById('trg-badge');
+      badge.style.cssText = `background:${s.bg};color:${s.color};border:1px solid ${s.bdr};display:inline-flex;align-items:center;gap:4px;`;
+      badge.innerHTML = esc`<i class="fa-solid ${s.icon}" style="font-size: 7px;"></i> ${loc.tematik||'—'}`;
+
+      /* Show clear sel */
+      document.getElementById('lok-meta-clr').style.display = 'block';
+
+      lokClose();
+      renderStrip(loc);
+      resetKategori(); resetDin(); resetFiles();
+      loadKategori(loc.id);
+      updPills();
+    }
+
+    function lokClearSel() {
+      selLokasiId  = null;
+      selLokasiObj = null;
+      const label = document.getElementById('trg-label');
+      label.textContent = 'Cari atau pilih lokasi proyek…';
+      label.classList.remove('sel');
+      const badge = document.getElementById('trg-badge');
+      badge.style.cssText = 'display:none;';
+      document.getElementById('lok-meta-clr').style.display = 'none';
+      renderStrip(null);
+      resetKategori(); resetDin(); resetFiles();
+      updPills();
+      tutupCardBAco();
+      if (ddOpen) lokClose();
+    }
+
+    /* ═══════════════════════════════════════════════
+       LOAD KATEGORI
+    ═══════════════════════════════════════════════ */
+    function tambahOpsiManual(sel) {
+      const opt = document.createElement('option');
+      opt.value = '__MANUAL__';
+      opt.textContent = '➕ Eviden lain (tulis manual)';
+      sel.appendChild(opt);
+    }
+
+    function tambahOpsiPeta(sel) {
+      const opt = document.createElement('option');
+      opt.value = KATEGORI_PETA;
+      opt.textContent = '🗺️ ' + KATEGORI_PETA;
+      sel.appendChild(opt);
+    }
+
+    function tambahOpsiSambco(sel) {
+      const opt = document.createElement('option');
+      opt.value = KATEGORI_SAMBCO;
+      opt.textContent = '🔗 ' + KATEGORI_SAMBCO;
+      sel.appendChild(opt);
+    }
+
+    async function loadKategori(id) {
+      const sel  = document.getElementById('sel-kategori');
+      const stat = document.getElementById('status-kategori');
+      sel.innerHTML = '<option value="">Memuat…</option>';
+      sel.disabled  = true;
+      stat.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:7px;padding:9px 13px;border-radius:10px;font-size: 9px;font-weight: 400;background:#f1f5f9;color:#64748b;';
+      stat.innerHTML     = '<i class="fa-solid fa-spinner fa-spin" style="font-size: 10px"></i> Memuat daftar berkas…';
+      stat.classList.add('show');
+      try {
+        const res  = await fetch(`/api/progres/${id}`);
+        const data = await res.json();
+        // "INPUT REKAP OPM" dikelola admin lewat halaman Audit Kelengkapan Berkas Lapangan,
+        // jadi tidak ditampilkan sebagai pilihan input di halaman ini.
+        const SEMBUNYI_KAT = ['INPUT REKAP OPM'];
+        const belum    = (data.belum || []).filter(k => !SEMBUNYI_KAT.includes(k));
+        const berulang = (data.berulang || []).filter(k => !SEMBUNYI_KAT.includes(k));
+
+        // Kategori yang boleh diisi ulang (sudah ada isinya tetap muncul di dropdown,
+        // dipakai untuk input ODP berikutnya pada kategori Hasil Ukur OPM)
+        const opsi = [...belum];
+        berulang.forEach(k => { if (!opsi.includes(k)) opsi.push(k); });
+
+        if (opsi.length > 0) {
+          sel.innerHTML = '<option value="">— Pilih kategori —</option>';
+          opsi.forEach(k => {
+            const o = document.createElement('option');
+            o.value = k; o.textContent = k; sel.appendChild(o);
+          });
+          tambahOpsiManual(sel);
+          tambahOpsiPeta(sel);
+          tambahOpsiSambco(sel);
+          sel.disabled = false;
+          stat.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:7px;padding:9px 13px;border-radius:10px;font-size: 9px;font-weight: 400;background:rgba(211,47,47,.06);color:#b91c1c;border:1px solid rgba(211,47,47,.2);';
+          const pesan = [];
+          if (belum.length) pesan.push(`${belum.length} berkas belum diupload`);
+          if (berulang.length) pesan.push(`${berulang.length} berkas dapat diisi berulang (contoh: 1 ODP / port)*`);
+          stat.innerHTML = esc`<i class="fa-solid fa-list-check" style="font-size: 10px"></i> <span>${pesan.join(' · ')}</span>`;
+        } else {
+          sel.innerHTML = '<option value="">— Pilih kategori —</option>';
+          tambahOpsiManual(sel);
+          tambahOpsiPeta(sel);
+          tambahOpsiSambco(sel);
+          sel.disabled  = false;
+          stat.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:7px;padding:9px 13px;border-radius:10px;font-size: 9px;font-weight: 400;background:rgba(5,150,105,.08);color:#059669;border:1px solid rgba(5,150,105,.2);';
+          stat.innerHTML = '<i class="fa-solid fa-circle-check" style="font-size: 11px"></i> <span>Semua kategori wajib sudah lengkap — masih bisa tambah eviden manual</span>';
+        }
+      } catch {
+        sel.innerHTML='<option value="">Gagal memuat</option>'; sel.disabled=true;
+        stat.style.cssText='display:flex;align-items:center;gap:8px;margin-top:7px;padding:9px 13px;border-radius:10px;font-size: 9px;font-weight: 400;background:rgba(225,29,72,.07);color:#be123c;border:1px solid rgba(225,29,72,.2);';
+        stat.innerHTML='<i class="fa-solid fa-circle-xmark"></i> Gagal terhubung ke server';
+        toast('Gagal memuat kategori berkas.','err');
+      }
+    }
+
+    /* ═══════════════════════════════════════════════
+       INFO PORT ODP (kategori Hasil Ukur OPM)
+    ═══════════════════════════════════════════════ */
+    const KATEGORI_OPM = '-EVIDENT HASIL UKUR OPM';
+    const KATEGORI_EPODP = '-EVIDEN PEMASANGAN ODP';
+    const KATEGORI_CUTOVER = '-EVIDEN COLUSER';
+    const KATEGORI_SAMBCO = '-INPUT SAMBUNGAN CO';
+    const KATEGORI_REDAMAN = 'EVIDEN REDAMAN ODP/OTB';
+    const KATEGORI_EIODP   = 'EVIDEN INSTALASI ODP/OTB';
+    // Kategori yang memakai wizard port per port (OPM & Redaman)
+    const KATEGORI_PORTWIZARD = [KATEGORI_OPM, KATEGORI_REDAMAN];
+    function portWizardApi(kat) { return kat === KATEGORI_REDAMAN ? 'redaman' : 'opm'; }
+    // Kategori yang memakai wizard 3 langkah SEBELUM → PROGRES → SESUDAH
+    const KATEGORI_STEPWIZARD = [KATEGORI_EPODP, KATEGORI_CUTOVER, KATEGORI_EIODP];
+    const LABEL_STEPWIZARD = {
+      [KATEGORI_EPODP]:   { ikon:'fa-plug-circle-bolt', nama:'Eviden Pemasangan ODP', singkat:'ODP' },
+      [KATEGORI_CUTOVER]: { ikon:'fa-shoe-prints',      nama:'Eviden CUT OVER',       singkat:'Titik Cut Over' },
+      [KATEGORI_EIODP]:   { ikon:'fa-box-open',         nama:'Eviden Instalasi ODP/OTB', singkat:'ODP/OTB' },
+    };
+    let opmDataCache = [];
+    let epodpDataCache = [];
+
+    function escS(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+    async function muatInfoOpm() {
+      if (!selLokasiId) { opmDataCache = []; return; }
+      const kat = document.getElementById('sel-kategori').value;
+      try {
+        const res = await fetch(`/api/${portWizardApi(kat)}/${selLokasiId}?kategori=${encodeURIComponent(kat)}`);
+        const j = await res.json();
+        opmDataCache = j.daftar || [];
+      } catch { opmDataCache = []; }
+    }
+
+    /* ── Data monitoring Pemasangan ODP / CUT OVER (cek yang sudah lengkap) ── */
+    async function muatInfoEpodp() {
+      if (!selLokasiId) { epodpDataCache = []; return; }
+      const kat = document.getElementById('sel-kategori').value;
+      const endpoint = (kat === KATEGORI_CUTOVER) ? `/api/eco/${selLokasiId}` : `/api/epodp/${selLokasiId}`;
+      try {
+        const res = await fetch(endpoint);
+        const j = await res.json();
+        epodpDataCache = j.daftar || [];
+      } catch { epodpDataCache = []; }
+    }
+
+    /* ═══════════════════════════════════════════════
+       WIZARD PORT OPM (isi per port: Ada / Ukur)
+    ═══════════════════════════════════════════════ */
+    let opmState = null; // { nama, kap, cur, port:{} , files:{} }
+
+    function resetOpmWizard() {
+      opmState = null;
+      const w = document.getElementById('opm-wizard');
+      if (w) w.style.display = 'none';
+      const s1 = document.getElementById('opm-step-kap');
+      const s2 = document.getElementById('opm-step-2');
+      if (s1) s1.style.display = 'block';
+      if (s2) s2.style.display = 'none';
+      const ub = document.getElementById('opm-ukur-box');
+      if (ub) ub.style.display = 'none';
+      opmTokohVisible(true);
+    }
+
+    // Tampilkan / sembunyikan bagian upload umum (drop + tombol Kirim Eviden).
+    // Saat OPM, upload dilakukan per port lewat wizard.
+    function opmTokohVisible(show) {
+      const fs = document.getElementById('foto-section');
+      const bu = document.getElementById('btn-upload');
+      if (fs) fs.style.display = show ? '' : 'none';
+      if (bu) bu.style.display = show ? '' : 'none';
+    }
+
+    // Panggil saat kategori OPM dipilih / nama ODP diketik
+    function opmBukaWizard() {
+      const kat  = document.getElementById('sel-kategori').value;
+      const nama = document.getElementById('input-sub').value.trim();
+      const w    = document.getElementById('opm-wizard');
+      if (!KATEGORI_PORTWIZARD.includes(kat) || !nama) {
+        resetOpmWizard();
+        return;
+      }
+      const kapTitle = document.getElementById('opm-kap-title');
+      if (kapTitle) kapTitle.innerHTML = kat === KATEGORI_REDAMAN
+        ? '<i class="fa-solid fa-wave-square"></i> Kapasitas Port untuk ODP/OTB: <b id="opm-nama-kap" style="color:#b91c1c;"></b>'
+        : '<i class="fa-solid fa-plug-circle-bolt"></i> Kapasitas Port untuk ODP: <b id="opm-nama-kap" style="color:#b91c1c;"></b>';
+      w.style.display = 'block';
+      opmTokohVisible(false);
+      // Kalau nama ODP berganti, mulai ulang wizard untuk ODP baru
+      if (opmState && opmState.nama !== nama) {
+        opmState = null;
+        document.getElementById('opm-step-kap').style.display = 'block';
+        document.getElementById('opm-step-2').style.display = 'none';
+      }
+      document.getElementById('opm-nama-kap').textContent = escS(nama);
+      document.getElementById('opm-nama-isi').textContent = escS(nama);
+    }
+
+    function opmPilihKap(kap) {
+      const nama = document.getElementById('input-sub').value.trim();
+      const kat  = document.getElementById('sel-kategori').value;
+      opmState = { nama, kapas: kap, cur: 1, port: {}, files: {} };
+
+      // Simpan ODP + kapasitas ke server supaya laporan & admin tahu.
+      (async () => {
+        try {
+          await fetch(`/api/${portWizardApi(kat)}/init`, {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lokasi_id: selLokasiId, odp: nama, kapasitas: kap })
+          });
+        } catch (e) { console.warn('Gagal simpan ODP init', e); }
+      })();
+
+      // Jika ODP ini sebelumnya sudah pernah diisi, lanjutkan dari port
+      // kosong berikutnya (data lama TIDAK ditimpa).
+      const ditemukan = opmDataCache.find(g => g.nama.toUpperCase() === nama.toUpperCase());
+      if (ditemukan) {
+        ditemukan.ports.forEach(p => {
+          if (p.status === 'ukur') opmState.port[p.port] = 'ukur';
+          if (p.status === 'isi')  opmState.port[p.port] = 'isi';
+        });
+        const maksIsi = Math.max(0, ...ditemukan.ports.filter(p => p.status !== 'kosong').map(p => p.port));
+        opmState.cur = Math.min(maksIsi + 1, kap + 1);
+        if (maksIsi >= kap) {
+          toast(`ODP ${nama} semua ${kap} port sudah terisi — gunakan nama ODP baru.`, 'wrn', 4000);
+        }
+      }
+
+      document.getElementById('opm-step-kap').style.display = 'none';
+      document.getElementById('opm-step-2').style.display = 'block';
+      opmRenderGrid();
+      opmRenderCard();
+    }
+
+    function opmRenderGrid() {
+      const grid = document.getElementById('opm-grid-preview');
+      let html = '';
+      for (let p = 1; p <= opmState.kapas; p++) {
+        const st = opmState.port[p];
+        let cls = 'background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;';
+        let ico = 'fa-minus';
+        if (st === 'isi')  { cls = 'background:#fde68a;color:#92400e;border:1px solid #f59e0b;'; ico = 'fa-user-check'; }
+        if (st === 'ukur') { cls = 'background:#bfdbfe;color:#1d4ed8;border:1px solid #93c5fd;'; ico = 'fa-wave-square'; }
+        html += `<div class="opm-grid-cell" style="${cls}" title="Port ${p}">P${p}<i class="fa-solid ${ico}" style="font-size: 7px;"></i></div>`;
+      }
+      grid.innerHTML = html;
+    }
+
+    function opmRenderCard() {
+      const cur = opmState.cur;
+      if (cur > opmState.kapas) { opmSelesai(); return; }
+      document.getElementById('opm-port-num').textContent = `PORT ${cur}`;
+      document.getElementById('opm-port-sub').textContent = `Port ${cur} / ${opmState.kapas}`;
+      document.getElementById('opm-count').textContent =
+        `${cur - 1}/${opmState.kapas} port selesai`;
+      // Reset area ukur
+      const ub = document.getElementById('opm-ukur-box');
+      ub.style.display = 'none';
+      document.getElementById('opm-file-info').style.display = 'none';
+      document.getElementById('opm-file-port').value = '';
+      document.getElementById('opm-save').style.display = 'inline-flex';
+      document.getElementById('opm-save').innerHTML = 'Kirim Port Ini';
+      document.getElementById('opm-save').disabled = false;
+    }
+
+    function opmPilihPort(tipe) {
+      if (tipe === 'isi') {
+        opmState.port[opmState.cur] = 'isi';
+        const kat = document.getElementById('sel-kategori').value;
+        // Simpan status "isi" (port ada user) ke server agar masuk ke laporan.
+        (async () => {
+          try {
+            await fetch(`/api/${portWizardApi(kat)}/isi`, {
+              method: 'POST', credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ lokasi_id: selLokasiId, odp: opmState.nama, port: opmState.cur })
+            });
+          } catch (e) { console.warn('Gagal simpan port isi', e); }
+        })();
+        opmState.cur++;
+        opmRenderGrid(); opmRenderCard();
+      } else {
+        // pilih ukur → tampilkan box foto port ini
+        document.getElementById('opm-ukur-box').style.display = 'block';
+        document.getElementById('opm-file-port').focus();
+      }
+    }
+
+    document.getElementById('opm-file-port').addEventListener('change', function () {
+      const inp = this;
+      const info = document.getElementById('opm-file-info');
+      const btn  = document.getElementById('opm-save');
+      if (inp.files.length > 0) {
+        const cur = opmState.cur;
+        opmState.files[cur] = inp.files[0];
+        opmState.port[cur]  = 'ukur';
+        info.style.display = 'block';
+        info.innerHTML = esc`<i class="fa-solid fa-circle-check"></i> 📷 Foto untuk <b>Port ${cur}</b>: ${inp.files[0].name}`;
+        btn.style.display = 'inline-flex';
+        btn.disabled = false;
+        opmRenderGrid();
+      } else {
+        info.style.display = 'none';
+        btn.disabled = true;
+      }
+    });
+
+    // Validasi jenis file port OPM (tolak HEIC/PDF/format yang tidak didukung sharp)
+    function opmAwasFile(input) {
+      const allowed = ['image/jpeg','image/png','image/webp'];
+      if (input.files.length && !allowed.includes(input.files[0].type)) {
+        const warn = document.getElementById('opm-heic-warn');
+        warn.innerHTML = '⚠️ Format <b>' + input.files[0].name + '</b> tidak didukung. Gunakan foto JPG/PNG (misal ubah dari format HEIC/iOS).';
+        warn.style.cssText = 'display:block;margin-bottom:8px;font-size: 9px;font-weight: 500;color:#b45309;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.25);border-radius:8px;padding:8px 12px;';
+        input.value = '';
+        document.getElementById('opm-file-info').style.display = 'none';
+        document.getElementById('opm-save').disabled = true;
+        return;
+      }
+      const warn = document.getElementById('opm-heic-warn');
+      if (warn) warn.style.display = 'none';
+      input.dispatchEvent(new Event('change'));
+    }
+
+    async function opmSimpanPort() {
+      const cur = opmState.cur;
+      const file = opmState.files[cur];
+      const btn = document.getElementById('opm-save');
+      if (opmState.port[cur] === 'ukur' && !file) {
+        toast('Pilih foto untuk port ini terlebih dahulu.', 'wrn'); return;
+      }
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim…';
+
+      try {
+        if (opmState.port[cur] === 'ukur') {
+          // Upload foto port ini (penamaan port eksplisit)
+          const kat = document.getElementById('sel-kategori').value;
+          const fd = new FormData();
+          fd.append('lokasi_id', selLokasiId);
+          fd.append('kategori', kat);
+          fd.append('sub_kategori', opmState.nama);
+          fd.append('ports', JSON.stringify([cur]));
+          fd.append('files', file);
+          const res = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
+          if (!res.ok) {
+            const e = await res.json().catch(()=>({message:'Gagal kirim.', detail:'Tidak ada respon dari server.'}));
+            throw new Error(e.message + (e.detail ? ' — ' + e.detail : ''));
+          }
+        }
+        toast(`Port ${cur} selesai.`, 'ok', 2000);
+        opmState.cur++;
+        opmRenderGrid(); opmRenderCard();
+      } catch (err) {
+        toast('Gagal kirim port: ' + err.message, 'err');
+        btn.disabled = false;
+        btn.innerHTML = 'Kirim Port Ini';
+      }
+    }
+
+    function opmSelesai() {
+      const nama = opmState.nama;
+      toast(`ODP ${nama} selesai (${opmState.kapas} port diproses) — silakan input ODP berikutnya atau ganti nama ODP.`, 'ok', 4500);
+      // Reset wizard di dalam kategori yang sama supaya bisa input ODP baru
+      opmState = null;
+      resetOpmWizard();
+    }
+
+    /* ═══════════════════════════════════════════════
+       WIZARD EVIDEN PEMASANGAN ODP (SEBELUM → PROGRES → SESUDAH)
+    ═══════════════════════════════════════════════ */
+    const EPODP_STEPS = ['SBL', 'PRG', 'SDH'];
+    const EPODP_LABEL = { SBL: 'SEBELUM', PRG: 'PROGRES', SDH: 'SESUDAH' };
+    let epodpState = null; // { nama, jenis, cur(0..2), files: {SBL:File, PRG:File, SDH:File} }
+
+    function resetEpodpWizard(showGeneric) {
+      epodpState = null;
+      const w = document.getElementById('epodp-wizard');
+      if (w) w.style.display = 'none';
+      const fi = document.getElementById('epodp-file-info');
+      if (fi) fi.style.display = 'none';
+      const warn = document.getElementById('epodp-warn-lengkap');
+      if (warn) warn.style.display = 'none';
+      const cb = document.getElementById('epodp-closure-box');
+      if (cb) cb.style.display = 'none';
+      if (showGeneric !== false) opmTokohVisible(true);
+    }
+
+    function epodpBukaWizard() {
+      const kat  = document.getElementById('sel-kategori').value;
+      const nama = document.getElementById('input-sub').value.trim();
+      const w    = document.getElementById('epodp-wizard');
+      if (!KATEGORI_STEPWIZARD.includes(kat) || !nama) { resetEpodpWizard(); return; }
+
+      const cfg = LABEL_STEPWIZARD[kat] || LABEL_STEPWIZARD[KATEGORI_EPODP];
+      document.getElementById('epodp-title').innerHTML = esc`<i class="fa-solid ${cfg.ikon}"></i> ${cfg.nama} — ${cfg.singkat}: <b id="epodp-nama" style="color:#b91c1c;"></b>`;
+
+      w.style.display = 'block';
+      opmTokohVisible(false);
+      if (epodpState && epodpState.nama !== nama) epodpState = null;
+      if (!epodpState) epodpState = { nama, jenis: '', cur: 0, files: {} };
+      document.getElementById('epodp-nama').textContent = escS(nama);
+
+      // Kotak "Jenis Closure" khusus CUT OVER + isi ulang dari data yang sudah tersimpan
+      const isCo = kat === KATEGORI_CUTOVER;
+      const cBox = document.getElementById('epodp-closure-box');
+      if (cBox) cBox.style.display = isCo ? 'block' : 'none';
+      if (isCo) {
+        const ditemukanCache = epodpDataCache.find(g => g.nama.toUpperCase() === nama.toUpperCase());
+        if (ditemukanCache && ditemukanCache.jenis) {
+          epodpState.jenis = ditemukanCache.jenis;
+          const selJ = document.getElementById('epodp-jenis');
+          const lain = document.getElementById('epodp-jenis-lain');
+          if (['24','48','96','144','288','576'].includes(ditemukanCache.jenis)) {
+            selJ.value = ditemukanCache.jenis;
+            if (lain) lain.style.display = 'none';
+          } else {
+            selJ.value = '__lainnya__';
+            if (lain) { lain.style.display = 'block'; lain.value = ditemukanCache.jenis; }
+          }
+        }
+      }
+
+      // ODP/titik sudah lengkap → peringatan tapi tetap boleh lanjut
+      const warnEl = document.getElementById('epodp-warn-lengkap');
+      const ditemukan = epodpDataCache.find(g => g.nama.toUpperCase() === nama.toUpperCase());
+      if (ditemukan && ditemukan.selesai) {
+        warnEl.style.display = 'block';
+        warnEl.innerHTML = esc`<i class="fa-solid fa-triangle-exclamation" style="margin-right:5px;"></i><b>${raw(escS(nama))}</b> sudah punya 3 eviden lengkap. Tetap bisa menambah/memperbarui foto.`;
+      } else {
+        warnEl.style.display = 'none';
+      }
+      epodpRender();
+    }
+
+    function epodpJenisChange() {
+      if (!epodpState) return;
+      const selJ = document.getElementById('epodp-jenis');
+      const lain = document.getElementById('epodp-jenis-lain');
+      if (selJ.value === '__lainnya__') {
+        lain.style.display = 'block';
+        epodpState.jenis = lain.value.trim();
+      } else {
+        lain.style.display = 'none';
+        lain.value = '';
+        epodpState.jenis = selJ.value;
+      }
+    }
+
+    function epodpJenisLainInput(inp) {
+      if (epodpState) epodpState.jenis = inp.value.trim();
+    }
+
+    function epodpRender() {
+      if (!epodpState) return;
+      const cur  = epodpState.cur;
+      const step = EPODP_STEPS[cur];
+
+      EPODP_STEPS.forEach((s, i) => {
+        const pill = document.querySelector(`.epodp-pill[data-step="${s}"]`);
+        if (pill) pill.className = 'epodp-pill ' + (i < cur ? 'done' : (i === cur ? 'active' : ''));
+      });
+
+      document.getElementById('epodp-step-label').textContent = EPODP_LABEL[step];
+      document.getElementById('epodp-step-sub').textContent  = `Step ${cur + 1} / 3`;
+      document.getElementById('epodp-count').textContent     = `${cur}/3 step selesai`;
+      document.getElementById('epodp-drop').innerHTML        = esc`📷 Klik untuk pilih foto eviden <b>${EPODP_LABEL[step]}</b>`;
+      const katNow = document.getElementById('sel-kategori').value;
+      const btnLabel = (katNow === KATEGORI_CUTOVER) ? 'Simpan Closure' : 'Simpan ODP';
+      document.getElementById('epodp-lanjut').innerHTML      = cur >= 2
+        ? `<i class="fa-solid fa-floppy-disk" style="font-size: 9px;"></i> ${btnLabel}`
+        : `Lanjut ke ${EPODP_LABEL[EPODP_STEPS[cur + 1]]}`;
+
+      const file = epodpState.files[step];
+      const info = document.getElementById('epodp-file-info');
+      const btn  = document.getElementById('epodp-lanjut');
+      if (file) {
+        info.style.display = 'block';
+        info.innerHTML = esc`<i class="fa-solid fa-circle-check"></i> 📷 Foto <b>${EPODP_LABEL[step]}</b>: ${file.name}`;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      } else {
+        info.style.display = 'none';
+        btn.disabled = true;
+        btn.style.opacity = '.45';
+      }
+      document.getElementById('epodp-file').value = '';
+    }
+
+    function epodpPilihFile(input) {
+      const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+      const warn = document.getElementById('epodp-heic-warn');
+      if (input.files.length && !allowed.includes(input.files[0].type)) {
+        warn.innerHTML = esc`⚠️ Format <b>${input.files[0].name}</b> tidak didukung. Gunakan JPG/PNG (misal ubah dari HEIC/iOS).`;
+        warn.style.display = 'block';
+        input.value = '';
+        document.getElementById('epodp-file-info').style.display = 'none';
+        const btn = document.getElementById('epodp-lanjut');
+        btn.disabled = true; btn.style.opacity = '.45';
+        return;
+      }
+      if (warn) warn.style.display = 'none';
+      if (!epodpState || !input.files.length) return;
+      epodpState.files[EPODP_STEPS[epodpState.cur]] = input.files[0];
+      epodpRender();
+    }
+
+    function epodpLanjut() {
+      if (!epodpState) return;
+      const step = EPODP_STEPS[epodpState.cur];
+      if (!epodpState.files[step]) { toast('Pilih foto eviden terlebih dahulu.', 'wrn'); return; }
+      if (epodpState.cur >= 2) { epodpSimpan(); return; }
+      epodpState.cur++;
+      epodpRender();
+    }
+
+    async function epodpSimpan() {
+      const btn = document.getElementById('epodp-lanjut');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size: 9px;"></i> Mengupload…';
+      try {
+        const katNow = document.getElementById('sel-kategori').value;
+        const cfg = LABEL_STEPWIZARD[katNow] || LABEL_STEPWIZARD[KATEGORI_EPODP];
+
+        // CUT OVER: simpan dulu nama + jenis closure
+        if (katNow === KATEGORI_CUTOVER) {
+          const jenis = (epodpState.jenis || '').trim();
+          if (!jenis) {
+            toast('Pilih jenis closure (24/48/96/dll) terlebih dahulu.', 'wrn');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-floppy-disk" style="font-size: 9px;"></i> Simpan';
+            return;
+          }
+          const cRes = await fetch('/api/eco/closure', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ lokasi_id: selLokasiId, nama: epodpState.nama, jenis }),
+          });
+          if (!cRes.ok) {
+            const ce = await cRes.json().catch(() => ({}));
+            throw new Error(ce.message || 'Gagal menyimpan jenis closure');
+          }
+        }
+
+        const fd = new FormData();
+        fd.append('lokasi_id', selLokasiId);
+        fd.append('kategori', katNow);
+        fd.append('sub_kategori', epodpState.nama);
+        fd.append('steps', JSON.stringify(EPODP_STEPS));
+        EPODP_STEPS.forEach(s => fd.append('files', epodpState.files[s]));
+
+        const res = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          throw new Error((e.message || 'Gagal upload') + (e.detail ? ' — ' + e.detail : ''));
+        }
+        const nama = epodpState.nama;
+        toast(`${cfg.singkat} ${nama} selesai (SEBELUM · PROGRES · SESUDAH) — silakan input berikutnya.`, 'ok', 5000);
+        epodpState = null;
+        await muatInfoEpodp();
+        resetEpodpWizard();
+        const boxDin = document.getElementById('box-dinamis');
+        boxDin.classList.add('show');
+        const inp = document.getElementById('input-sub');
+        inp.value = ''; inp.required = true; inp.focus();
+        opmTokohVisible(false);
+      } catch (err) {
+        toast('Gagal upload ODP: ' + err.message, 'err');
+        btn.disabled = false;
+        btn.innerHTML = 'Simpan ODP';
+      }
+    }
+
+    /* ═══════════════════════════════════════════════
+       ON KATEGORI CHANGE
+    ═══════════════════════════════════════════════ */
+    function onInputSub(inp) {
+      // Cegah karakter yang tidak boleh ada di nama file (\ / : * ? " < > |)
+      // supaya tidak menyebabkan error "unable to open for write" di server.
+      const bersih = inp.value.replace(/[\\/:*?"<>|]+/g, '-');
+      if (bersih !== inp.value) inp.value = bersih;
+      const kat = document.getElementById('sel-kategori').value;
+      if (inp.value && KATEGORI_PORTWIZARD.includes(kat)) {
+        muatInfoOpm().then(opmBukaWizard);
+      } else {
+        opmBukaWizard();
+      }
+      if (inp.value && KATEGORI_STEPWIZARD.includes(kat)) {
+        muatInfoEpodp().then(epodpBukaWizard);
+      } else {
+        epodpBukaWizard();
+      }
+      updPills();
+    }
+
+    function onManualKat(inp) {
+      // Cegah karakter yang tidak boleh ada di nama folder/file (\ / : * ? " < > |)
+      const bersih = inp.value.replace(/[\\/:*?"<>|]+/g, '-');
+      if (bersih !== inp.value) inp.value = bersih;
+      updPills();
+    }
+
+    function onKategori(val) {
+      resetDin(); resetManual(); resetFiles();
+      const box=document.getElementById('box-dinamis'), lbl=document.getElementById('lbl-din'), inp=document.getElementById('input-sub');
+      const boxManual=document.getElementById('box-manual'), inpManual=document.getElementById('input-manual-kat');
+      const boxVol=document.getElementById('box-vol'), inpVol=document.getElementById('input-vol');
+      const boxTeks=document.getElementById('box-teks');
+      const fotoSection=document.getElementById('foto-section'), btnTxt=document.getElementById('btn-txt');
+      boxVol.style.display='none'; inpVol.value='';
+      if (boxTeks) boxTeks.style.display='none';
+      document.getElementById('box-boq').style.display='none';
+      document.getElementById('box-barang-tiba').style.display='none';
+
+      // Kategori INPUT SAMBUNGAN CO: tampilkan form sambungan, sembunyikan alur upload foto.
+      if (val === KATEGORI_SAMBCO) {
+        inpManual.required = false; boxManual.classList.remove('show');
+        inp.required = false; box.classList.remove('show');
+        opmBukaWizard(); epodpBukaWizard();
+        cekValidasi(); updPills();
+        if (selLokasiObj) bukaCardBAco(selLokasiObj);
+        else toast('Pilih lokasi dulu.','wrn');
+        return;
+      }
+      tutupCardBAco();
+
+      // BOQ AKTUAL: paste Excel ala RAB (tanpa upload foto).
+      if (val === KATEGORI_BOQ) {
+        inp.required = false; box.classList.remove('show');
+        inpManual.required = false; boxManual.classList.remove('show');
+        resetOpmWizard(); resetEpodpWizard(false);
+        fotoSection.style.display = 'none';
+        document.getElementById('btn-upload').style.display = 'none';
+        document.getElementById('box-boq').style.display = 'block';
+        muatListBoq();
+        cekValidasi(); updPills();
+        return;
+      }
+
+      // INPUT REKAP OPM dipindahkan ke halaman Audit Kelengkapan Berkas (admin) —
+      // tidak lagi tersedia sebagai kategori input di halaman ini.
+
+      // BOQ BARANG TIBA (Node B): tabel baris (jenis material/satuan/volume/keterangan), tanpa upload foto.
+      if (val === KATEGORI_BT) {
+        inp.required = false; box.classList.remove('show');
+        inpManual.required = false; boxManual.classList.remove('show');
+        resetOpmWizard(); resetEpodpWizard(false);
+        fotoSection.style.display = 'none';
+        document.getElementById('btn-upload').style.display = 'none';
+        document.getElementById('box-barang-tiba').style.display = 'block';
+        muatListBt();
+        cekValidasi(); updPills();
+        return;
+      }
+      fotoSection.style.display = '';
+      document.getElementById('btn-upload').style.display = '';
+      btnTxt.textContent = 'Kirim Eviden';
+
+      if (val === '__MANUAL__') {
+        inpManual.required = true;
+        boxManual.classList.add('show');
+        setTimeout(()=>inpManual.focus(),300);
+      } else {
+        inpManual.required = false;
+        boxManual.classList.remove('show');
+
+        const cfg = DIN_SKBUNYI.includes(val) ? undefined : DIN_CFG[val];
+        if (cfg) {
+          lbl.textContent=cfg.label; inp.placeholder=cfg.ph; inp.required=true;
+          box.classList.add('show'); setTimeout(()=>inp.focus(),300);
+        } else { inp.required=false; box.classList.remove('show'); }
+      }
+
+      // EVIDEN BON MATERIAL: tambah input volume material (kecuali Node B / HEM / MICRODEMAND).
+      if (val === KATEGORI_BONMAT && !(selLokasiObj && BONMAT_TANPA_VOLUME.includes(selLokasiObj.tematik))) boxVol.style.display = 'block';
+
+      // INPUT RFC / BON MATERIAL: tampilkan data yang sudah tersimpan supaya bisa
+      // diedit & disimpan ulang (sebelumnya daftar ini tidak pernah dimuat).
+      if (boxTeks && (val === KATEGORI_RFC || val === KATEGORI_BONMAT)) {
+        boxTeks.style.display = 'block';
+        muatListTeks(val);
+      }
+
+      // Sesuaikan filter file picker sesuai kategori.
+      const inpFiles=document.getElementById('inp-files');
+      if (val === KATEGORI_ABD) {
+        inpFiles.accept='.pdf,.dwg,.dxf,.jpg,.jpeg,.png,.webp';
+      } else if (val === KATEGORI_RFC) {
+        inpFiles.accept='.pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp';
+      } else if (val === KATEGORI_PETA || val === KATEGORI_KML) {
+        inpFiles.accept='.kml,.kmz';
+      } else if (val === KATEGORI_OPMFORM) {
+        inpFiles.accept='image/*,.jpg,.jpeg,.png,.webp';
+      } else if (val === KATEGORI_SOR) {
+        inpFiles.accept='.sor';
+      } else if (val === KATEGORI_EOTDR) {
+        // EVIDEN OTDR (HEM/MICRODEMAND/Node B): .sor disimpan apa adanya; gambar juga boleh.
+        inpFiles.accept='.sor,image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp';
+      } else {
+        inpFiles.accept='image/*,application/pdf,.kml,.kmz';
+      }
+
+      if (KATEGORI_PORTWIZARD.includes(val)) muatInfoOpm().then(opmBukaWizard);
+      else opmBukaWizard();
+      if (KATEGORI_STEPWIZARD.includes(val)) muatInfoEpodp().then(epodpBukaWizard);
+      else epodpBukaWizard();
+      cekValidasi(); updPills();
+    }
+
+    function onInputVol() { updPills(); }
+    function onInputTeks() { updPills(); }
+
+    /* ═══════════════════════════════════════════════
+       LIST INPUT TEKS (BOQ AKTUAL / INPUT RFC)
+    ═══════════════════════════════════════════════ */
+    /* ── Data tersimpan (INPUT RFC / BON MATERIAL): daftar + edit/hapus ── */
+    let ikRowsTeks = [];
+    let ikAktif    = null;
+
+    async function muatListTeks(kategori) {
+      const listEl = document.getElementById('teks-list');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+      ikRowsTeks = [];
+      if (!selLokasiId) return;
+      try {
+        const res = await fetch(`/api/input-khusus/${selLokasiId}/${encodeURIComponent(kategori)}`);
+        if (!res.ok) return;
+        const rows = await res.json();
+        ikRowsTeks = rows.slice();
+        if (!rows.length) {
+          listEl.innerHTML = '<div style="font-size: 9px;color:#94a3b8;font-style:italic;padding:4px 2px;">Belum ada data tersimpan.</div>';
+          return;
+        }
+        rows.forEach((r, i) => {
+          const card = document.createElement('div');
+          card.style.cssText = 'border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;padding:9px 12px;display:flex;gap:10px;align-items:flex-start;';
+          const vol = r.volume ? ` · <b>${window.escapeHtml(r.volume)}</b>` : '';
+          const isi = r.isi ? `<div style="font-size: 9px;color:#64748b;white-space:pre-wrap;word-break:break-word;margin-top:2px;max-height:90px;overflow:auto;">${window.escapeHtml(r.isi)}</div>` : '';
+          const stempel = r.updated_at ? `diubah ${r.updated_at}` : (r.created_at || '');
+          card.innerHTML = esc`
+            <i class="fa-solid fa-file-lines" style="color:#d32f2f;margin-top:2px;font-size: 10px;"></i>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size: 9px;font-weight: 600;color:#b91c1c;">${r.judul||kategori}${raw(vol)}</div>
+              ${raw(isi)}
+              <div style="font-size: 8px;color:#94a3b8;margin-top:3px;font-family:'JetBrains Mono',monospace;">${stempel}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+              <button type="button" onclick="ikEditBuka(${i})" title="Edit & simpan ulang"
+                style="background:#fff;border:1px solid #c7d2fe;color:#4f46e5;border-radius:8px;padding:4px 8px;font-size: 8px;font-weight: 600;cursor:pointer;">
+                <i class="fa-solid fa-pen"></i> Edit
+              </button>
+              <button type="button" onclick="hapusInputKhusus(${r.id},'${raw(window.escapeHtml(kategori))}')" title="Hapus"
+                style="background:#fff;border:1px solid #fecdd3;color:#be123c;border-radius:8px;padding:4px 8px;font-size: 8px;font-weight: 600;cursor:pointer;">
+                <i class="fa-solid fa-trash-can"></i> Hapus
+              </button>
+            </div>`;
+          listEl.appendChild(card);
+        });
+      } catch { /* diam */ }
+    }
+
+    /* ── Modal edit data input khusus ── */
+    function ikEditBuka(i) {
+      const r = ikRowsTeks[i];
+      if (!r) return;
+      ikAktif = r;
+      const set = (id, v) => { const e = document.getElementById(id); if (e) e.value = v || ''; };
+      set('ik-judul',  r.judul);
+      set('ik-volume', r.volume);
+      set('ik-isi',    r.isi);
+      // Sembunyikan kolom yang tidak berlaku untuk baris ini
+      const volWrap = document.getElementById('ik-vol-wrap');
+      const isiWrap = document.getElementById('ik-isi-wrap');
+      if (volWrap) volWrap.style.display = (r.volume || r.kategori === 'EVIDEN BON MATERIAL') ? '' : 'none';
+      if (isiWrap) isiWrap.style.display = (r.isi    || r.kategori === 'INPUT RFC')          ? '' : 'none';
+      const sub = document.getElementById('ik-sub');
+      if (sub) sub.textContent = `${r.kategori || ''} · ID ${r.id}${r.created_at ? ' · dibuat ' + r.created_at : ''}`;
+      const m = document.getElementById('ik-modal');
+      if (m) m.style.display = 'flex';
+      setTimeout(() => { const e = document.getElementById('ik-judul'); if (e) e.focus(); }, 120);
+    }
+
+    function ikTutup() {
+      const m = document.getElementById('ik-modal');
+      if (m) m.style.display = 'none';
+      ikAktif = null;
+    }
+
+    async function ikSimpan() {
+      if (!ikAktif) return;
+      const btn  = document.getElementById('ik-btn');
+      const asli = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+      btn.disabled = true;
+      try {
+        const ambil = id => { const e = document.getElementById(id); return e ? e.value.trim() : ''; };
+        const res = await fetch(`/api/input-khusus/${ikAktif.id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ judul: ambil('ik-judul'), volume: ambil('ik-volume'), isi: ambil('ik-isi') })
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok || !j.success) { toast(j.message || 'Gagal menyimpan perubahan.','err'); return; }
+        toast('Perubahan tersimpan.','ok');
+        ikTutup();
+        const kat = document.getElementById('sel-kategori').value;
+        if (kat) muatListTeks(kat);
+      } catch { toast('Kendala koneksi ke server.','err'); }
+      finally { btn.innerHTML = asli; btn.disabled = false; }
+    }
+
+    async function hapusInputKhusus(id, kategori) {
+      if (!confirm('Hapus data ini?')) return;
+      try {
+        const res = await fetch(`/api/input-khusus/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          toast('Data dihapus.','ok');
+          muatListTeks(kategori);
+        }
+      } catch { toast('Gagal menghapus.','err'); }
+    }
+
+    /* ═══════════════════════════════════════════════
+       BOQ AKTUAL (paste Excel ala RAB)
+    ═══════════════════════════════════════════════ */
+    let boqRows = [];
+
+    async function muatListBoq() {
+      boqRows = [];
+      if (!selLokasiId) { boqRenderBoq(); return; }
+      try {
+        const res = await fetch(`/api/boq/${selLokasiId}`);
+        if (!res.ok) { boqRenderBoq(); return; }
+        const rows = await res.json();
+        boqRows = rows.map(r => ({ id: r.id, designator: r.designator||'', uraian: r.uraian||'', satuan: r.satuan||'', material: Number(r.material)||0, jasa: Number(r.jasa)||0, volume: Number(r.volume)||0 }));
+        boqRenderBoq();
+      } catch { boqRenderBoq(); }
+    }
+
+    function parseBoqPaste(text) {
+      const result = [];
+      text.split('\n').forEach(line => {
+        const cols = line.split('\t');
+        const des = (cols[0] || '').trim();
+        if (!des || /^(designator|no|#)$/i.test(des)) return;
+        const num = s => parseFloat(String(s||'0').replace(/[^\d.,-]/g,'').replace(/\./g,'').replace(',','.')) || 0;
+        result.push({
+          designator: des,
+          uraian: (cols[1] || '').trim(),
+          satuan: (cols[2] || '').trim(),
+          material: num(cols[3]),
+          jasa: num(cols[4]),
+          volume: num(cols[5]),
+        });
+      });
+      return result;
+    }
+
+    function boqProsesPaste() {
+      const t = document.getElementById('input-boq-paste').value;
+      if (!t.trim()) { toast('Paste data dari Excel terlebih dahulu.','wrn'); return; }
+      const baru = parseBoqPaste(t);
+      if (!baru.length) {
+        toast('Tidak ada baris terbaca. Format: designator [Tab] uraian [Tab] satuan [Tab] material [Tab] jasa [Tab] volume(TOTAL).','wrn',5000);
+        return;
+      }
+      boqRows = [...boqRows, ...baru];
+      document.getElementById('input-boq-paste').value = '';
+      boqRenderBoq();
+      toast(`${baru.length} baris BOQ ditambahkan.`, 'ok', 3000);
+    }
+
+    function boqHapusBaris(i) {
+      boqRows.splice(i, 1);
+      boqRenderBoq();
+    }
+
+    function boqRenderBoq() {
+      const el = document.getElementById('boq-preview');
+      if (!boqRows.length) {
+        el.innerHTML = '<div style="font-size: 9px;color:#94a3b8;font-style:italic;">Belum ada baris BOQ tersimpan. Paste dari Excel lalu tekan Parsing Data.</div>';
+        return;
+      }
+      let html = `<div style="font-size: 8px;font-weight: 600;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">${boqRows.length} baris BOQ — periksa lalu Simpan</div>`;
+      html += `<div style="max-height:190px;overflow:auto;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;">`;
+      boqRows.forEach((r, i) => {
+        html += `<div style="display:flex;gap:8px;align-items:center;padding:7px 10px;border-bottom:1px solid #f1f5f9;">
+          <span style="font-family:'JetBrains Mono',monospace;font-size: 8px;font-weight: 600;color:#d32f2f;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escS(r.designator)}</span>
+          <span style="font-size: 8px;color:#64748b;flex:2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escS(r.uraian||'-')}</span>
+          <span style="font-size: 8px;color:#94a3b8;">${escS(r.satuan||'-')}</span>
+          <button type="button" onclick="boqHapusBaris(${i})" title="Hapus baris" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size: 9px;">✕</button>
+        </div>`;
+      });
+      html += '</div>';
+      const totM = boqRows.reduce((s,r)=>s+Number(r.material||0),0);
+      const totJ = boqRows.reduce((s,r)=>s+Number(r.jasa||0),0);
+      html += `<div style="font-size: 9px;color:#475569;margin-top:8px;font-weight: 500;">Total Material: <span style="color:#047857;">${totM.toLocaleString('id-ID')}</span> · Jasa: <span style="color:#b45309;">${totJ.toLocaleString('id-ID')}</span></div>`;
+      html += `<button type="button" id="boq-simpan" onclick="simpanBoq()" style="margin-top:10px;width:100%;background:linear-gradient(135deg,#e53935,#d32f2f);color:#fff;border:none;border-radius:12px;padding:12px;font-size: 10px;font-weight: 600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;box-shadow:0 6px 16px rgba(211,47,47,.3);"><i class="fa-solid fa-floppy-disk" style="font-size: 9px;"></i> Simpan BOQ Aktual</button>`;
+      el.innerHTML = html;
+    }
+
+    async function simpanBoq() {
+      if (!boqRows.length) { toast('Belum ada baris BOQ untuk disimpan.','wrn'); return; }
+      const btn = document.getElementById('boq-simpan');
+      if (!btn) return;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size: 9px;"></i> Menyimpan…';
+      try {
+        const res = await fetch(`/api/boq/${selLokasiId}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ items: boqRows.map(({ id, ...r }) => r) })
+        });
+        if (res.ok) {
+          toast('BOQ Aktual tersimpan!', 'ok', 4000);
+          await muatListBoq();
+          cekValidasi(); updPills();
+        } else {
+          const j = await res.json().catch(()=>({}));
+          toast(j.message || 'Gagal menyimpan BOQ.', 'err');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-floppy-disk" style="font-size: 9px;"></i> Simpan BOQ Aktual';
+        }
+      } catch {
+        toast('Kendala koneksi ke server.','err');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk" style="font-size: 9px;"></i> Simpan BOQ Aktual';
+      }
+    }
+
+    /* ═══════════════════════════════════════════════
+       BOQ BARANG TIBA (khusus TEMATIK Node B / LACT)
+    ═══════════════════════════════════════════════ */
+    let btRows = [];
+
+    async function muatListBt() {
+      btRows = [];
+      if (!selLokasiId) { btRender(); return; }
+      try {
+        const res = await fetch(`/api/barang-tiba/${selLokasiId}`);
+        if (!res.ok) { btRender(); return; }
+        const rows = await res.json();
+        btRows = rows.map(r => ({ id: r.id, no: r.no, jenis_material: r.jenis_material||'', satuan: r.satuan||'', volume: r.volume||'', keterangan: r.keterangan||'' }));
+        btRender();
+      } catch { btRender(); }
+    }
+
+    function parseBtPaste(text) {
+      const result = [];
+      text.split('\n').forEach(line => {
+        const cols = line.split('\t');
+        const jenis = (cols[0] || '').trim();
+        if (!jenis) return;
+        if (/^(jenis\s*material|jenis|no|#)$/i.test(jenis)) return;
+        result.push({
+          jenis_material: jenis,
+          satuan: (cols[1] || '').trim(),
+          volume: (cols[2] || '').trim(),
+          keterangan: (cols[3] || '').trim(),
+        });
+      });
+      return result;
+    }
+
+    function btProsesPaste() {
+      const t = document.getElementById('input-bt-paste').value;
+      if (!t.trim()) { toast('Paste data dari Excel terlebih dahulu.','wrn'); return; }
+      const baru = parseBtPaste(t);
+      if (!baru.length) {
+        toast('Tidak ada baris terbaca. Format: jenis material [Tab] satuan [Tab] volume [Tab] keterangan.','wrn',5000);
+        return;
+      }
+      btRows = [...btRows, ...baru];
+      document.getElementById('input-bt-paste').value = '';
+      btRender();
+      toast(`${baru.length} baris Barang Tiba ditambahkan. Jangan lupa Simpan.`, 'ok', 3000);
+    }
+
+    function btHapusBaris(i) {
+      btRows.splice(i, 1);
+      btRender();
+    }
+
+    function btRender() {
+      const el = document.getElementById('bt-preview');
+      if (!el) return;
+      if (!btRows.length) {
+        el.innerHTML = '<div style="font-size: 9px;color:#94a3b8;font-style:italic;">Belum ada baris Barang Tiba tersimpan. Paste dari Excel lalu tekan Parsing Data.</div>';
+        updPills();
+        return;
+      }
+      let html = `<div style="font-size: 8px;font-weight: 600;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">${btRows.length} baris barang tiba — periksa lalu Simpan</div>`;
+      html += `<div style="max-height:190px;overflow:auto;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;">`;
+      btRows.forEach((r, i) => {
+        html += `<div style="display:flex;gap:8px;align-items:center;padding:7px 10px;border-bottom:1px solid #f1f5f9;">
+          <span style="font-family:'JetBrains Mono',monospace;font-size: 8px;font-weight: 600;color:#6d28d9;flex:0 0 auto;">${escS(r.no != null ? r.no : (i+1))}.</span>
+          <span style="font-size: 9px;font-weight: 500;color:#1e293b;flex:2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escS(r.jenis_material)}</span>
+          <span style="font-size: 8px;color:#94a3b8;">${escS(r.satuan||'-')}</span>
+          <span style="font-size: 8px;font-weight: 600;color:#475569;">${escS(r.volume||'-')}</span>
+          <span style="font-size: 8px;color:#64748b;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escS(r.keterangan||'-')}</span>
+          <button type="button" onclick="btHapusBaris(${i})" title="Hapus baris" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size: 9px;">✕</button>
+        </div>`;
+      });
+      html += '</div>';
+      html += `<button type="button" id="bt-simpan" onclick="simpanBt()" style="margin-top:10px;width:100%;background:linear-gradient(135deg,#6d28d9,#5b21b6);color:#fff;border:none;border-radius:12px;padding:12px;font-size: 10px;font-weight: 600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;box-shadow:0 6px 16px rgba(109,40,217,.3);"><i class="fa-solid fa-floppy-disk" style="font-size: 9px;"></i> Simpan BOQ Barang Tiba</button>`;
+      el.innerHTML = html;
+      updPills();
+    }
+
+    async function simpanBt() {
+      if (!btRows.length) { toast('Belum ada baris untuk disimpan.','wrn'); return; }
+      const btn = document.getElementById('bt-simpan');
+      if (!btn) return;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size: 9px;"></i> Menyimpan…';
+      try {
+        const res = await fetch(`/api/barang-tiba/${selLokasiId}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ items: btRows.map(({ id, no, ...r }) => r) })
+        });
+        if (res.ok) {
+          toast('BOQ Barang Tiba tersimpan!', 'ok', 4000);
+          await muatListBt();
+          await loadKategori(selLokasiId);
+          cekValidasi(); updPills();
+        } else {
+          const j = await res.json().catch(()=>({}));
+          toast(j.message || 'Gagal menyimpan.', 'err');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-floppy-disk" style="font-size: 9px;"></i> Simpan BOQ Barang Tiba';
+        }
+      } catch {
+        toast('Kendala koneksi ke server.','err');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk" style="font-size: 9px;"></i> Simpan BOQ Barang Tiba';
+      }
+    }
+
+    /* ═══════════════════════════════════════════════
+       FILE HANDLING
+    ═══════════════════════════════════════════════ */
+    function onFiles(inp) {
+      const badge=document.getElementById('file-badge'), n=inp.files.length;
+      if (n>0) {
+        badge.style.display='block';
+        document.getElementById('fbadge-n').textContent=`${n} foto`;
+        const names=Array.from(inp.files).slice(0,5).map(f=>`<span style="opacity:.65">·</span> ${f.name}`).join('<br>');
+        const more=n>5?`<br><span style="opacity:.5">+${n-5} foto lainnya</span>`:'';
+        document.getElementById('fbadge-names').innerHTML=names+more;
+      } else { badge.style.display='none'; }
+      cekValidasi(); updPills();
+    }
+    function cekValidasi() {
+      const kat=document.getElementById('sel-kategori').value, n=document.getElementById('inp-files').files.length;
+      const el=document.getElementById('validasi-foto'), btn=document.getElementById('btn-upload');
+
+      // Kategori teks (BOQ/RFC): tidak butuh foto.
+      if (KATEGORI_TEKS.includes(kat)) {
+        el.classList.remove('show'); btn.disabled=false;
+        return;
+      }
+      // BOQ Aktual: tidak butuh foto (disimpan lewat box BOQ).
+      if (kat === KATEGORI_BOQ) {
+        el.classList.remove('show'); btn.disabled=false;
+        return;
+      }
+      // BOQ Barang Tiba: tidak butuh file (disimpan lewat box Barang Tiba).
+      if (kat === KATEGORI_BT) {
+        el.classList.remove('show'); btn.disabled=false;
+        return;
+      }
+      // Form Pengukuran OPM: wajib gambar saja.
+      if (kat === KATEGORI_OPMFORM) {
+        const files = document.getElementById('inp-files').files;
+        const okAll = files.length > 0 && Array.from(files).every(f => /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(f.name));
+        if (!okAll) {
+          document.getElementById('validasi-txt').textContent='Kategori Form Pengukuran OPM: pilih berkas gambar (.jpg/.png). Ubah file Excel/PDF jadi screenshot/foto dulu.';
+          el.classList.add('show'); btn.disabled=true;
+          return;
+        }
+        el.classList.remove('show'); btn.disabled=false;
+        return;
+      }
+      // OTDR (.SOR): wajib file .sor — boleh lebih dari 1 file (multi loop).
+      if (kat === KATEGORI_SOR) {
+        const files = document.getElementById('inp-files').files;
+        const okAll = files.length > 0 && Array.from(files).every(f => /\.sor$/i.test(f.name));
+        if (!okAll) {
+          document.getElementById('validasi-txt').textContent='Kategori OTDR (.SOR): pilih minimal 1 file berekstensi .sor (boleh pilih banyak sekaligus).';
+          el.classList.add('show'); btn.disabled=true;
+          return;
+        }
+        el.classList.remove('show'); btn.disabled=false;
+        return;
+      }
+      // EVIDEN OTDR (HEM/MICRODEMAND/Node B): .sor disimpan apa adanya — atau gambar.
+      if (kat === KATEGORI_EOTDR) {
+        const files = document.getElementById('inp-files').files;
+        const okAll = files.length > 0 && Array.from(files).every(f => /\.(sor|jpg|jpeg|png|webp|gif|bmp)$/i.test(f.name));
+        if (!okAll) {
+          document.getElementById('validasi-txt').textContent='Kategori EVIDEN OTDR: pilih minimal 1 file .sor atau gambar (.jpg/.png) — file .sor disimpan apa adanya, tidak dikonversi.';
+          el.classList.add('show'); btn.disabled=true;
+          return;
+        }
+        el.classList.remove('show'); btn.disabled=false;
+        return;
+      }
+      if (kat === KATEGORI_PETA || kat === KATEGORI_KML) {
+        const f = document.getElementById('inp-files').files[0];
+        const okExt = f && /\.(kml|kmz)$/i.test(f.name);
+        if (!okExt) {
+          document.getElementById('validasi-txt').textContent='Kategori ini: pilih tepat 1 file .kml atau .kmz.';
+          el.classList.add('show'); btn.disabled=true;
+          return;
+        }
+        el.classList.remove('show'); btn.disabled=false;
+        return;
+      }
+      if (kat === KATEGORI_ABD) {
+        const files = document.getElementById('inp-files').files;
+        const okAll = files.length > 0 && Array.from(files).every(f => /\.(pdf|dwg|dxf|jpg|jpeg|png|webp)$/i.test(f.name));
+        if (!okAll) {
+          document.getElementById('validasi-txt').textContent='Kategori ABD: pilih minimal 1 file .pdf, .dwg, atau .dxf.';
+          el.classList.add('show'); btn.disabled=true;
+          return;
+        }
+        el.classList.remove('show'); btn.disabled=false;
+        return;
+      }
+      const wajib=RULES_FOTO[kat];
+      if (wajib&&n>0&&n!==wajib) {
+        document.getElementById('validasi-txt').textContent=`Kategori ini wajib tepat ${wajib} foto. Terpilih: ${n}.`;
+        el.classList.add('show'); btn.disabled=true;
+      } else { el.classList.remove('show'); btn.disabled=false; }
+    }
+    /* ═══════════════════════════════════════════════
+       DRAG & DROP + PASTE DARI TELEGRAM / WHATSAPP
+       File hanya MASUK DAFTAR pilihan — belum terkirim,
+       tetap klik "Kirim Eviden" seperti memilih file biasa.
+    ═══════════════════════════════════════════════ */
+    function fotoSectionSiap(){
+      const s=document.getElementById('foto-section');
+      return !s || s.style.display !== 'none';
+    }
+    // Gabungkan file baru ke pilihan yang sudah ada (tidak menimpa)
+    function tambahKeInputFiles(list){
+      const inp=document.getElementById('inp-files');
+      if(!inp || !list || !list.length) return 0;
+      let dt;
+      try { dt=new DataTransfer(); } catch(e){ inp.files=list; onFiles(inp); return list.length; }
+      for(let i=0;i<inp.files.length;i++) dt.items.add(inp.files[i]);
+      list.forEach(f=>dt.items.add(f));
+      inp.files=dt.files;
+      onFiles(inp);
+      return list.length;
+    }
+    // Telegram/WA terkadang hanya menyeret URL gambar, bukan file-nya
+    function urlDariDataTransfer(dt){
+      try{
+        const uri=(dt.getData('text/uri-list')||'').split(/\r?\n/).map(s=>s.trim())
+                  .find(s=>/^https?:\/\//i.test(s));
+        if(uri) return uri;
+        const html=dt.getData('text/html')||'';
+        const m=html.match(/<img[^>]+src=["']([^"']+)["']/i);
+        return (m && /^https?:\/\//i.test(m[1])) ? m[1] : '';
+      }catch(e){ return ''; }
+    }
+    async function fileDariUrl(url,fallback){
+      try{
+        const r=await fetch(url);
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const blob=await r.blob();
+        if(!blob.size) throw new Error('kosong');
+        const nama=decodeURIComponent((url.split('?')[0].split('/').pop())||fallback);
+        return new File([blob], nama, {type:blob.type||'image/jpeg'});
+      }catch(e){ return null; }
+    }
+    function onDragOver(e){e.preventDefault();document.getElementById('drop').classList.add('over');}
+    function onDragLeave(){document.getElementById('drop').classList.remove('over');}
+    async function onDrop(e){
+      e.preventDefault(); document.getElementById('drop').classList.remove('over');
+      const dt=e.dataTransfer;
+      const files=Array.from((dt&&dt.files)||[]);
+      if(files.length){
+        const n=tambahKeInputFiles(files);
+        toast(`${n} file ditambahkan — periksa lalu klik "Kirim Eviden".`,'ok');
+        return;
+      }
+      const url=dt?urlDariDataTransfer(dt):'';
+      if(url){
+        toast('Mengambil file dari hasil drag…','ok');
+        const f=await fileDariUrl(url,'eviden.jpg');
+        if(f){ tambahKeInputFiles([f]); toast('1 file ditambahkan — klik "Kirim Eviden".','ok'); }
+        else toast('File dari situs lain tidak bisa diambil (dilindungi situs). Cara aman: buka gambarnya → klik kanan → Copy image, lalu tekan Ctrl+V di halaman ini.','wrn',7000);
+      } else {
+        toast('Tidak ada file terbaca dari hasil drag. Jika dari Telegram/WA: klik kanan gambar → Copy, lalu tekan Ctrl+V.','wrn',7000);
+      }
+    }
+    // PASTE (Ctrl+V) — ambil gambar/file langsung dari clipboard Telegram/WA
+    window.addEventListener('paste', async function(e){
+      const t=e.target, tag=(t&&t.tagName)||'';
+      // Sedang mengetik di kolom teks → biarkan tempel teks berjalan normal
+      const mengetik = t && (tag==='TEXTAREA' || (tag==='INPUT' && t.type!=='file') || t.isContentEditable);
+      if(mengetik || !fotoSectionSiap()) return;
+      const cd=e.clipboardData; if(!cd) return;
+      const files=Array.from(cd.files||[]);
+      if(!files.length && cd.items){
+        Array.from(cd.items).forEach(it=>{ if(it.kind==='file'){ const f=it.getAsFile(); if(f) files.push(f); } });
+      }
+      if(files.length){
+        e.preventDefault();
+        const n=tambahKeInputFiles(files);
+        toast(`${n} file dari clipboard ditambahkan — periksa lalu klik "Kirim Eviden".`,'ok');
+        return;
+      }
+      // Fallback: yang tersalin hanya <img src="https://…">
+      let url=''; try { url=urlDariDataTransfer(cd); } catch(err){}
+      if(url){
+        e.preventDefault();
+        toast('Mengambil gambar dari clipboard…','ok');
+        const f=await fileDariUrl(url,'tempel.jpg');
+        if(f){ tambahKeInputFiles([f]); toast('1 file dari clipboard ditambahkan — klik "Kirim Eviden".','ok'); }
+        else toast('Gambar tidak bisa diambil dari link (dilindungi situs). Paling aman: klik kanan gambar di Telegram/WA → Copy image, lalu Ctrl+V.','wrn',7000);
+      }
+    });
+
+    /* ═══════════════════════════════════════════════
+       RESETS
+    ═══════════════════════════════════════════════ */
+    function resetKategori(){
+      const sel=document.getElementById('sel-kategori'),stat=document.getElementById('status-kategori');
+      sel.innerHTML='<option value="">— Pilih lokasi terlebih dahulu —</option>'; sel.disabled=true;
+      stat.style.cssText=''; stat.innerHTML=''; stat.classList.remove('show');
+      resetManual();
+      // Sembunyikan form khusus & kembalikan area foto
+      const boxBoq=document.getElementById('box-boq'); if (boxBoq) boxBoq.style.display='none';
+      const boxBt=document.getElementById('box-barang-tiba'); if (boxBt) boxBt.style.display='none';
+      const boxVol=document.getElementById('box-vol'); if (boxVol) boxVol.style.display='none';
+      const boxTeks=document.getElementById('box-teks'); if (boxTeks) boxTeks.style.display='none';
+      const fotoSection=document.getElementById('foto-section');
+      if (fotoSection) fotoSection.style.display='';
+      const btnUpload=document.getElementById('btn-upload');
+      if (btnUpload) btnUpload.style.display='';
+      const btnTxt=document.getElementById('btn-txt');
+      if (btnTxt) btnTxt.textContent='Kirim Eviden';
+    }
+    function resetDin(){
+      document.getElementById('box-dinamis').classList.remove('show');
+      document.getElementById('input-sub').value=''; document.getElementById('input-sub').required=false;
+    }
+    function resetManual(){
+      document.getElementById('box-manual').classList.remove('show');
+      document.getElementById('input-manual-kat').value=''; document.getElementById('input-manual-kat').required=false;
+    }
+    function resetFiles(){
+      document.getElementById('inp-files').value='';
+      document.getElementById('file-badge').style.display='none';
+      document.getElementById('validasi-foto').classList.remove('show');
+      document.getElementById('btn-upload').disabled=false;
+    }
+
+    /* ═══════════════════════════════════════════════
+       SUBMIT
+    ═══════════════════════════════════════════════ */
+    document.getElementById('form').onsubmit = async (e) => {
+      e.preventDefault();
+      const lokasi=selLokasiId, kategoriPilihan=document.getElementById('sel-kategori').value;
+      const subVal=document.getElementById('input-sub').value.trim();
+      const manualVal=document.getElementById('input-manual-kat').value.trim();
+      const files=document.getElementById('inp-files').files;
+      if (!lokasi)            { toast('Pilih lokasi kerja terlebih dahulu.','wrn'); return; }
+      if (!kategoriPilihan)   { toast('Pilih kategori berkas terlebih dahulu.','wrn'); return; }
+
+      // OPM & REDAMAN: alur pengisian lewat wizard port (8/16) — jangan lewat form umum ini.
+      if (KATEGORI_PORTWIZARD.includes(kategoriPilihan)) {
+        toast('Gunakan tombol Kapasitas Port & tombol "Kirim Port Ini" di wizard untuk kategori ini.', 'wrn');
+        return;
+      }
+
+      // EPODP, CUT OVER & INSTALASI ODP/OTB: wajib lewat wizard SEBELUM → PROGRES → SESUDAH.
+      if (KATEGORI_STEPWIZARD.includes(kategoriPilihan)) {
+        toast('Gunakan wizard Eviden (SEBELUM → PROGRES → SESUDAH) untuk kategori ini.', 'wrn');
+        return;
+      }
+
+      if (kategoriPilihan === '__MANUAL__' && !manualVal) {
+        toast('Isi nama eviden pekerjaan manual terlebih dahulu.','wrn'); return;
+      }
+
+      // BOQ AKTUAL: disimpan lewat tombol "Simpan BOQ Aktual" di box BOQ.
+      if (kategoriPilihan === KATEGORI_BOQ) {
+        toast('Paste data BOQ dari Excel, tekan Parsing Data, lalu Simpan BOQ Aktual.', 'wrn');
+        return;
+      }
+
+      // BOQ BARANG TIBA: disimpan lewat tombol "Simpan BOQ Barang Tiba" di box Barang Tiba.
+      if (kategoriPilihan === KATEGORI_BT) {
+        toast('Paste data dari Excel, tekan Parsing Data, lalu Simpan BOQ Barang Tiba.', 'wrn');
+        return;
+      }
+
+      // PETA RUTE (KML/KMZ) & KML (KML): kirim 1 file .kml/.kmz ke endpoint khusus
+      if (kategoriPilihan === KATEGORI_PETA || kategoriPilihan === KATEGORI_KML) {
+        const f = files[0];
+        if (!f || !/\.(kml|kmz)$/i.test(f.name)) {
+          toast('Pilih tepat 1 file .kml atau .kmz untuk kategori ini.','wrn'); return;
+        }
+        const btn=document.getElementById('btn-upload');
+        btn.disabled=true;
+        document.getElementById('btn-ico').className='fa-solid fa-spinner fa-spin ico';
+        document.getElementById('btn-txt').textContent='Memproses peta…';
+        const fd=new FormData();
+        fd.append('lokasi_id', lokasi);
+        fd.append('file', f);
+        if (kategoriPilihan === KATEGORI_KML) fd.append('kategori', KATEGORI_KML);
+        try {
+          const res=await fetch('/api/upload/kml',{method:'POST',body:fd,credentials:'include'});
+          const j=await res.json().catch(()=>({}));
+          if (res.ok && j.success) {
+            const link = j.pdf
+              ? ` <a href="${j.pdf}" target="_blank" style="color:#d32f2f;font-weight: 600;text-decoration:underline;">&gt;&gt; Download PDF</a>`
+              : '';
+            toast(`🗺️ Peta rute berhasil diproses!${link}`,'ok',8000);
+            document.getElementById('form').reset();
+            resetKategori(); resetDin(); resetFiles();
+            if (selLokasiId) await loadKategori(selLokasiId);
+          } else {
+            toast(j.message || 'Gagal memproses peta.','err',6000);
+          }
+        } catch { toast('Kendala koneksi ke server.','err'); }
+        finally {
+          btn.disabled=false;
+          document.getElementById('btn-ico').className='fa-solid fa-rocket ico';
+          document.getElementById('btn-txt').textContent='Kirim Eviden';
+        }
+        return;
+      }
+
+      // EVIDEN BON MATERIAL: simpan nama + volume material (foto eviden opsional,
+      // bisa ditambah kapan saja karena kategori flexibel).
+      if (kategoriPilihan === KATEGORI_BONMAT) {
+        const namaMat = document.getElementById('input-sub').value.trim();
+        const volMat  = document.getElementById('input-vol').value.trim();
+        const volWajib = !(selLokasiObj && BONMAT_TANPA_VOLUME.includes(selLokasiObj.tematik));
+        if (!namaMat) { toast('Isi nama material terlebih dahulu.','wrn'); return; }
+        if (volWajib && !volMat)  { toast('Isi volume material terlebih dahulu.','wrn'); return; }
+        const btn=document.getElementById('btn-upload');
+        btn.disabled=true;
+        document.getElementById('btn-ico').className='fa-solid fa-spinner fa-spin ico';
+        document.getElementById('btn-txt').textContent='Menyimpan…';
+        try {
+          const res=await fetch('/api/input-khusus',{
+            method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+            body:JSON.stringify({ lokasi_id: lokasi, kategori: KATEGORI_BONMAT, judul: namaMat, volume: volMat })
+          });
+          if (!res.ok) {
+            const j=await res.json().catch(()=>({}));
+            toast(j.message||'Gagal menyimpan material.','err');
+            return;
+          }
+          if (files.length) {
+            document.getElementById('btn-txt').textContent='Mengupload…';
+            const fd=new FormData();
+            fd.append('lokasi_id',lokasi); fd.append('kategori',KATEGORI_BONMAT); fd.append('sub_kategori',namaMat);
+            for(let i=0;i<files.length;i++) fd.append('files',files[i]);
+            const res2=await fetch('/api/upload',{method:'POST',body:fd,credentials:'include'});
+            if (!res2.ok) {
+              const j2=await res2.json().catch(()=>({}));
+              toast('Material tersimpan, tapi foto gagal: '+(j2.message||'error'),'wrn',6000);
+              return;
+            }
+          }
+          toast('Bon Material tersimpan!','ok',4500);
+          document.getElementById('form').reset();
+          resetKategori(); resetDin(); resetFiles();
+          if (selLokasiId) await loadKategori(selLokasiId);
+          muatListTeks(KATEGORI_BONMAT);
+        } catch { toast('Kendala koneksi ke server.','err'); }
+        finally {
+          btn.disabled=false;
+          document.getElementById('btn-ico').className='fa-solid fa-rocket ico';
+          document.getElementById('btn-txt').textContent='Kirim Eviden';
+        }
+        return;
+      }
+
+      if (!files.length) { toast('Pilih minimal 1 foto eviden.','wrn'); return; }
+
+      // Kategori final yang dikirim ke server: kalau pilih manual, pakai teks yang diketik user
+      const kategori = kategoriPilihan === '__MANUAL__' ? ('-' + manualVal.toUpperCase()) : kategoriPilihan;
+
+      const wajib=RULES_FOTO[kategori];
+      if (wajib&&files.length!==wajib){ toast(`Kategori ini wajib tepat ${wajib} foto sekaligus.`,'wrn'); return; }
+
+      const btn=document.getElementById('btn-upload');
+      btn.disabled=true;
+      document.getElementById('btn-ico').className='fa-solid fa-spinner fa-spin ico';
+      document.getElementById('btn-txt').textContent='Mengupload…';
+
+      const fd=new FormData();
+      fd.append('lokasi_id',lokasi); fd.append('kategori',kategori); fd.append('sub_kategori',subVal);
+      for(let i=0;i<files.length;i++) fd.append('files',files[i]);
+
+      try {
+        const res=await fetch('/api/upload',{method:'POST',body:fd,credentials:'include'});
+        if (res.ok) {
+          toast(`${files.length} foto berhasil diupload!`,'ok',4500);
+          document.getElementById('form').reset();
+          // Lokasi TETAP dipertahankan (tidak di-clear) supaya user bisa langsung
+          // lanjut input titik/ODP berikutnya di lokasi yang sama tanpa cari ulang.
+          resetKategori(); resetDin(); resetFiles();
+          if (selLokasiId) await loadKategori(selLokasiId);
+
+// Kategori OPM boleh diisi berkali-kali — kembalikan pilihan + tampilkan
+          // wizard supaya user tinggal mengetik nama ODP berikutnya.
+          if (kategori === KATEGORI_OPM && selLokasiId) {
+            const selK = document.getElementById('sel-kategori');
+            selK.value = KATEGORI_OPM;
+            await muatInfoOpm();
+            const boxDin = document.getElementById('box-dinamis');
+            boxDin.classList.add('show');
+            const inp = document.getElementById('input-sub');
+            inp.required = true;
+            inp.focus();
+            resetOpmWizard();
+            opmBukaWizard();
+            opmTokohVisible(false);
+          }
+
+          // MASUKAN EVIDEN PEKERJAAN: looping — pertahankan kategori, reset input & file
+          // agar user bisa langsung input eviden berikutnya
+          if (kategori === 'MASUKAN EVIDEN PEKERJAAN' && selLokasiId) {
+            const selK = document.getElementById('sel-kategori');
+            selK.value = 'MASUKAN EVIDEN PEKERJAAN';
+            const boxDin = document.getElementById('box-dinamis');
+            boxDin.classList.add('show');
+            const inp = document.getElementById('input-sub');
+            inp.required = true;
+            inp.value = '';
+            inp.focus();
+            resetFiles();
+            updPills();
+          }
+        } else {
+          const err=await res.json().catch(()=>({message:'Gagal merespon dari server.'}));
+          toast(err.message||'Upload gagal — coba lagi.','err');
+        }
+      } catch { toast('Kendala koneksi ke server.','err'); }
+      finally {
+        btn.disabled=false;
+        document.getElementById('btn-ico').className='fa-solid fa-rocket ico';
+        document.getElementById('btn-txt').textContent='Kirim Eviden';
+      }
+    };
+
+    /* INIT */
+    muatSesiAkses();
+    muatLokasi();
+    updPills();
+
+    /* ═══════════════════════════════════════════════
+       BA CO — Laporan Cut Over
+    ═══════════════════════════════════════════════ */
+    const BACO_SAMPLE = '1. Sambung di Bastray MINI OLT:\n- Uplink 12*2 = 24 Core\n- Distribusi 12*10 = 120\n  TOTAL = 144 Core\n * Sambungan Sisi Closure\n- SC-OF-SM-24 2*2 = 2 Core\n- SC-OF-SM-48  12*4 = 48 Core\n- SC-OF-SM-48(eksisting)  12*5 = 72 Core\n\n  TOTAL = 122 Core';
+
+    function bukaCardBAco(loc) {
+      const card = document.getElementById('card-baco');
+      card.classList.add('show');
+      document.getElementById('baco-lok').textContent = loc.nama_lokasi || '-';
+      buildSesiBAco();
+      muatBAco(loc.id);
+    }
+
+    function tutupCardBAco() {
+      document.getElementById('card-baco').classList.remove('show');
+      document.getElementById('baco-status').textContent = '';
+    }
+
+    function buildSesiBAco() {
+      const wrap = document.getElementById('baco-sesis');
+      wrap.innerHTML = '';
+      for (let i = 1; i <= 4; i++) {
+        const div = document.createElement('div');
+        div.className = 'baco-sesi';
+        div.innerHTML =
+          '<div class="baco-sesi-head">' +
+          '<span class="baco-sesi-t">Sesi Sambungan ' + i + ' <code>{sambungan' + i + 'co}</code></span>' +
+          (i === 1
+            ? '<button type="button" class="baco-btn-contoh" onclick="document.getElementById(\'baco-modal\').classList.add(\'show\')"><i class="fa-solid fa-lightbulb"></i> Contoh</button>'
+            : '') +
+          '</div>' +
+          '<textarea id="baco-ses' + i + '" class="baco-ta" placeholder="Isi rincian sambungan sesi ' + i + '...">' +
+          (i === 1 ? BacoEsc(BACO_SAMPLE) : '') +
+          '</textarea>';
+        wrap.appendChild(div);
+      }
+    }
+
+    function BacoEsc(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    async function muatBAco(id) {
+      const status = document.getElementById('baco-status');
+      try {
+        const r = await fetch('/api/ba-co/' + id);
+        if (r.status === 401) { status.textContent = 'Sesi berakhir — login dulu.'; return; }
+        const d = await r.json();
+        for (let i = 1; i <= 4; i++) {
+          const el = document.getElementById('baco-ses' + i);
+          if (el && d['sambungan' + i + 'co']) el.value = d['sambungan' + i + 'co'];
+        }
+        status.textContent = 'Data sambungan CO terakhir dimuat.';
+      } catch (e) {
+        status.textContent = '';
+      }
+    }
+
+    async function simpanBAco() {
+      if (!selLokasiId) { toast('Pilih lokasi dulu.','wrn'); return; }
+      const btn = document.getElementById('baco-save');
+      btn.disabled = true;
+      const old = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan…';
+      const payload = {
+        sambungan1co: document.getElementById('baco-ses1').value,
+        sambungan2co: document.getElementById('baco-ses2').value,
+        sambungan3co: document.getElementById('baco-ses3').value,
+        sambungan4co: document.getElementById('baco-ses4').value,
+      };
+      try {
+        const r = await fetch('/api/ba-co/' + selLokasiId, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          credentials: 'include',
+        });
+        const d = await r.json().catch(() => ({}));
+        if (d.success) {
+          toast('BA CO tersimpan.','ok');
+          document.getElementById('baco-status').textContent = 'Tersimpan ✓';
+        } else {
+          toast(d.message || 'Gagal simpan BA CO.','err');
+        }
+      } catch (e) {
+        toast('Kendala koneksi ke server.','err');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = old;
+      }
+    }
+
+    function generateLact() {
+      if (!selLokasiId) { toast('Pilih lokasi dulu.','wrn'); return; }
+      const pdf = !!((document.getElementById('baco-pdf') || {}).checked);
+      window.open('/api/generate/lact/' + selLokasiId + (pdf ? '?format=pdf' : ''), '_blank');
+      if (pdf) toast('Membuat PDF (dikonversi MS Word) — tunggu beberapa detik.','ok');
+    }
+  </script>
+
+  <!-- ═══ POPUP FORM EVIDEN LAMA: kontrol buka/tutup ═══ -->
+  <script>
+  (function () {
+    var ov = document.getElementById('oldEvOverlay');
+    if (!ov || window.__oldEvReady) return;
+    window.__oldEvReady = true;
+    var lastFocus = null;
+
+    function open() {
+      lastFocus = document.activeElement;
+      ov.hidden = false;
+      document.body.style.overflow = 'hidden';
+      var x = document.getElementById('oldEvClose');
+      if (x) x.focus();
+    }
+    function close() {
+      ov.hidden = true;
+      document.body.style.overflow = '';
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+
+    window.openEvidenModal = open;
+    window.closeEvidenModal = close;
+    window.EvidenModal = { open: open, close: close };
+
+    var btnClose = document.getElementById('oldEvClose');
+    if (btnClose) btnClose.addEventListener('click', close);
+    ov.addEventListener('mousedown', function (e) { if (e.target === ov) close(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape' || ov.hidden) return;
+      var pp = document.getElementById('ppOverlay');
+      if (!pp || pp.hidden) close();
+    });
+  })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Dashboard Laporan M-tel — DRAMATIC</title>
+<link rel="icon" type="image/png" href="/assets/img/favicon-ta.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/css/admin.tw.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><link rel="stylesheet" href="/assets/css/theme.css">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   DASHBOARD LAPORAN M-TEL — desain disamakan dengan Dashboard Admin
+   ══════════════════════════════════════════════════════════════ */
+*{box-sizing:border-box}
+body { font-family:'Inter','Roboto',sans-serif; font-size:11px; background:#E9EDF2; color:#1f2937; margin:0; -webkit-font-smoothing:antialiased; }
+.font-mono { font-family:'JetBrains Mono',monospace; }
+
+/* ── SHELL (identik admin) ─────────────────────────────────── */
+.app-shell { display:flex; height:100vh; width:100vw; overflow:hidden; position:relative; z-index:1; }
+.app-bg { position:absolute; inset:0; z-index:0; pointer-events:none; background:#E9EDF2; }
+.app-main { flex:1 1 auto; min-width:0; overflow-y:auto; padding:16px 22px 28px; }
+.app-main::-webkit-scrollbar { width:8px; }
+.app-main::-webkit-scrollbar-track { background:transparent; }
+.app-main::-webkit-scrollbar-thumb { background:rgba(99,102,241,.35); border-radius:99px; }
+
+/* ── SIDEBAR (identik admin) ───────────────────────────────── */
+.app-sidebar {
+  width:170px; flex-shrink:0;
+  background:linear-gradient(180deg,#B71C1C 0%,#D32F2F 46%,#A31515 100%);
+  color:#fff; display:flex; flex-direction:column; position:relative; z-index:200; overflow:hidden;
+}
+.app-sidebar::before {
+  content:''; position:absolute; inset:0; z-index:-1;
+  background:url('/sidebar.jpg') 0 0 / 100% 100% no-repeat; pointer-events:none;
+  animation:sideArtDrift 36s ease-in-out infinite alternate;
+}
+@keyframes sideArtDrift { from{transform:scale(1.05) translate3d(0,-1.8%,0)} to{transform:scale(1.05) translate3d(0,1.8%,0)} }
+@keyframes headArtDrift { from{transform:scale(1.04) translate3d(-1.2%,0,0)} to{transform:scale(1.04) translate3d(1.2%,0,0)} }
+@media (prefers-reduced-motion:reduce){ .app-sidebar::before,.app-topbar::before{animation:none} }
+.app-sidebar-inner { display:flex; flex-direction:column; height:100%; padding:16px 12px 14px; overflow-y:auto; }
+.app-sidebar-inner::-webkit-scrollbar { width:5px; }
+.app-sidebar-inner::-webkit-scrollbar-thumb { background:rgba(255,255,255,.45); border-radius:99px; }
+.app-brand { display:flex; align-items:center; gap:11px; padding:2px 4px 14px; margin-bottom:8px; }
+.brand-logo {
+  position:relative; width:100%; height:3.2rem; flex:0 0 auto; border-radius:0; overflow:hidden;
+  background:transparent; border:none; box-shadow:none; display:flex; align-items:center; justify-content:center; padding:2px 0;
+}
+.brand-logo img { display:block; width:100%; height:100%; object-fit:contain; background:transparent; filter:brightness(0) invert(1); }
+.brand-logo i { display:none; font-size:1.15rem; color:#fff; }
+.brand-logo.no-img img { display:none; }
+.brand-logo.no-img i { display:block; color:#fff; }
+.app-nav { display:flex; flex-direction:column; gap:3px; flex:1; }
+.app-nav-label { font-size:7px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.7); padding:10px 10px 4px; }
+.nav-btn, .nav-doc {
+  display:flex; align-items:center; gap:11px; width:100%; text-align:left;
+  padding:9px 11px; border-radius:8px; font-size:10px; font-weight:500;
+  color:#fff; background:transparent; border:none; cursor:pointer; text-decoration:none;
+  transition:background .15s ease,color .15s ease;
+}
+.nav-btn i, .nav-doc i { width:18px; text-align:center; color:#fff; font-size:11px; }
+.nav-btn:hover, .nav-doc:hover { background:rgba(255,255,255,.12); color:#fff; }
+.nav-btn.active { background:#fff; color:#263238; }
+.nav-btn.active i { color:#C62828; }
+.app-nav-foot { margin-top:14px; border-top:1px solid rgba(255,255,255,.18); padding-top:12px; display:flex; flex-direction:column; gap:3px; }
+.app-ver { font-size:7px; color:rgba(255,255,255,.6); text-align:center; padding-top:10px; }
+.hamburger { display:none; width:38px; height:38px; border-radius:10px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.3); color:#fff; cursor:pointer; align-items:center; justify-content:center; font-size:11px; }
+.app-sidebar-bg { display:none; }
+
+/* ── TOPBAR (identik admin) ────────────────────────────────── */
+.app-topbar {
+  box-sizing:border-box; position:relative; display:flex; align-items:center; justify-content:space-between; gap:.75rem;
+  background:linear-gradient(180deg,#B71C1C 0%,#C62828 100%);
+  border:none; border-radius:0; box-shadow:0 10px 26px rgba(15,23,42,.18);
+  margin:-16px -22px 0; min-height:150px; padding:18px 26px 44px; overflow:hidden; color:#fff;
+}
+.app-topbar::before {
+  content:''; position:absolute; inset:0; z-index:0;
+  background:url('/header.jpg') center bottom / 158% auto no-repeat; pointer-events:none;
+  animation:headArtDrift 28s ease-in-out infinite alternate;
+}
+.app-topbar > * { position:relative; }
+.topbar-brand-title { font-size:12px; font-weight:600; letter-spacing:.02em; color:#fff; line-height:1.1; white-space:nowrap; }
+.topbar-brand-sub { font-size:9px; color:rgba(255,255,255,.8); margin-top:2px; white-space:nowrap; }
+#live_clock { color:#fff; font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:.05em; }
+#live_date { color:rgba(255,255,255,.8); font-size:9px; margin-top:2px; }
+.topbar-title { font-size:16px; font-weight:800; color:#fff; letter-spacing:.02em; line-height:1.2; }
+.topbar-sub { font-size:9.5px; color:rgba(255,255,255,.85); margin-top:4px; max-width:640px; }
+
+/* ── STAT CARDS (rk-stats — identik admin) ─────────────────── */
+.rk-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:.875rem; margin-top:-76px; position:relative; z-index:102; align-items:stretch; }
+@media (min-width:1024px){ .rk-stats { grid-template-columns:repeat(4,1fr); } }
+.rk-stat { display:flex; align-items:center; gap:.7rem; padding:.8rem .9rem; border-radius:14px; border:2px solid; min-height:5.6rem; background:#fff; box-shadow:0 12px 26px rgba(15,23,42,.14); }
+.rk-body { min-width:0; }
+.rk-label { font-size:.6rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em; margin:0 0 .05rem; color:inherit; }
+.rk-num { font-size:1.75rem; font-weight:700; line-height:1.12; margin:0; color:#111; font-variant-numeric:tabular-nums; }
+.rk-trend { font-size:.6rem; font-weight:500; margin:.12rem 0 0; color:inherit; }
+.rk-stat.st-indigo { background:#fff; border-color:#3F51B5; color:#283593; }
+.rk-stat.st-emerald { background:#fff; border-color:#2E7D32; color:#2E7D32; }
+.rk-stat.st-amber { background:#fff; border-color:#F9A825; color:#B45309; }
+.rk-stat.st-rose { background:#fff; border-color:#C62828; color:#C62828; }
+.rk-stat.st-indigo2 { background:#fff; border-color:#5B21B6; color:#5B21B6; }
+.rk-stat.st-slate { background:#fff; border-color:#0F172A; color:#0F172A; }
+
+/* ── CHIPS RINGKAS (identik admin dash-chips) ──────────────── */
+.dash-chips { display:grid; grid-template-columns:repeat(2,1fr); gap:.6rem; margin-top:.7rem; }
+@media (min-width:1024px){ .dash-chips { grid-template-columns:repeat(4,1fr); } }
+.dash-chip { background:#fff; border:1px solid #e2e8f0; border-radius:.85rem; padding:.55rem .6rem; box-shadow:0 6px 16px rgba(15,23,42,.08); display:flex; flex-direction:column; justify-content:center; min-height:3.4rem; }
+.dash-chip-n { font-size:1rem; font-weight:700; color:#1e293b; line-height:1.1; font-variant-numeric:tabular-nums; }
+.dash-chip-rp { font-size:.72rem; font-weight:700; color:#334155; margin-top:.2rem; font-variant-numeric:tabular-nums; }
+.dash-chip-l { font-size:7px; font-weight:500; color:#64748b; text-transform:uppercase; letter-spacing:.04em; margin-top:.3rem; }
+.dash-chip-l i { margin-right:.2rem; font-size:7px; }
+.cl-indigo-t { color:#3F51B5; } .cl-emerald-t { color:#2E7D32; } .cl-rose-t { color:#C62828; } .cl-amber-t { color:#F9A825; } .cl-slate-t { color:#0F172A; }
+
+/* ── WIDGET PANEL (identik admin dash-widget) ──────────────── */
+.dash-widget { background:#fff; border:1px solid #E5E7EB; border-radius:14px; padding:1rem; box-shadow:0 2px 8px rgba(0,0,0,.06); margin-top:.9rem; }
+.dash-head { display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin-bottom:.8rem; flex-wrap:wrap; }
+.dash-head-l { display:flex; align-items:center; gap:.6rem; }
+.dash-ic { width:2rem; height:2rem; border-radius:.6rem; display:flex; align-items:center; justify-content:center; color:#fff; flex-shrink:0; background:#475569; }
+.dash-ic i { font-size:.8rem; }
+.dash-title { font-size:11px; font-weight:700; color:#0f172a; line-height:1.2; }
+.dash-sub { font-size:8px; font-weight:400; color:#64748b; }
+.dash-icgrp { display:flex; align-items:center; gap:.35rem; flex-shrink:0; }
+.dash-icbtn { width:1.9rem; height:1.9rem; border-radius:.5rem; background:transparent; border:1px solid transparent; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s ease; }
+.dash-icbtn:hover { color:#D32F2F; background:#f1f5f9; }
+.dash-icbtn i { font-size:.7rem; }
+
+/* ── FILTER (identik admin rekap filter) ───────────────────── */
+.dash-filters { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; margin-bottom:.7rem; }
+.dash-filters input, .dash-filters select {
+  border:1px solid #e2e8f0; border-radius:.55rem; padding:.45rem .6rem;
+  font:400 11px Inter,Arial,sans-serif; color:#334155; background:#fff; outline:none;
+}
+.dash-filters input { min-width:210px; }
+.dash-filters input:focus, .dash-filters select:focus { border-color:#D32F2F; box-shadow:0 0 0 3px #d32f2f1c; }
+.dash-filters input::placeholder { color:#94a3b8; }
+.rekap-count { font-size:10px; color:#475569; font-weight:600; margin-left:auto; }
+
+/* ── TABEL (identik admin rekap-tbl) ───────────────────────── */
+.tbl-scroll { overflow:auto; max-height:60vh; border:1px solid #F0E4E5; border-radius:.6rem; }
+.tbl-scroll::-webkit-scrollbar { width:7px; height:7px; }
+.tbl-scroll::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:99px; }
+.rekap-tbl { border-collapse:collapse; width:100%; min-width:900px; background:#fff; }
+.rekap-tbl thead th {
+  font-size:10px; font-weight:600; color:#8C4A54; background:#FBEDEE;
+  border:1px solid #F3DEE0; border-bottom:2px solid #EBCBD0;
+  padding:.5rem .55rem; white-space:nowrap; text-align:left; position:sticky; top:0; z-index:2;
+}
+.rekap-tbl thead th.sortable { cursor:pointer; user-select:none; }
+.rekap-tbl thead th.sortable:hover { color:#C62828; }
+.rekap-tbl thead th .arr { font-size:8px; margin-left:4px; color:#D9B3B8; }
+.rekap-tbl thead th.on .arr { color:#C62828; }
+.rekap-tbl td { border:1px solid #EFE6E7; padding:.45rem .55rem; font-size:11px; color:#334155; vertical-align:middle; }
+.rekap-tbl tbody tr:nth-child(even) td { background:#FCF7F7; }
+.rekap-tbl tbody tr:hover td { background:#FAF1F2; }
+.rekap-tbl td.td-r { text-align:right; font-variant-numeric:tabular-nums; }
+.rekap-tbl .cell-nama b { display:block; font-size:9.5px; color:#334155; font-weight:600; line-height:1.35; word-break:break-word; }
+.rekap-tbl .cell-nama small { display:block; font-size:8px; color:#94a3b8; margin-top:1px; font-family:'JetBrains Mono',monospace; line-height:1.35; }
+.rekap-empty { text-align:center; padding:1.4rem 0; color:#94a3b8; font-size:11px; }
+
+/* ── BADGE / PROGRES (nada warna admin) ────────────────────── */
+.badge { display:inline-flex; align-items:center; gap:.25rem; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:.16rem .5rem; border-radius:999px; white-space:nowrap; }
+.badge.yes { background:#d1fae5; color:#047857; }
+.badge.no { background:#f1f5f9; color:#94a3b8; }
+.prog { display:flex; align-items:center; gap:.4rem; min-width:110px; }
+.prog .bar { flex:1; height:.4rem; background:#e2e8f0; border-radius:999px; overflow:hidden; min-width:56px; }
+.prog .bar i { display:block; height:100%; border-radius:999px; transition:width .8s cubic-bezier(.4,0,.2,1); }
+.prog.p-opm .bar i { background:linear-gradient(90deg,#10b981,#5eead4); }
+.prog.p-atp .bar i { background:linear-gradient(90deg,#6366f1,#a5b4fc); }
+.prog span { font-size:9px; font-weight:700; min-width:30px; text-align:right; font-variant-numeric:tabular-nums; }
+.prog.p-opm span { color:#059669; } .prog.p-atp span { color:#4f46e5; }
+.witel-tag { display:inline-block; background:#FBEDEE; border:1px solid #F3DEE0; color:#8C4A54; border-radius:.5rem; padding:.18rem .5rem; font-size:10px; font-weight:700; white-space:nowrap; }
+.nominal { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:11px; color:#0f172a; white-space:nowrap; }
+.nominal.kosong { color:#cbd5e1; font-weight:500; }
+.st { display:inline-block; border-radius:.4rem; padding:.16rem .45rem; font-size:8.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin:1px 2px 1px 0; white-space:nowrap; }
+.st.ok { background:#d1fae5; color:#047857; }
+.st.warn { background:#fef3c7; color:#b45309; }
+.st.off { background:#f1f5f9; color:#94a3b8; }
+
+/* ── REKAP WITEL — list baris sederhana (info di samping) ────── */
+.witel-tbl { min-width: 900px; }
+.witel-tbl .wl-nama { display:flex; align-items:center; gap:.45rem; font-weight:800; color:#0f172a; font-size:11.5px; white-space:nowrap; }
+.witel-tbl .wl-nama i { color:#D32F2F; font-size:10px; }
+.wl-count { font-variant-numeric:tabular-nums; font-weight:700; color:#1e293b; text-align:center; }
+.wl-count small { display:block; font-size:7px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:.04em; margin-top:1px; }
+.wl-money b { display:block; font-family:'JetBrains Mono',monospace; font-size:11px; color:#0f172a; white-space:nowrap; }
+.wl-money small { display:block; font-size:8px; color:#94a3b8; margin-top:1px; white-space:nowrap; font-variant-numeric:tabular-nums; }
+
+/* ── TOAST ─────────────────────────────────────────────────── */
+#toast { position:fixed; right:22px; bottom:22px; z-index:9999; background:#0f172a; color:#fff; padding:.7rem 1rem; border-radius:.75rem; font-size:11px; font-weight:600; box-shadow:0 16px 40px rgba(2,6,23,.35); opacity:0; transform:translateY(12px); transition:.25s; pointer-events:none; max-width:340px; }
+#toast.on { opacity:1; transform:translateY(0); }
+#toast.err { background:#b91c1c; }
+
+@media (max-width:1023px){
+  .app-sidebar { position:fixed; left:0; top:0; bottom:0; transform:translateX(-105%); transition:transform .25s ease; box-shadow:0 0 60px rgba(0,0,0,.5); }
+  .app-sidebar.open { transform:translateX(0); }
+  .app-sidebar-bg { display:block; position:fixed; inset:0; background:rgba(2,6,23,.6); opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:150; }
+  .app-sidebar-bg.show { opacity:1; pointer-events:auto; }
+  .hamburger { display:inline-flex; }
+  .app-shell { display:block; height:auto; min-height:100vh; width:100%; overflow:visible; }
+  .app-bg { display:none; }
+  .app-main { padding:14px 14px 24px; overflow:visible; }
+  .app-topbar { margin:-14px -14px 0; min-height:auto; padding:14px 16px 34px; flex-wrap:wrap; }
+  .rk-stats { margin-top:-46px; }
+  .dash-filters input { min-width:100%; }
+  .rekap-count { margin-left:0; }
+}
+</style>
+</head><body>
+<div class="app-bg" aria-hidden="true"></div>
+
+<div class="app-shell">
+  <!-- ══ SIDEBAR (identik Dashboard Admin) ══ -->
+  <aside class="app-sidebar" id="app_sidebar" aria-label="Navigasi utama">
+    <div class="app-sidebar-inner">
+      <div class="app-brand">
+        <div class="brand-logo" id="brand_logo">
+          <img src="/assets/img/logo-ta.png" alt="Telkom Akses" onerror="document.getElementById('brand_logo').classList.add('no-img')">
+          <i class="fa-solid fa-chart-network"></i>
+        </div>
+      </div>
+      <nav class="app-nav">
+        <p class="app-nav-label">Menu Utama</p>
+        <a href="/admin.html" class="nav-btn"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a>
+        <a href="/admin.html" class="nav-btn"><i class="fa-solid fa-map-location-dot"></i><span>Master Lokasi</span></a>
+        <a href="/mitratel" class="nav-btn"><i class="fa-solid fa-tower-cell"></i><span>Input MITRATEL – OPM</span></a>
+        <a href="/mitratel/atp" class="nav-btn"><i class="fa-solid fa-tower-broadcast"></i><span>ATP MITRATEL</span></a>
+        <a href="/mitratel/report" class="nav-btn active"><i class="fa-solid fa-chart-pie"></i><span>Laporan M-tel</span></a>
+      </nav>
+      <div class="app-nav-foot">
+        <a href="/login.html" class="nav-btn" title="Keluar dari sistem"><i class="fa-solid fa-right-from-bracket"></i><span>Keluar Sistem</span></a>
+        <p class="app-ver">v2026 · PT Telkom Akses</p>
+      </div>
+    </div>
+  </aside>
+  <div class="app-sidebar-bg" id="sidebar_backdrop" onclick="toggleSidebar(false)"></div>
+
+  <!-- ══ MAIN ══ -->
+  <div class="app-main">
+    <nav class="app-topbar">
+      <button type="button" class="hamburger" onclick="toggleSidebar()" aria-label="Buka menu sidebar"><i class="fa-solid fa-bars"></i></button>
+      <div class="min-w-0 flex items-center gap-3.5" style="display:flex;align-items:center;gap:.9rem;min-width:0;">
+        <div style="display:flex;flex-direction:column;flex-shrink:0;">
+          <span class="topbar-brand-title">DRAMATIC</span>
+          <span class="topbar-brand-sub">Telkom Akses Regional 2</span>
+        </div>
+        <div style="width:1px;height:34px;background:rgba(255,255,255,.25);flex-shrink:0;"></div>
+        <div style="min-width:0;">
+          <div class="topbar-title">DASHBOARD LAPORAN M-TEL</div>
+          <div class="topbar-sub">Rekap lokasi input <b>ATP</b> &amp; <b>OPM</b> · Nominal (Nilai DRM) · Witel · Akumulasi progres</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.6rem;flex-shrink:0;">
+        <div style="display:flex;flex-direction:column;align-items:flex-end;">
+          <span id="live_clock" class="font-mono">--:--:--</span>
+          <span id="live_date">—</span>
+        </div>
+        <span style="background:#fff;color:#b91c1c;border:1px solid #fecaca;border-radius:99px;padding:5px 10px;font-size:9px;font-weight:700;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;"><i class="fa-solid fa-shield-halved"></i> ADMIN</span>
+      </div>
+    </nav>
+
+    <div style="padding-top:14px;">
+
+  <!-- STAT CARDS — akumulasi total (rk-stats identik admin) -->
+  <section class="rk-stats" id="cards">
+    <div class="rk-stat st-indigo">
+      <div class="rk-body"><p class="rk-label">Total Lokasi M-tel</p><h3 class="rk-num" id="k-total">—</h3><p class="rk-trend" id="k-total-trend">Memuat…</p></div>
+    </div>
+    <div class="rk-stat st-emerald">
+      <div class="rk-body"><p class="rk-label">Sudah Input OPM</p><h3 class="rk-num" id="k-opm">—</h3><p class="rk-trend" id="k-opm-sub">—</p></div>
+    </div>
+    <div class="rk-stat st-indigo2">
+      <div class="rk-body"><p class="rk-label">Sudah Input ATP</p><h3 class="rk-num" id="k-atp">—</h3><p class="rk-trend" id="k-atp-sub">—</p></div>
+    </div>
+    <div class="rk-stat st-amber">
+      <div class="rk-body"><p class="rk-label">Lengkap (OPM + ATP)</p><h3 class="rk-num" id="k-lengkap">—</h3><p class="rk-trend" id="k-lengkap-sub">—</p></div>
+    </div>
+  </section>
+
+  <!-- Chips baris 2: Belum + Nominal -->
+  <div class="dash-chips">
+    <div class="dash-chip"><div class="dash-chip-n cl-rose-t" id="k-belum">—</div><div class="dash-chip-rp cl-rose-t" id="k-belum-rp">Rp —</div><div class="dash-chip-l"><i class="fa-solid fa-clock cl-rose-t"></i> Belum Input</div></div>
+    <div class="dash-chip"><div class="dash-chip-n cl-slate-t" id="k-nominal">—</div><div class="dash-chip-rp cl-slate-t" id="k-nominal-sub2">Rp —</div><div class="dash-chip-l"><i class="fa-solid fa-wallet cl-slate-t"></i> Total Nominal (Nilai DRM)</div></div>
+    <div class="dash-chip"><div class="dash-chip-n cl-emerald-t" id="k-nom-opm">—</div><div class="dash-chip-rp cl-emerald-t" id="k-nom-opm-sub">Rp —</div><div class="dash-chip-l"><i class="fa-solid fa-signal cl-emerald-t"></i> Nominal Sudah OPM</div></div>
+    <div class="dash-chip"><div class="dash-chip-n cl-indigo-t" id="k-nom-atp">—</div><div class="dash-chip-rp cl-indigo-t" id="k-nom-atp-sub">Rp —</div><div class="dash-chip-l"><i class="fa-solid fa-tower-broadcast cl-indigo-t"></i> Nominal Sudah ATP</div></div>
+  </div>
+
+  <!-- ══ WIDGET: DETAIL LOKASI ══ -->
+  <section class="dash-widget">
+    <div class="dash-head">
+      <div class="dash-head-l">
+        <div class="dash-ic"><i class="fa-solid fa-table-list"></i></div>
+        <div>
+          <div class="dash-title">Detail Lokasi</div>
+          <div class="dash-sub">Status input OPM &amp; ATP, nominal, dan Witel tiap lokasi M-tel</div>
+        </div>
+      </div>
+      <div class="dash-icgrp">
+        <button type="button" class="dash-icbtn" onclick="muat()" title="Segarkan data" aria-label="Segarkan data"><i class="fa-solid fa-rotate"></i></button>
+      </div>
+    </div>
+
+    <div class="dash-filters">
+      <input id="q" placeholder="Cari nama lokasi / PID / SP..." oninput="render()" aria-label="Cari lokasi">
+      <select id="f-witel" onchange="render()" aria-label="Filter Witel"><option value="">Semua Witel</option></select>
+      <select id="f-status" onchange="render()" aria-label="Filter status">
+        <option value="">Semua Status</option>
+        <option value="lengkap">Lengkap (OPM + ATP)</option>
+        <option value="opm">Sudah OPM</option>
+        <option value="atp">Sudah ATP</option>
+        <option value="belum">Belum Input</option>
+      </select>
+      <span class="rekap-count" id="count-pill">—</span>
+    </div>
+
+    <div class="tbl-scroll">
+      <table class="rekap-tbl">
+        <thead><tr>
+          <th class="sortable on" data-k="nama">Lokasi <span class="arr">▲</span></th>
+          <th class="sortable" data-k="witel">Witel <span class="arr">▲</span></th>
+          <th>No. SP</th>
+          <th class="sortable" data-k="nominal" style="text-align:right;">Nominal <span class="arr">▲</span></th>
+          <th>Progres OPM</th>
+          <th>Progres ATP</th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="7" class="rekap-empty">Memuat data…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ WIDGET: REKAP PER WITEL ══ -->
+  <section class="dash-widget">
+    <div class="dash-head">
+      <div class="dash-head-l">
+        <div class="dash-ic"><i class="fa-solid fa-map-location-dot"></i></div>
+        <div>
+          <div class="dash-title">Rekap per Witel</div>
+          <div class="dash-sub">Akumulasi jumlah lokasi, progress OPM/ATP, dan nominal di tiap Witel</div>
+        </div>
+      </div>
+    </div>
+    <div class="tbl-scroll">
+      <table class="rekap-tbl witel-tbl">
+        <thead><tr>
+          <th>Witel</th>
+          <th style="text-align:center;">Lokasi</th>
+          <th style="text-align:center;">Sudah OPM</th>
+          <th style="text-align:center;">Sudah ATP</th>
+          <th style="text-align:center;">Lengkap</th>
+          <th>Progres OPM</th>
+          <th>Progres ATP</th>
+          <th style="text-align:right;">Nominal</th>
+        </tr></thead>
+        <tbody id="witel-body"><tr><td colspan="8" class="rekap-empty">Memuat data…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+    </div><!-- /padding -->
+  </div><!-- /app-main -->
+</div><!-- /app-shell -->
+
+<div id="toast"></div>
+<script>
+let DATA = { rows: [], ringkas: {}, witel: [] };
+let sortK = 'nama', sortDir = 1;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rupiah = n => 'Rp ' + Math.round(Number(n) || 0).toLocaleString('id-ID');
+const rupiahPendek = n => {
+  n = Number(n) || 0;
+  if (Math.abs(n) >= 1e12) return 'Rp ' + (n / 1e12).toFixed(2).replace('.', ',') + ' T';
+  if (Math.abs(n) >= 1e9) return 'Rp ' + (n / 1e9).toFixed(2).replace('.', ',') + ' M';
+  if (Math.abs(n) >= 1e6) return 'Rp ' + (n / 1e6).toFixed(1).replace('.', ',') + ' Jt';
+  return rupiah(n);
+};
+const pct = (a, b) => b > 0 ? Math.round(a * 100 / b) : 0;
+function msg(t, err) {
+  const el = $('toast'); el.textContent = t; el.className = err ? 'on err' : 'on';
+  clearTimeout(el._t); el._t = setTimeout(() => el.className = '', 4200);
+}
+
+/* ── Jam live (identik Dashboard Admin) ── */
+function jam() {
+  const d = new Date();
+  const c = $('live_clock'), dt = $('live_date');
+  if (c) c.textContent = d.toLocaleTimeString('id-ID', { hour12: false });
+  if (dt) dt.textContent = d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+setInterval(jam, 1000); jam();
+
+function toggleSidebar(force) {
+  const s = $('app_sidebar'), b = $('sidebar_backdrop');
+  const buka = force === undefined ? !s.classList.contains('open') : force;
+  s.classList.toggle('open', buka); b.classList.toggle('show', buka);
+}
+
+async function muat() {
+  try {
+    const r = await fetch('/api/mitratel/report');
+    const d = await r.json();
+    if (!r.ok) throw Error(d.message || 'Gagal memuat laporan.');
+    DATA = d;
+    isiFilter(); renderCards(); render(); renderWitel();
+    msg('Data laporan M-tel dimuat · ' + new Date().toLocaleTimeString('id-ID'));
+  } catch (e) {
+    msg(e.message || String(e), true);
+    $('tbody').innerHTML = '<tr><td colspan="7" class="rekap-empty">Gagal memuat data laporan.</td></tr>';
+  }
+}
+
+function isiFilter() {
+  const sel = $('f-witel'), cur = sel.value;
+  sel.innerHTML = '<option value="">Semua Witel</option>' +
+    DATA.witel.map(w => `<option value="${esc(w.witel)}">${esc(w.witel)} (${w.lokasi})</option>`).join('');
+  sel.value = cur;
+}
+
+function renderCards() {
+  const k = DATA.ringkas || {};
+  $('k-total').textContent = (k.total || 0).toLocaleString('id-ID');
+  $('k-opm').textContent = (k.opm || 0).toLocaleString('id-ID');
+  $('k-atp').textContent = (k.atp || 0).toLocaleString('id-ID');
+  $('k-lengkap').textContent = (k.lengkap || 0).toLocaleString('id-ID');
+  $('k-belum').textContent = (k.belum || 0).toLocaleString('id-ID');
+  $('k-nominal').textContent = rupiahPendek(k.nominal_total);
+  $('k-total-trend').textContent = 'Tematik M-tel · ' + (k.total_slot_opm || 31) + ' slot OPM · ' + (k.total_slot_atp || 46) + ' slot ATP';
+  $('k-opm-sub').textContent = pct(k.opm, k.total) + '% dari total · ' + rupiahPendek(k.nominal_opm);
+  $('k-atp-sub').textContent = pct(k.atp, k.total) + '% dari total · ' + rupiahPendek(k.nominal_atp);
+  $('k-lengkap-sub').textContent = pct(k.lengkap, k.total) + '% dari total · ' + rupiahPendek(k.nominal_lengkap);
+  $('k-belum-rp').textContent = rupiahPendek(k.nominal_belum);
+  $('k-nominal-sub2').textContent = rupiah(k.nominal_total);
+  $('k-nom-opm').textContent = pct(k.opm, k.total) + '%';
+  $('k-nom-opm-sub').textContent = rupiahPendek(k.nominal_opm);
+  $('k-nom-atp').textContent = pct(k.atp, k.total) + '%';
+  $('k-nom-atp-sub').textContent = rupiahPendek(k.nominal_atp);
+}
+
+function filtered() {
+  const q = $('q').value.trim().toLowerCase();
+  const w = $('f-witel').value, st = $('f-status').value;
+  const rows = (DATA.rows || []).filter(r => {
+    if (w && r.witel !== w) return false;
+    if (st === 'lengkap' && !(r.opm.sudah && r.atp.sudah)) return false;
+    if (st === 'opm' && !r.opm.sudah) return false;
+    if (st === 'atp' && !r.atp.sudah) return false;
+    if (st === 'belum' && (r.opm.sudah || r.atp.sudah)) return false;
+    if (q && !(r.nama.toLowerCase().includes(q) || r.pid.toLowerCase().includes(q) || r.sp.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  rows.sort((a, b) => {
+    let x, y;
+    if (sortK === 'nominal') { x = a.nominal; y = b.nominal; }
+    else { x = String(a[sortK] || '').toLowerCase(); y = String(b[sortK] || '').toLowerCase(); }
+    return (x > y ? 1 : x < y ? -1 : 0) * sortDir;
+  });
+  return rows;
+}
+
+function badge(ya, label) {
+  return ya ? '<span class="badge yes"><i class="fa-solid fa-check"></i> ' + label + '</span>'
+            : '<span class="badge no"><i class="fa-solid fa-minus"></i> ' + label + '</span>';
+}
+function progres(r, tipe) {
+  const k = DATA.ringkas || {};
+  const so = k.total_slot_opm || 31, sa = k.total_slot_atp || 46;
+  let v, p;
+  if (tipe === 'opm') {
+    v = Math.min(r.opm.foto + (r.opm.form ? 1 : 0), so);
+    p = r.opm.sudah ? (v >= so ? 100 : Math.max(pct(v, so), 5)) : 0;
+    return `<div class="prog p-opm"><div class="bar"><i style="width:${p}%"></i></div><span>${p}%</span></div>`;
+  }
+  v = Math.min(r.atp.foto, sa);
+  p = r.atp.sudah ? (v >= sa ? 100 : Math.max(pct(v, sa), 5)) : 0;
+  return `<div class="prog p-atp"><div class="bar"><i style="width:${p}%"></i></div><span>${p}%</span></div>`;
+}
+function statusCell(r) {
+  const s = [];
+  s.push(r.opm.sudah ? '<span class="st ok">OPM ✓</span>' : '<span class="st off">OPM —</span>');
+  s.push(r.atp.sudah ? '<span class="st ok">ATP ✓</span>' : '<span class="st off">ATP —</span>');
+  if (r.opm.sudah && r.atp.sudah) s.push('<span class="st ok">Lengkap</span>');
+  else if (r.opm.sudah || r.atp.sudah) s.push('<span class="st warn">Sebagian</span>');
+  else s.push('<span class="st off">Belum</span>');
+  return s.join('');
+}
+
+function render() {
+  const rows = filtered();
+  $('count-pill').textContent = rows.length.toLocaleString('id-ID') + ' lokasi ditampilkan';
+  if (!rows.length) { $('tbody').innerHTML = '<tr><td colspan="7" class="rekap-empty">Tidak ada lokasi yang cocok dengan filter.</td></tr>'; return; }
+  $('tbody').innerHTML = rows.map(r => `<tr>
+    <td class="cell-nama"><b>${esc(r.nama)}</b><small>${esc(r.pid)}${r.pm ? ' · PM: ' + esc(r.pm) : ''}</small></td>
+    <td><span class="witel-tag">${esc(r.witel || '—')}</span></td>
+    <td style="font-size:10px;color:#64748b;white-space:nowrap">${esc(r.sp || '—')}</td>
+    <td class="td-r"><span class="nominal${r.nominal ? '' : ' kosong'}" title="${rupiah(r.nominal)}">${r.nominal ? rupiah(r.nominal) : '—'}</span></td>
+    <td>${progres(r, 'opm')}</td>
+    <td>${progres(r, 'atp')}<div style="margin-top:4px">${badge(r.atp.sudah, 'ATP')}</div></td>
+    <td style="white-space:nowrap">${statusCell(r)}</td>
+  </tr>`).join('');
+}
+
+function renderWitel() {
+  const ws = DATA.witel || [];
+  const body = $('witel-body');
+  if (!body) return;
+  if (!ws.length) { body.innerHTML = '<tr><td colspan="8" class="rekap-empty">Belum ada data Witel.</td></tr>'; return; }
+  body.innerHTML = ws.map(w => {
+    const po = pct(w.opm, w.lokasi), pa = pct(w.atp, w.lokasi);
+    return `<tr>
+      <td><span class="wl-nama"><i class="fa-solid fa-map-pin"></i> ${esc(w.witel)}</span></td>
+      <td class="wl-count">${w.lokasi}<small>Lokasi</small></td>
+      <td class="wl-count" style="color:#2E7D32">${w.opm}<small>OPM</small></td>
+      <td class="wl-count" style="color:#3F51B5">${w.atp}<small>ATP</small></td>
+      <td class="wl-count" style="color:#B45309">${w.lengkap}<small>Lengkap</small></td>
+      <td><div class="prog p-opm"><div class="bar"><i style="width:${po}%"></i></div><span>${po}%</span></div></td>
+      <td><div class="prog p-atp"><div class="bar"><i style="width:${pa}%"></i></div><span>${pa}%</span></div></td>
+      <td class="td-r wl-money"><b title="${rupiah(w.nominal)}">${rupiahPendek(w.nominal)}</b><small>OPM ${rupiahPendek(w.nominal_opm)} · ATP ${rupiahPendek(w.nominal_atp)}</small></td>
+    </tr>`;
+  }).join('');
+}
+
+document.querySelectorAll('th.sortable').forEach(th => th.addEventListener('click', () => {
+  const k = th.dataset.k;
+  if (sortK === k) sortDir *= -1; else { sortK = k; sortDir = 1; }
+  document.querySelectorAll('th.sortable').forEach(t => {
+    t.classList.toggle('on', t === th);
+    t.querySelector('.arr').textContent = t === th ? (sortDir > 0 ? '▲' : '▼') : '▲';
+  });
+  render();
+}));
+
+muat();
+</script>
+</body></html>

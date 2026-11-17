@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 — Halaman Tidak Ditemukan</title>
+  <link rel="icon" type="image/png" href="assets/img/favicon-ta.png">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="description" content="Halaman tidak ditemukan — Sistem Rekonsiliasi Konstruksi PT Telkom Akses.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans); min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px; color: #fff;
+      background:
+        radial-gradient(60% 60% at 50% 0%, rgba(99,102,241,0.25), transparent 70%),
+        linear-gradient(160deg, #060b1a 0%, #131929 60%, #0d1220 100%);
+    }
+    .box { text-align: center; max-width: 420px; }
+    .logo { width: 200px; height: 64px; margin: 0 auto 22px; border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      background: #FFFFFF; padding: 10px 16px; box-sizing: border-box;
+      box-shadow: 0 8px 28px rgba(99,102,241,0.45); }
+    .logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .code { font-family: var(--font-mono); font-size: 84px; font-weight: 800; line-height: 1;
+      background: linear-gradient(135deg,#818cf8,#a855f7); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    h1 { font-size: 20px; font-weight: 800; margin-top: 6px; }
+    p { color: var(--slate-400); font-size: 13px; margin-top: 10px; line-height: 1.6; }
+    .back { display: inline-flex; align-items: center; gap: 8px; margin-top: 26px;
+      background: var(--grad-brand); color: #fff; font-weight: 800; font-size: 13px;
+      padding: 12px 22px; border-radius: 12px; text-decoration: none;
+      min-height: var(--touch-min);
+      box-shadow: 0 8px 24px rgba(79,70,229,0.38); transition: transform var(--transition-fast); }
+    .back:hover { transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="logo"><img src="assets/img/logo-ta.png" alt="Telkom Akses"></div>
+    <div class="code">404</div>
+    <h1>Halaman Tidak Ditemukan</h1>
+    <p>URL yang Anda tuju tidak tersedia atau telah dipindahkan.<br>Silakan kembali ke halaman login untuk melanjutkan.</p>
+    <a class="back" href="/login.html"><i class="fa-solid fa-right-to-bracket"></i> Kembali ke Login</a>
+  </div>
+</body>
+</html>

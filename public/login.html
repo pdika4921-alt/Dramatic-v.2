@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Sistem Rekonsiliasi Konstruksi</title>
+  <link rel="icon" type="image/png" href="assets/img/favicon-ta.png">
+  <meta name="theme-color" content="#06b6d4">
+  <meta name="application-name" content="Sistem Rekonsiliasi Konstruksi">
+  <meta name="description" content="Sistem Rekonsiliasi Konstruksi PT Telkom Akses — login aman untuk manajemen lokasi, eviden lapangan, RAB & rekonsiliasi DRM vs REKON.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <script src="assets/js/util.js"></script>
+  <script>
+    /* Ikuti tema dashboard: localStorage('theme') atau preferensi sistem */
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('theme'); } catch (e) {}
+      if (t !== 'dark' && t !== 'light') {
+        t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      }
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      /* ── Mode terang (default — menyerupai dashboard admin) ── */
+      --page-bg: #F8F9FA;
+      --card-bg: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.94));
+      --card-border: #E2E8F0;
+      --card-glow: 0 14px 32px -26px rgba(2,6,23,0.35), 0 24px 60px rgba(6,182,212,0.10);
+      --text-primary: #1F2937;
+      --text-secondary: #64748B;
+      --text-muted: #94A3B8;
+      --label-color: #475569;
+      --input-bg: #F8FAFC;
+      --input-border: #CBD5E1;
+      --input-border-focus: #06b6d4;
+      --divider: rgba(6,182,212,0.35);
+      --err-text: #BE123C;
+      --brand-red: #D32F2F;
+      --logo-border: #E2E8F0;
+      --grid-line: rgba(6,182,212,0.05);
+      --grid-glow-1: rgba(6,182,212,0.07);
+      --grid-glow-2: rgba(20,184,166,0.06);
+      --orb-1: rgba(6,182,212,0.16);
+      --orb-2: rgba(20,184,166,0.14);
+      --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --radius: 20px;
+      --radius-sm: 10px;
+      --danger: #F43F5E;
+      --success: #10B981;
+    }
+    :root[data-theme="dark"] {
+      /* ── Mode gelap (foto overlay navy — sama dgn .app-bg dashboard) ── */
+      --page-bg: #0A1628;
+      --card-bg: rgba(26, 46, 66, 0.92);
+      --card-border: rgba(255, 255, 255, 0.10);
+      --card-glow: 0 32px 80px rgba(0, 0, 0, 0.5);
+      --text-primary: #E8EDF5;
+      --text-secondary: #8899B0;
+      --text-muted: #5A6A80;
+      --label-color: rgba(180, 210, 240, 0.55);
+      --input-bg: rgba(13, 27, 46, 0.9);
+      --input-border: rgba(255, 255, 255, 0.08);
+      --input-border-focus: #22d3ee;
+      --divider: rgba(6,182,212,0.30);
+      --err-text: #FDA4AF;
+      --brand-red: #E53935;
+      --logo-border: rgba(255, 255, 255, 0.14);
+      --grid-line: rgba(6,182,212,0.035);
+      --grid-glow-1: rgba(6,182,212,0.06);
+      --grid-glow-2: rgba(20,184,166,0.045);
+      --orb-1: rgba(6,182,212,0.10);
+      --orb-2: rgba(20,184,166,0.08);
+    }
+
+    html, body {
+      height: 100%; font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body.login-body {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px 16px;
+      position: relative; overflow: hidden;
+      background:
+        linear-gradient(rgba(8, 15, 33, 0.40), rgba(8, 15, 33, 0.50)),
+        url('login.jpg') center / cover no-repeat fixed,
+        var(--page-bg);
+      color: var(--text-primary);
+    }
+    /* Mode gelap: foto latar + overlay navy pekat — sama dgn .app-bg dashboard */
+    :root[data-theme="dark"] body.login-body {
+      background:
+        linear-gradient(rgba(10, 15, 35, 0.80), rgba(25, 20, 60, 0.82)),
+        url('login.jpg') center / cover no-repeat fixed,
+        var(--page-bg);
+    }
+
+    /* ── BACKGROUND ─────────────────────────────────────────── */
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+    .bg-grid::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 800px 600px at 20% 30%, var(--grid-glow-1) 0%, transparent 70%),
+        radial-gradient(ellipse 600px 500px at 80% 70%, var(--grid-glow-2) 0%, transparent 70%);
+    }
+    .bg-grid::after {
+      content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image: repeating-linear-gradient(
+        0deg, transparent 0px, transparent 3px,
+        var(--grid-line) 3px, var(--grid-line) 4px
+      );
+    }
+    .orb { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; filter: blur(100px); }
+    .orb-1 { width: 500px; height: 500px; top: -150px; left: -120px; background: var(--orb-1); }
+    .orb-2 { width: 400px; height: 400px; bottom: -100px; right: -100px; background: var(--orb-2); }
+
+    /* ── LOGIN CARD ─────────────────────────────────────────── */
+    .login-card {
+      position: relative; z-index: 10;
+      width: 360px; max-width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: var(--card-glow);
+      animation: cardIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+      overflow: hidden;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(24px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Top accent line — brand gradient cyan-teal (sama dgn nav-btn aktif dashboard) */
+    .card-accent {
+      height: 3px;
+      background: var(--grad-brand);
+      opacity: 0.85;
+    }
+
+    /* ── CARD HEADER ────────────────────────────────────────── */
+    .card-hdr {
+      padding: 40px 36px 24px;
+      text-align: center;
+    }
+
+    /* Logo Telkom Akses — transparan tanpa kotak (sama dgn .brand-logo dashboard) */
+    .logo-wrap {
+      width: 196px; height: 62px; margin: 0 auto 16px;
+      border-radius: 14px;
+      background: transparent;
+      border: none;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0;
+      box-shadow: none;
+    }
+    .logo-wrap img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+    /* System badge */
+    .sys-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 8px; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--brand-500);
+      background: rgba(6, 182, 212, 0.10);
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      padding: 4px 12px; border-radius: 20px;
+      margin-bottom: 14px;
+    }
+    .sys-badge .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--brand-500);
+      animation: blink 1.4s ease-in-out infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* Title */
+    .card-title {
+      font-size: 16px; font-weight: 600; color: var(--text-primary);
+      letter-spacing: -0.3px; line-height: 1.25;
+      margin-bottom: 6px;
+    }
+
+    /* Subtitle */
+    .card-sub {
+      font-size: 10px; color: var(--text-secondary); font-weight: 500;
+      line-height: 1.5;
+    }
+
+    /* ── DIVIDER ────────────────────────────────────────────── */
+    .divider {
+      height: 1px; margin: 0 36px;
+      background: linear-gradient(90deg, transparent 0%, var(--divider) 50%, transparent 100%);
+    }
+
+    /* ── FORM AREA ──────────────────────────────────────────── */
+    .card-body {
+      padding: 24px 36px 28px;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    .field-label {
+      display: block;
+      font-size: 10px; font-weight: 400;
+      color: var(--label-color);
+      letter-spacing: 0.02em;
+      margin-bottom: 8px;
+    }
+
+    .login-hint {
+      font-size: 9px; line-height: 1.5; font-weight: 500;
+      color: var(--text-secondary);
+      margin-top: 7px;
+    }
+
+    /* ── INPUT GROUP: unified container (seraga .ds-input) ──── */
+    .input-group {
+      background: var(--input-bg);
+      border: 1.5px solid var(--input-border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      transition: border-color var(--transition-fast, 150ms ease), box-shadow var(--transition-fast, 150ms ease);
+    }
+
+    .input-group:focus-within {
+      border-color: var(--input-border-focus);
+      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.35);
+    }
+
+    .input-row {
+      position: relative;
+      display: flex; align-items: center;
+    }
+
+    /* Left icon */
+    .inp-ico {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      font-size: 13px; color: var(--text-muted);
+      pointer-events: none;
+      transition: color 0.2s ease;
+      width: 20px; text-align: center;
+    }
+
+    .input-row:focus-within .inp-ico { color: var(--brand-500); }
+
+    /* Native input */
+    .login-input {
+      width: 100%; font-family: var(--font-sans);
+      background: transparent;
+      border: none; outline: none;
+      padding: 0 40px 0 40px;
+      font-size: 11px; font-weight: 500; color: var(--text-primary);
+      height: 44px;
+      caret-color: var(--brand-500);
+    }
+    .login-input::placeholder { color: var(--text-muted); font-weight: 400; }
+    .login-input:focus-visible { box-shadow: none; }
+
+    .login-input:-webkit-autofill {
+      -webkit-text-fill-color: var(--text-primary) !important;
+      -webkit-box-shadow: 0 0 0 100px var(--input-bg) inset !important;
+      caret-color: var(--brand-500);
+    }
+
+    /* Right icon: eye toggle */
+    .toggle-pw {
+      position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      background: none; border: none; border-radius: 8px;
+      cursor: pointer; font-size: 13px; color: var(--text-muted);
+      transition: color 0.2s ease, background 0.2s ease;
+    }
+    .toggle-pw:hover {
+      color: var(--brand-500);
+      background: rgba(6, 182, 212, 0.10);
+    }
+
+    /* ── ERROR ALERT ────────────────────────────────────────── */
+    #login-error {
+      display: none; margin-bottom: 16px;
+      background: rgba(244, 63, 94, 0.08);
+      border: 1px solid rgba(244, 63, 94, 0.22);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 11px; font-weight: 400; color: var(--err-text);
+      align-items: center; gap: 10px;
+      animation: shakeX 0.35s ease;
+    }
+    #login-error.show { display: flex; }
+    @keyframes shakeX {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+
+    /* ── SUBMIT BUTTON — grad-brand (sama dgn .ds-btn dashboard) ── */
+    #btn-login {
+      width: 100%; border: none; cursor: pointer;
+      margin-top: 20px;
+      background: var(--grad-brand);
+      color: #FFFFFF;
+      font-family: var(--font-sans);
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.02em;
+      border-radius: var(--radius-sm);
+      height: 44px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 6px 18px rgba(6, 182, 212, 0.30);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    }
+    #btn-login:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 26px rgba(6, 182, 212, 0.42);
+    }
+    #btn-login:active { transform: scale(0.98); }
+    #btn-login:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    #btn-login .btn-ico { font-size: 11px; }
+
+    .spin { animation: spin 0.65s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── FOOTER ─────────────────────────────────────────────── */
+    .card-ftr {
+      padding: 14px 36px 20px;
+      border-top: 1px solid var(--card-border);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .ftr-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); }
+    .ftr-txt { font-size: 9px; font-weight: 500; color: var(--text-secondary); }
+    .ftr-txt span { color: var(--brand-red); font-weight: 500; }
+
+    /* ── VERSION TAG ────────────────────────────────────────── */
+    .ver-tag {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      z-index: 10; font-size: 8px; font-weight: 400;
+      color: var(--text-muted); font-family: var(--font-sans);
+      letter-spacing: 0.05em; opacity: 0.75;
+    }
+
+    /* ── RESPONSIVE ─────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      .login-card { width: 100%; border-radius: 14px; }
+      .card-hdr { padding: 32px 24px 20px; }
+      .divider { margin: 0 24px; }
+      .card-body { padding: 20px 24px 24px; }
+      .card-ftr { padding: 12px 24px 18px; }
+    }
+  </style>
+</head>
+<body class="login-body">
+
+  <div class="bg-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <div class="login-card">
+    <div class="card-accent"></div>
+
+    <div class="card-hdr">
+      <div class="logo-wrap">
+        <img src="assets/img/logo-ta.png" alt="Telkom Akses">
+      </div>
+      <div class="sys-badge">
+        <span class="dot"></span>
+        Sistem Rekonsiliasi Konstruksi
+      </div>
+      <div class="card-title">Masuk ke Sistem</div>
+      <div class="card-sub">Akses terbatas untuk personel yang<br>telah terdaftar oleh administrator</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="card-body">
+
+      <div id="login-error">
+        <i class="fa-solid fa-circle-xmark" style="color:#F43F5E;font-size: 13px;flex-shrink:0;"></i>
+        <span id="error-msg">Username atau password salah. Coba lagi.</span>
+      </div>
+
+      <form id="form-login" novalidate>
+
+        <div class="field">
+          <label class="field-label" for="username">Username</label>
+          <div class="input-group">
+            <div class="input-row">
+              <i class="fa-solid fa-user inp-ico"></i>
+              <input type="text" id="username" class="login-input"
+                placeholder="Masukkan username"
+                autocomplete="username" spellcheck="false" autocapitalize="none"
+                oninput="clearErr()" aria-label="Username">
+            </div>
+          </div>
+          <p class="login-hint">Akun lapangan cukup tulis username, lalu tekan Masuk.</p>
+        </div>
+
+        <div class="field" id="pw-field" hidden>
+          <label class="field-label" for="password">Password</label>
+          <div class="input-group">
+            <div class="input-row">
+              <i class="fa-solid fa-lock inp-ico"></i>
+              <input type="password" id="password" class="login-input"
+                placeholder="Masukkan password"
+                autocomplete="current-password" oninput="clearErr()" aria-label="Password">
+              <button type="button" class="toggle-pw" id="toggle-pw" onclick="togglePw()"
+                tabindex="-1" title="Tampilkan/sembunyikan password"
+                aria-label="Tampilkan atau sembunyikan password">
+                <i class="fa-solid fa-eye" id="pw-eye"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-login">
+          <i class="fa-solid fa-right-to-bracket btn-ico" id="btn-ico"></i>
+          <span id="btn-txt">Masuk Sekarang</span>
+        </button>
+
+      </form>
+    </div>
+
+    <div class="card-ftr">
+      <div class="ftr-dot"></div>
+      <div class="ftr-txt"><span>PT Telkom Akses</span> &middot; Bogor Area &middot; 2026</div>
+      <div class="ftr-dot"></div>
+    </div>
+  </div>
+
+  <div class="ver-tag">v2.4.1 &middot; PROD</div>
+
+  <script>
+    function togglePw() {
+      const inp = document.getElementById('password');
+      const icon = document.getElementById('pw-eye');
+      const show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      icon.className = show ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+    }
+
+    function clearErr() {
+      document.getElementById('login-error').classList.remove('show');
+    }
+
+    function setLoading(on) {
+      const btn = document.getElementById('btn-login');
+      const ico = document.getElementById('btn-ico');
+      const txt = document.getElementById('btn-txt');
+      btn.disabled = on;
+      if (on) {
+        ico.className = 'fa-solid fa-circle-notch btn-ico spin';
+        txt.textContent = 'Memverifikasi\u2026';
+      } else {
+        ico.className = 'fa-solid fa-right-to-bracket btn-ico';
+        txt.textContent = 'Masuk Sekarang';
+      }
+    }
+
+    function showErr(msg) {
+      const el = document.getElementById('login-error');
+      const txt = document.getElementById('error-msg');
+      txt.textContent = msg || 'Username atau password salah.';
+      el.classList.remove('show');
+      void el.offsetWidth;
+      el.classList.add('show');
+    }
+
+    function pwField() { return document.getElementById('pw-field'); }
+
+    function tampilkanPassword() {
+      pwField().hidden = false;
+      document.getElementById('password').focus();
+    }
+
+    function sembunyikanPassword() {
+      const inp = document.getElementById('password');
+      pwField().hidden = true;
+      inp.value = '';
+      inp.type = 'password';
+      document.getElementById('pw-eye').className = 'fa-solid fa-eye';
+    }
+
+    // ganti username → kembali ke mode tanpa password
+    document.getElementById('username').addEventListener('input', function () {
+      if (!pwField().hidden && !document.getElementById('password').value) sembunyikanPassword();
+    });
+
+    document.getElementById('form-login').onsubmit = async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const perluPassword = !pwField().hidden;
+      const password = document.getElementById('password').value;
+
+      if (!username) { showErr('Username tidak boleh kosong.'); document.getElementById('username').focus(); return; }
+      if (perluPassword && !password) { showErr('Password tidak boleh kosong.'); document.getElementById('password').focus(); return; }
+
+      setLoading(true);
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(perluPassword ? { username, password } : { username })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          clearErr();
+          const btn = document.getElementById('btn-login');
+          btn.style.background = 'var(--success)';
+          document.getElementById('btn-ico').className = 'fa-solid fa-circle-check btn-ico';
+          document.getElementById('btn-txt').textContent = 'Berhasil! Mengalihkan\u2026';
+          setTimeout(() => {
+            location.href = data.role === 'admin' ? '/admin.html' : '/user.html';
+          }, 700);
+        } else {
+          const data = await res.json().catch(() => ({}));
+          showErr(data.message || 'Akses ditolak. Periksa kembali kredensial Anda.');
+          if (data.need_password) {
+            // akun admin: buka kolom password
+            tampilkanPassword();
+          } else {
+            document.getElementById('password').value = '';
+            (perluPassword ? document.getElementById('password') : document.getElementById('username')).focus();
+          }
+        }
+      } catch {
+        showErr('Tidak dapat terhubung ke server. Cek koneksi jaringan.');
+      } finally {
+        if (!document.getElementById('btn-login').style.background.includes('10B981')) {
+          setLoading(false);
+        }
+      }
+    };
+
+    document.getElementById('username').addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (pwField().hidden) document.getElementById('form-login').requestSubmit();
+      else document.getElementById('password').focus();
+    });
+  </script>
+</body>
+</html>

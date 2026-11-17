@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panduan Pengguna — Sistem Rekonsiliasi Konstruksi</title>
+<style>
+  :root{
+    --biru:#0b5394; --biru-tua:#073763; --muda:#eaf1f8; --abu:#5b6b7c;
+    --teks:#1f2933; --garis:#d6dee6; --hijau:#1e7e34; --kuning:#fff8e1; --kuning-garis:#f0c36d;
+    --merah:#b02a37; --merah-muda:#fdecea; --hijau-muda:#e8f5e9;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Segoe UI",Tahoma,Arial,sans-serif;
+    color:var(--teks); font-size:10.5pt; line-height:1.55;
+    background:#fff;
+  }
+  @page{ size:A4; margin:15mm 14mm 16mm 14mm; }
+  @media print{
+    .no-print{display:none !important;}
+    body{font-size:10pt;}
+  }
+
+  /* ---------- footer berulang tiap halaman ---------- */
+  .footer-halaman{
+    position:fixed; bottom:0; left:0; right:0;
+    font-size:7.5pt; color:#93a3b3; border-top:1px solid var(--garis);
+    padding:3px 2px 0 2px; text-align:center; background:#fff;
+  }
+
+  /* ---------- sampul ---------- */
+  .sampul{
+    page-break-after:always; padding:26mm 10mm 0 10mm; text-align:center;
+  }
+  .sampul .logo{
+    display:inline-block; background:var(--biru); color:#fff; font-weight: 500;
+    letter-spacing:2px; padding:10px 22px; border-radius:6px; font-size:12pt;
+  }
+  .sampul h1{
+    font-size:26pt; color:var(--biru-tua); margin:18px 0 4px 0; line-height:1.2;
+  }
+  .sampul h2{ font-size:14pt; color:var(--abu); font-weight: 400; margin:0 0 26px 0; }
+  .sampul .kartu{
+    display:inline-block; text-align:left; background:var(--muda);
+    border:1px solid var(--garis); border-radius:8px;
+    padding:14px 26px; font-size:10pt; margin-top:8px;
+  }
+  .sampul .kartu div{margin:3px 0;}
+  .sampul .kartu b{color:var(--biru-tua);}
+
+  /* ---------- judul bagian & isi ---------- */
+  h1.bab{
+    font-size:16pt; color:#fff; background:var(--biru-tua);
+    padding:8px 12px; border-radius:6px; margin:0 0 12px 0;
+    page-break-before:always; page-break-after:avoid;
+  }
+  h1.bab .kecil{ display:block; font-size:9pt; font-weight:400; color:#cfe0f0; letter-spacing:1px; }
+  h2{ font-size:12.5pt; color:var(--biru); margin:18px 0 6px 0; page-break-after:avoid;
+      border-bottom:2px solid var(--muda); padding-bottom:3px; }
+  h3{ font-size:11pt; color:var(--biru-tua); margin:14px 0 4px 0; page-break-after:avoid; }
+  p{margin:6px 0;}
+  ul,ol{margin:6px 0 6px 0; padding-left:22px;}
+  li{margin:3px 0;}
+  b,strong{color:var(--biru-tua);}
+
+  /* ---------- komponen ---------- */
+  .langkah{ margin:8px 0; page-break-inside:avoid; }
+  .langkah ol{ margin:4px 0 0 0; }
+  .langkah ol li{ margin:4px 0; }
+
+  .kotak{ padding:8px 12px; border-radius:6px; margin:10px 0; page-break-inside:avoid; }
+  .tips{ background:var(--hijau-muda); border-left:4px solid var(--hijau); }
+  .peringatan{ background:var(--merah-muda); border-left:4px solid var(--merah); }
+  .catatan{ background:var(--kuning); border-left:4px solid var(--kuning-garis); }
+  .kotak .judul{ font-weight: 500; margin-bottom:2px; }
+  .tips .judul{color:var(--hijau);} .peringatan .judul{color:var(--merah);} .catatan .judul{color:#9a6b00;}
+
+  .tombol{
+    display:inline-block; background:var(--biru); color:#fff !important;
+    padding:1px 8px; border-radius:4px; font-size:9pt; font-weight: 400;
+  }
+  .tombol.kelabu{background:var(--abu);} .tombol.hijau{background:var(--hijau);} .tombol.merah{background:var(--merah);}
+  .jalan{background:var(--muda); border:1px solid var(--garis); border-radius:4px; padding:0 6px; font-size:9.5pt;}
+
+  table{ border-collapse:collapse; width:100%; margin:8px 0; font-size:9.5pt; page-break-inside:auto; }
+  th,td{ border:1px solid var(--garis); padding:5px 7px; text-align:left; vertical-align:top; }
+  th{ background:var(--muda); color:var(--biru-tua); font-weight: 500; }
+  tr{ page-break-inside:avoid; }
+  td.kode{ font-family:Consolas,monospace; font-size:9pt; white-space:nowrap; }
+
+  .toc{ background:#fff; border:1px solid var(--garis); border-radius:8px; padding:12px 18px; }
+  .toc div{ margin:5px 0; }
+  .toc .b1{ font-weight: 500; color:var(--biru-tua); }
+  .toc .b2{ padding-left:18px; }
+
+  .kecil-teks{ font-size:8.5pt; color:var(--abu); }
+  .center{text-align:center;}
+  .hindari-potong{ page-break-inside:avoid; }
+</style>
+</head>
+<body>
+
+<div class="footer-halaman">Panduan Pengguna · Sistem Rekonsiliasi Konstruksi · PT Telkom Akses — Wilayah Bogor</div>
+
+<!-- ===================== SAMPUL ===================== -->
+<section class="sampul">
+  <div class="logo">TELKOM AKSES</div>
+  <h1>Panduan Pengguna</h1>
+  <h2>Sistem Rekonsiliasi Konstruksi — Wilayah Bogor</h2>
+
+  <div class="kartu">
+    <div><b>Isi panduan ini</b></div>
+    <div>• Bagian A — Aplikasi User (untuk petugas lapangan)</div>
+    <div>• Bagian B — Dasbor Admin (untuk pengawas &amp; admin)</div>
+    <div>• Bagian C — Pemecahan masalah (troubleshooting)</div>
+    <div>• Lampiran — Daftar status pekerjaan &amp; bukti kerja</div>
+  </div>
+
+  <p class="kecil-teks" style="margin-top:28px;">
+    Panduan ini ditulis dengan bahasa sederhana langkah demi langkah.<br>
+    Tidak perlu mengerti teknis — ikuti urutannya saja.
+  </p>
+</section>
+
+<!-- ===================== DAFTAR ISI ===================== -->
+<section>
+  <h1 class="bab"><span class="kecil">PENDAHULUAN</span>Daftar Isi &amp; Istilah Penting</h1>
+
+  <div class="toc">
+    <div class="b1">Pendahuluan</div>
+    <div class="b2">A. Untuk siapa aplikasi ini</div>
+    <div class="b2">B. Istilah &amp; singkatan yang sering dipakai</div>
+    <div class="b2">C. Aturan dasar yang harus diketahui semua orang</div>
+    <div class="b1">Bagian A — Aplikasi User (Lapangan)</div>
+    <div class="b2">A1. Cara masuk (login)</div>
+    <div class="b2">A2. Mengenal layar utama</div>
+    <div class="b2">A3. Alur kerja harian (ringkas)</div>
+    <div class="b2">A4. Jenis bukti kerja (eviden) &amp; cara mengunggahnya</div>
+    <div class="b2">A5. Memahami progres persen</div>
+    <div class="b2">A6. Aturan main tiap status pekerjaan</div>
+    <div class="b2">A7. Tips HP &amp; koneksi</div>
+    <div class="b1">Bagian B — Dasbor Admin</div>
+    <div class="b2">B1. Login &amp; peran pengguna</div>
+    <div class="b2">B2. Mengenal dasbor &amp; kartu statistik</div>
+    <div class="b2">B3. Rekap Status — filter &amp; detail per lokasi</div>
+    <div class="b2">B4. Sinkronisasi GODC</div>
+    <div class="b2">B5. Master Lokasi</div>
+    <div class="b2">B6. Audit Berkas — memeriksa kelengkapan bukti</div>
+    <div class="b2">B7. Generate dokumen (LACT, BAUT, BA Prelim, dll.)</div>
+    <div class="b2">B8. Rekap OPM</div>
+    <div class="b2">B9. Verifikasi keaslian foto (AI)</div>
+    <div class="b2">B10. Manajemen pengguna &amp; akses</div>
+    <div class="b2">B11. Input RAB</div>
+    <div class="b2">B12. Peringatan penting sebelum menghapus</div>
+    <div class="b1">Bagian C — Pemecahan Masalah</div>
+    <div class="b1">Lampiran — Daftar status, kategori berkas &amp; aturan file</div>
+  </div>
+
+  <h2>A. Untuk siapa aplikasi ini</h2>
+  <p>Aplikasi <b>Sistem Rekonsiliasi Konstruksi</b> dipakai PT Telkom Akses Wilayah Bogor untuk mencocokkan
+  pekerjaan konstruksi di lapangan dengan bukti kerjanya. Ada dua pintu masuk yang berbeda:</p>
+  <table>
+    <tr><th style="width:22%">Aplikasi</th><th style="width:30%">Dipakai oleh</th><th>Fungsinya</th></tr>
+    <tr>
+      <td><b>Aplikasi User</b><br><span class="kecil-teks">(dibuka lewat HP/laptop)</span></td>
+      <td>Petugas lapangan, teknisi, surveyor</td>
+      <td>Melihat daftar lokasi yang diminta buktinya, lalu <b>mengunggah foto, hasil ukur, dan dokumen</b>.</td>
+    </tr>
+    <tr>
+      <td><b>Dasbor Admin</b><br><span class="kecil-teks">(dibuka lewat laptop)</span></td>
+      <td>Admin, pengawas, PM/PMO</td>
+      <td><b>Mengawasi seluruh progres</b>, mencocokkan data GODC, membuat rekap &amp; dokumen, mengelola pengguna.</td>
+    </tr>
+  </table>
+  <div class="kotak tips">
+    <div class="judul">💡 Intinya</div>
+    Lapangan <b>mengunggah bukti</b> → Admin <b>mengawasi dan menerbitkan dokumen</b>. Keduanya memakai akun masing-masing,
+    tidak boleh bertukar akun.
+  </div>
+
+  <h2>B. Istilah &amp; singkatan yang sering dipakai</h2>
+  <table>
+    <tr><th style="width:24%">Istilah</th><th>Artinya</th></tr>
+    <tr><td><b>LOP</b></td><td>Lokasi Pekerjaan — satu titik lokasi yang dikerjakan (mis. satu ODP atau satu rumah pelanggan).</td></tr>
+    <tr><td><b>ODP</b></td><td>Optical Distribution Point — kotak/petak sambungan fiber di lapangan. Tersedia berbagai jumlah port, mis. 8 port, 16 port.</td></tr>
+    <tr><td><b>OTB</b></td><td>Optical Termination Box — kotak penutup (terminasi) jalur fiber.</td></tr>
+    <tr><td><b>Feeder</b></td><td>Kabel utama (trunk) yang membawa sinyal dari sentral ke area.</td></tr>
+    <tr><td><b>Drop</b></td><td>Kabel sambungan dari ODP ke rumah pelanggan.</td></tr>
+    <tr><td><b>Redaman</b></td><td>Pelemahan sinyal di kabel fiber (satuan dB). Semakin kecil, semakin baik. Diukur dengan alat <b>OPM</b> dan <b>OTDR</b>.</td></tr>
+    <tr><td><b>OPM</b></td><td>Optical Power Meter — alat ukur besar/kecilnya daya cahaya hasil ukur (satuan dBm).</td></tr>
+    <tr><td><b>OTDR</b> / <b>file .SOR</b></td><td>Alat uji jalur fiber. Hasil simpanannya berupa file <span class="jalan">.SOR</span> — nanti tampil sebagai grafik trace di aplikasi.</td></tr>
+    <tr><td><b>Eviden</b></td><td>Bukti kerja: foto, hasil ukur, atau dokumen yang diunggah petugas lapangan.</td></tr>
+    <tr><td><b>Butuh Eviden</b></td><td>Tanda "lokasi ini wajib mengunggah bukti". Muncul otomatis untuk status tertentu (lihat A6).</td></tr>
+    <tr><td><b>GODC</b></td><td>Sistem induk tempat data proyek &amp; status pekerjaan berasal. Dasbor admin menyinkronkan data dari GODC.</td></tr>
+    <tr><td><b>Status Pekerjaan</b></td><td>Tahap pengerjaan lokasi, contoh: 03. MATDEV, 04. INSTALASI, 07. TC. Daftar lengkap di Lampiran.</td></tr>
+    <tr><td><b>Branch / Cabang</b></td><td>Wilayah kerja, mis. BOGOR, CIAWI, JAKARTA TIMUR. Dipakai untuk memfilter rekap.</td></tr>
+    <tr><td><b>MATDEV</b></td><td>Material Development — pengadaan/persiapan material sebelum instalasi.</td></tr>
+    <tr><td><b>TC</b> / <b>UT</b></td><td>Test Call (uji panggilan) / User Trial (uji coba oleh pelanggan).</td></tr>
+    <tr><td><b>REKON</b> / <b>BAST</b></td><td>Rekonsiliasi data / Berita Acara Serah Terima.</td></tr>
+  </table>
+
+  <h2>C. Aturan dasar yang harus diketahui semua orang</h2>
+  <ol>
+    <li><b>Bukti kerja mengikuti status.</b> Sebuah lokasi baru meminta foto/dokumen ketika statusnya masuk tahap yang diminta (lihat Bagian A6 &amp; Lampiran). Jadi daftar bukti di HP bisa berbeda antar lokasi.</li>
+    <li><b>Satu akun satu orang.</b> Unggahan tercatat sesuai akun yang mengunggah.</li>
+    <li><b>Foto harus jelas dan sesuai lokasi</b> — nomor ODP/kotak terbaca, posisi diambil dari dekat.</li>
+    <li><b>Data bisa berubah sewaktu-waktu</b> karena disinkronkan dari GODC. Jika ada lokasi yang hilang/berubah status, lapor ke admin (jangan membuat lokasi sendiri).</li>
+    <li><b>Progres yang sudah diunggah tersimpan otomatis</b> — tidak perlu menunggu "kirim" besar-besaran, cukup unggah per bukti.</li>
+  </ol>
+</section>
+
+<!-- ===================== BAGIAN A ===================== -->
+<section>
+  <h1 class="bab"><span class="kecil">BAGIAN A</span>Aplikasi User — Untuk Petugas Lapangan</h1>
+
+  <h2>A1. Cara masuk (login)</h2>
+  <div class="langkah">
+    <p>Buka aplikasi lewat browser HP atau laptop, misalnya dengan alamat yang dibagikan admin
+    (contoh: <span class="jalan">http://192.168.x.x:3000/login.html</span>). Layar akan menampilkan kartu login
+    <b>"Masuk ke Sistem"</b>.</p>
+    <ol>
+      <li><b>Ketik username</b> Anda di kolom pertama.</li>
+      <li>Tekan tombol <span class="tombol">Masuk Sekarang</span>.
+        <ul>
+          <li><b>Akun lapangan: cukup username saja</b> — kolom password tidak perlu diisi.</li>
+          <li>Jika yang login <b>admin</b>, kolom password akan muncul otomatis dan wajib diisi.</li>
+        </ul>
+      </li>
+      <li>Tunggu sampai muncul tulisan <b>"Berhasil! Mengalihkan…"</b> — Anda akan masuk otomatis ke halaman upload eviden.</li>
+    </ol>
+  </div>
+  <table>
+    <tr><th style="width:45%">Pesan yang muncul</th><th>Artinya &amp; yang harus dilakukan</th></tr>
+    <tr><td>"Username tidak boleh kosong."</td><td>Ketik dulu username Anda.</td></tr>
+    <tr><td>"Username tidak terdaftar. Hubungi administrator."</td><td>Akun Anda belum dibuat admin. Lapor admin — jangan memakai akun orang lain.</td></tr>
+    <tr><td>"Password salah. Coba lagi."</td><td>Untuk admin: password keliru. Ulangi; kalau lupa, minta admin mereset.</td></tr>
+    <tr><td>"Tidak dapat terhubung ke server. Cek koneksi jaringan."</td><td>HP/laptop tidak tersambung ke jaringan kantor/WiFi. Cek sinyal, coba lagi.</td></tr>
+  </table>
+  <div class="kotak tips">
+    <div class="judul">💡 Tidak ada tombol "Keluar / Logout"</div>
+    Halaman upload eviden memang hanya satu tujuan. Jika pekerjaan sudah selesai, cukup tutup browser.
+    Bila sesi berakhir (misal setelah lama tidak dipakai), Anda akan dialihkan otomatis ke halaman login —
+    tinggal masuk lagi dengan username.
+  </div>
+
+  <h2>A2. Mengenal layar utama</h2>
+  <p>Setelah masuk, tekan tombol besar <span class="tombol">☁️ Upload Eviden Lapangan</span> di bagian atas.
+  Form upload akan terbuka sebagai kartu popup. Empat batang kecil di header kartu menunjukkan
+  <b>tahap pengisian Anda</b> (putih = sedang dikerjakan, hijau = selesai):</p>
+  <table>
+    <tr><th style="width:30%">Bagian</th><th>Fungsi</th></tr>
+    <tr><td><b>Indikator akses</b><br><span class="kecil-teks">di atas, sebelah kanan</span></td>
+        <td>Menunjukkan batas tugas Anda, contoh: <b>"🧩 Akses tematik: HEM · Node B"</b>. Artinya Anda hanya melihat
+        lokasi-lokasi tematik tersebut. Jika tertulis <b>"Akun ini belum memiliki tematik — hubungi admin"</b>,
+        berarti akun Anda belum ditugaskan — minta admin mengaturnya dulu.</td></tr>
+    <tr><td><b>Lokasi Kerja</b> (dropdown)</td><td>Daftar lokasi yang <b>saat ini diminta buktinya</b>. Bisa diketik untuk mencari (nama lokasi atau PID).</td></tr>
+    <tr><td><b>Kategori Berkas</b> (dropdown)</td><td>Jenis bukti yang diminta di lokasi itu, contoh: "-EVIDEN PEMASANGAN ODP", "EVIDEN OTDR".</td></tr>
+    <tr><td><b>Area foto / isian</b></td><td>Berubah menurut kategori yang dipilih: kotak upload foto, wizard port, formulir BOQ, dll.</td></tr>
+    <tr><td><b>Tombol kirim</b></td><td><span class="tombol">KIRIM EVIDEN</span> atau tombol simpan khusus (per kategori).</td></tr>
+  </table>
+  <div class="kotak catatan">
+    <div class="judul">📌 Catatan penting</div>
+    Pilihan <b>lokasi tetap tersimpan</b> walaupun Anda selesai mengunggah satu bukti. Jadi setelah berhasil,
+    Anda bisa langsung memilih kategori berikutnya untuk lokasi yang sama — tidak perlu memilih ulang lokasi.
+  </div>
+
+  <h2>A3. Alur kerja harian (ringkas)</h2>
+  <div class="langkah">
+    <ol>
+      <li><b>Masuk</b> dengan username (A1).</li>
+      <li>Tekan <span class="tombol">☁️ Upload Eviden Lapangan</span>.</li>
+      <li><b>Pilih lokasi</b> — ketik nama lokasi/PID di kolom pencarian, lalu klik lokasinya.</li>
+      <li><b>Pilih kategori berkas</b> — di bawah dropdown tertulis statusnya, misal
+          <i>"✔ 2 berkas belum diupload · 3 berkas dapat diisi berulang"</i>. Itulah pekerjaan Anda di lokasi ini.</li>
+      <li><b>Isi sesuai kategori</b>: unggah foto, isi wizard port, paste BOQ, dll (lihat A4).</li>
+      <li>Tekan tombol kirim. Tunggu notifikasi hijau <b>✔ … berhasil</b>.</li>
+      <li>Ulangi langkah 4–6 untuk kategori berikutnya, atau pilih lokasi lain.</li>
+    </ol>
+  </div>
+
+  <h2>A4. Jenis bukti kerja (eviden) &amp; cara mengunggahnya</h2>
+  <p>Daftar kategori berkas berbeda tiap tematik (MyRepublik, Node B, Relokasi, Jlm, M-tel, HEM, MICRODEMAND).
+  Berikut cara mengisi setiap jenis pekerjaan:</p>
+
+  <h3>① Foto biasa / dokumen PDF (cara umum)</h3>
+  <div class="langkah">
+    <ol>
+      <li>Pilih lokasi, lalu pilih kategori berkas (mis. "-Pemasangan Tiang", "-Instalasi JC", "ABD (PDF/DWG/DXF)").</li>
+      <li>Jika muncul kolom <b>nama tambahan</b> (contoh: <i>"Nama ODP (wajib)"</i>, <i>"Nama Closure (wajib)"</i>),
+          <b>wajib diisi dulu</b> sebelum foto bisa dikirim.</li>
+      <li>Masukkan berkas dengan salah satu cara:
+        <ul>
+          <li><b>HP:</b> ketuk area bertuliskan <i>"Drag &amp; drop foto… atau klik untuk buka galeri"</i> → pilih <b>Kamera</b> atau <b>Galeri</b>.</li>
+          <li><b>Laptop:</b> klik untuk pilih file, atau <b>seret (drag &amp; drop)</b> file ke kotak tersebut.</li>
+          <li><b>Tempel dari Telegram/WA:</b> buka gambarnya → klik kanan → <i>Copy image</i> → arahkan kursor ke kotak → tekan <b>Ctrl+V</b>.</li>
+        </ul>
+      </li>
+      <li>Periksa daftar file (badge <i>"3 foto — siap diupload"</i>). File baru <b>digabung</b>, bukan ditimpa — boleh tambah berkali-kali.</li>
+      <li>Tekan <span class="tombol">KIRIM EVIDEN</span> → tunggu <i>"Mengupload…"</i> → muncul notifikasi hijau.</li>
+    </ol>
+  </div>
+  <table>
+    <tr><th style="width:34%">Aturan</th><th>Detail</th></tr>
+    <tr><td>Ukuran file</td><td>Maksimal <b>15 MB per file</b>.</td></tr>
+    <tr><td>Format gambar</td><td>JPG, PNG, WEBP. Foto dari iPhone (HEIC) harus diubah dulu ke JPG —
+        cara cepat: kirim foto ke diri sendiri di WA, maka otomatis jadi JPG.</td></tr>
+    <tr><td>Kategori "wajib 3 foto"</td><td><b>-Istalasi Per FAT</b> dan <b>-Instalasi Pole</b> mewajibkan
+        <b>tepat 3 foto sekaligus</b>. Pesan jika salah: <i>"Kategori ini wajib tepat 3 foto."</i></td></tr>
+    <tr><td>Dokumen ABD</td><td>Kategori <b>ABD</b> menerima .pdf, .dwg, .dxf, atau foto hasil cetak.</td></tr>
+    <tr><td>Karakter nama</td><td>Karakter terlarang <span class="jalan">\ / : * ? " &lt; &gt; |</span> otomatis diganti tanda <b>-</b>.</td></tr>
+  </table>
+
+  <h3>② Wizard OPM / Redaman per port (8 PORT &amp; 16 PORT)</h3>
+  <p>Dipakai kategori <b>-EVIDENT HASIL UKUR OPM</b>, <b>FORM PENGUKURAN OPM</b>, dan <b>EVIDEN REDAMAN ODP/OTB</b>.
+  Kategori ini berbentuk <b>wizard per port</b>, bukan upload bebas.</p>
+  <div class="langkah">
+    <ol>
+      <li>Pilih kategori → isi <b>Nama ODP (wajib)</b>, contoh: <span class="jalan">ODP-BOG-01</span>.</li>
+      <li>Pilih kapasitas: tombol <span class="tombol">8 PORT</span> atau <span class="tombol">16 PORT</span>.</li>
+      <li>Akan muncul chip <b>P1 … P8/P16</b> dan kartu <b>"PORT 1"</b>. Untuk tiap port, pilih salah satu:
+        <ul>
+          <li><span class="tombol hijau">ADA USER (ISI)</span> — port terpakai/terisi pelanggan → langsung lanjut ke port berikutnya.</li>
+          <li><span class="tombol kelabu">UKUR OPM (KOSONG)</span> — port kosong → <b>wajib foto hasil ukur</b> alat OPM pada port itu.</li>
+        </ul>
+      </li>
+      <li>Pada mode ukur: ketuk <i>"📷 Klik untuk pilih foto port ini"</i> → pilih foto hasil ukur → tekan
+          <span class="tombol">Kirim Port Ini</span>.</li>
+      <li>Ulangi sampai semua port selesai — penghitung di bawah menulis <b>"8/8 port selesai"</b>.</li>
+    </ol>
+  </div>
+  <div class="kotak tips">
+    <div class="judul">💡 Bisa dilanjut kapan saja</div>
+    Jika ODP sudah terisi sebagian (misal 5 dari 8 port), data lama <b>tidak hilang</b>. Buka lagi nama ODP yang sama,
+    port yang sudah terisi akan terlihat berwarna — lanjutkan dari port yang masih kosong.
+  </div>
+
+  <h3>③ Wizard 3 langkah: SEBELUM → PROGRES → SESUDAH</h3>
+  <p>Dipakai kategori <b>-EVIDEN PEMASANGAN ODP</b>, <b>-EVIDEN COLUSER (CUT OVER)</b>, dan
+  <b>EVIDEN INSTALASI ODP/OTB</b>. Tujuannya: bukti urutan pengerjaan satu titik.</p>
+  <div class="langkah">
+    <ol>
+      <li>Pilih kategori → isi <b>Nama ODP / Nama Closure (wajib)</b>.</li>
+      <li>Untuk kategori <b>CUT OVER</b>: pilih dulu <b>Jenis Closure</b> (24, 48, 96, 144, 288, 576, atau "Lainnya").</li>
+      <li>Untuk tiap tahap — <b>SEBELUM</b>, lalu <b>PROGRES</b>, lalu <b>SESUDAH</b> — ambil 1 foto, lalu tekan
+          <span class="tombol">Lanjut ke PROGRES</span> → <span class="tombol">Lanjut ke SESUDAH</span> →
+          <span class="tombol hijau">Simpan ODP</span>/<span class="tombol hijau">Simpan Closure</span>.</li>
+      <li>Penghitung menunjukkan <b>"3/3 step selesai"</b>. Kolom nama otomatis dikosongkan supaya Anda bisa
+          langsung mengisi titik berikutnya.</li>
+    </ol>
+  </div>
+
+  <h3>④ File OTDR (ekstensi .SOR)</h3>
+  <div class="langkah">
+    <ol>
+      <li>Pilih kategori <b>OTDR (.SOR)</b> atau <b>EVIDEN OTDR</b>.</li>
+      <li>Pilih file <span class="jalan">.SOR</span> hasil alat OTDR dari HP/komputer — boleh pilih
+          <b>banyak file sekaligus</b>. Tidak perlu foto pendamping untuk kategori "OTDR (.SOR)".</li>
+      <li>Tekan <span class="tombol">KIRIM EVIDEN</span>. File disimpan apa adanya (tidak dikonversi);
+          admin yang akan melihat grafik trace-nya di dasbor.</li>
+    </ol>
+  </div>
+  <div class="kotak catatan">
+    <div class="judul">📌 Kategori "EVIDEN OTDR"</div>
+    Kategori ini menerima file .SOR <b>atau</b> gambar. Kalau alat Anda tidak bisa menyimpan .SOR,
+    foto layar hasil uji OTDR boleh dipakai.
+  </div>
+
+  <h3>⑤ BOQ Aktual &amp; BOQ Barang Tiba (tanpa foto — dari Excel)</h3>
+  <div class="langkah">
+    <ol>
+      <li>Buka Excel berisi data BOQ → blok sel yang akan disalin (mengikuti urutan kolom yang diminta) → <b>Ctrl+C</b>.</li>
+      <li>Pilih kategori <b>BOQ AKTUAL</b> (atau <b>BOQ BARANG TIBA</b> untuk tematik Node B) → kotak paste akan muncul.</li>
+      <li>Tempel (<b>Ctrl+V</b>) → tekan <span class="tombol">📊 Parsing Data</span>.
+          Akan tampil pratinjau baris + jumlah <b>"n baris BOQ ditambahkan"</b>. Periksa dulu; baris keliru bisa dihapus dengan tombol ✕.</li>
+      <li>Tekan <span class="tombol hijau">💾 Simpan BOQ Aktual</span> (atau <span class="tombol">💾 Simpan BOQ Barang Tiba</span>).</li>
+    </ol>
+  </div>
+  <table>
+    <tr><th style="width:30%">Jenis</th><th>Urutan kolom saat disalin dari Excel</th></tr>
+    <tr><td><b>BOQ Aktual</b></td><td>designator · uraian · satuan · material · jasa · volume (TOTAL)</td></tr>
+    <tr><td><b>BOQ Barang Tiba</b></td><td>jenis material · satuan · volume · keterangan</td></tr>
+  </table>
+
+  <h3>⑥ Peta Rute (KML/KMZ)</h3>
+  <div class="langkah">
+    <ol>
+      <li>Pilih kategori <b>-PETA RUTE (KML/KMZ)</b> (atau <b>KML (KML)</b>).</li>
+      <li>Pilih <b>tepat 1 file</b> berekstensi <span class="jalan">.kml</span> atau <span class="jalan">.kmz</span>.</li>
+      <li>Tekan kirim → tombol berubah jadi <i>"Memproses peta…"</i> → bila berhasil muncul notifikasi
+          <i>"🗺 Peta rute berhasil diproses!"</i> beserta tombol <b>&gt;&gt; Download PDF</b>.</li>
+    </ol>
+  </div>
+
+  <h3>⑦ Bon Material</h3>
+  <div class="langkah">
+    <ol>
+      <li>Pilih kategori <b>EVIDEN BON MATERIAL</b>.</li>
+      <li>Isi <b>Nama Material (wajib)</b> dan <b>Volume Material</b> (volume tidak berlaku untuk tematik Node B, HEM, MICRODEMAND).</li>
+      <li>Foto bon material <b>opsional</b> — jika ada, unggah seperti biasa.</li>
+      <li>Tekan kirim → notifikasi <b>"Bon Material tersimpan!"</b>.</li>
+    </ol>
+  </div>
+
+  <h3>⑧ Data tersimpan (RFC, dll.) — memperbaiki data yang salah</h3>
+  <p>Untuk kategori <b>INPUT RFC</b> dan <b>EVIDEN BON MATERIAL</b>, data yang pernah Anda isi tersimpan
+  dan <b>bisa diperbaiki</b>:</p>
+  <div class="langkah">
+    <ol>
+      <li>Pilih lokasi + kategori tersebut → daftar <b>Data tersimpan</b> muncul di bawah.</li>
+      <li>Tekan <span class="tombol kelabu">🖊 Edit</span> → ubah nama/judul, volume, atau keterangan →
+          <span class="tombol hijau">💾 Simpan Perubahan</span>.</li>
+      <li>Untuk membuang: <span class="tombol merah">🗑 Hapus</span> → konfirmasi <b>OK</b>.</li>
+    </ol>
+  </div>
+
+  <h3>⑨ Eviden lain (tulis manual)</h3>
+  <p>Jika bukti yang diminta tidak ada di daftar kategori, pilih <b>➕ Eviden lain (tulis manual)</b>,
+  ketik nama buktinya (contoh: <i>Eviden Perbaikan Tiang Miring</i>), lalu unggah fotonya seperti biasa.</p>
+
+  <h3>⑩ Input Sambungan CO (BA CO) &amp; Generate LACT</h3>
+  <div class="langkah">
+    <ol>
+      <li>Pilih kategori <b>🔗 -INPUT SAMBUNGAN CO</b> → kartu <b>"Input BA CO — Laporan Cut Over"</b> terbuka.</li>
+      <li>Isi maksimal <b>4 sesi sambungan</b>. Untuk mengetahui formatnya, tekan <span class="tombol kelabu">💡 Contoh</span>
+          pada sesi 1.</li>
+      <li>Tekan <span class="tombol hijau">💾 Simpan BA CO</span> → status berubah <b>"Tersimpan ✓"</b>.</li>
+      <li>Untuk membuat dokumen: centang <b>PDF</b> bila perlu, lalu tekan <span class="tombol">📤 Generate LACT</span> —
+          dokumen terbuka di tab baru (Word atau PDF).</li>
+    </ol>
+  </div>
+  <div class="kotak catatan">
+    <div class="judul">📌 Hari/Tanggal/Bulan CO</div>
+    Kolom tersebut <b>diisi oleh Admin</b> pada form berkas lokasi — petugas lapangan tidak perlu mengisinya.
+  </div>
+
+  <h2>A5. Memahami progres</h2>
+  <table>
+    <tr><th style="width:34%">Yang Anda lihat</th><th>Artinya</th></tr>
+    <tr><td>4 batang di header kartu</td><td>Tahap pengisian: lokasi dipilih → kategori dipilih → nama terisi → berkas siap. Hijau = selesai.</td></tr>
+    <tr><td>"✔ 2 berkas belum diupload · 3 berkas dapat diisi berulang"</td><td>Tugas Anda: <b>2 bukti wajib</b> yang belum ada, dan 3 bukti yang boleh diisi berulang (contoh: 1 foto per ODP/port).</td></tr>
+    <tr><td>"Semua kategori wajib sudah lengkap — masih bisa tambah eviden manual"</td><td>Lokasi itu sudah lengkap. Selamat! Anda tetap boleh menambah bukti bila ada perbaikan.</td></tr>
+    <tr><td>Persentase %</td><td>Persentase tidak tampil di aplikasi lapangan — yang melihat angka persen adalah <b>admin</b> di dasbor (Bagian B).</td></tr>
+  </table>
+
+  <h2>A6. Kenapa ada lokasi yang tidak muncul di daftar?</h2>
+  <p>Daftar lokasi di HP hanya memuat lokasi yang <b>saat ini diminta buktinya</b>. Sebuah lokasi baru muncul
+  ketika status pekerjaannya mencapai tahap tertentu:</p>
+  <table>
+    <tr><th style="width:46%">Status pekerjaan (dilihat di dasbor admin)</th><th>Muncul di HP?</th></tr>
+    <tr><td>00. DROP · 02. PERIJINAN · 10. BAST</td><td>❌ Tidak — belum wajib bukti.</td></tr>
+    <tr><td><b>03. MATDEV</b></td><td>✅ Ya — mulai diminta bukti (41 lokasi per Oktober 2026).</td></tr>
+    <tr><td><b>04. INSTALASI</b></td><td>✅ Ya.</td></tr>
+    <tr><td>05. FINISH INSTALASI/OA · 06. GO LIVE · 07. TC · 08. UT · 09. REKON</td><td>✅ Ya.</td></tr>
+  </table>
+  <p>Selain status, lokasi juga hanya tampil jika <b>termasuk tematik Anda</b>. Jadi jika ada lokasi yang
+  menurut Anda seharusnya muncul tapi tidak terlihat, kemungkinan besar: (a) statusnya belum masuk tahap di atas,
+  atau (b) lokasi itu bukan tematik Anda. <b>Lapor ke admin</b> — bukan mengunggah ke lokasi lain.</p>
+
+  <h2>A7. Tips HP &amp; koneksi</h2>
+  <ul>
+    <li><b>Foto iPhone (HEIC) ditolak</b> di wizard OPM &amp; wizard 3 langkah. Ubah dulu ke JPG —
+        paling mudah: kirim fotonya ke diri sendiri lewat WhatsApp, hasil unduhan otomatis JPG.</li>
+    <li><b>Ukuran maksimal 15 MB per file.</b> Kalau foto dari kamera HP terlalu besar, kirim dulu lewat WA
+        (WA memperkecil ukuran) lalu unggah hasilnya.</li>
+    <li><b>Gambar dari situs lain tidak bisa langsung diseret</b> (dilindungi situsnya). Cara aman:
+        buka gambarnya → klik kanan → <i>Copy image</i> → <b>Ctrl+V</b> di halaman upload.</li>
+    <li><b>Drag &amp; drop hanya untuk laptop.</b> Di HP gunakan cara klik → pilih Galeri/Kamera, atau tempel (paste).</li>
+    <li><b>Jaringan lemah?</b> Unggah sedikit demi sedikit — setiap bukti tersimpan sendiri-sendiri,
+        jadi putus di tengah tidak mengulang dari awal.</li>
+    <li><b>Jangan menutup halaman</b> selagi tombol masih bertuliskan "Mengupload…".</li>
+    <li><b>Salah unggah?</b> Buka lokasi &amp; kategori yang sama, unggah ulang foto yang benar —
+        bukti terbaru yang dipakai admin.</li>
+  </ul>
+</section>
+<!-- ===================== BAGIAN B ===================== -->
+<section>
+  <h1 class="bab"><span class="kecil">BAGIAN B</span>Dasbor Admin — Untuk Admin &amp; Pengawas</h1>
+
+  <h2>B1. Login &amp; peran pengguna</h2>
+  <p>Dasbor admin dibuka lewat halaman login yang sama (lihat A1), tetapi <b>akun admin wajib password</b>.
+  Setelah berhasil, Anda langsung masuk ke dasbor.</p>
+  <table>
+    <tr><th style="width:22%">Peran</th><th style="width:26%">Cara login</th><th>Masuk ke</th></tr>
+    <tr><td><b>Admin</b></td><td>Username + password</td><td>Dasbor admin (halaman ini)</td></tr>
+    <tr><td><b>Lapangan (user)</b></td><td>Username saja</td><td>Halaman upload eviden (Bagian A)</td></tr>
+  </table>
+
+  <h3>Menu di sebelah kiri (sidebar)</h3>
+  <table>
+    <tr><th style="width:26%">Menu</th><th>Fungsinya</th></tr>
+    <tr><td><b>Dashboard</b></td><td>Ringkasan proyek + widget <b>Rekap Status</b> (B2–B3).</td></tr>
+    <tr><td><b>Generate</b></td><td>Membuat dokumen (LACT, BAUT, BA Prelim, dll.) — lihat B7.</td></tr>
+    <tr><td><b>Master Lokasi</b></td><td>Daftar seluruh lokasi + status buktinya (B5).</td></tr>
+    <tr><td><b>Audit Berkas</b></td><td>Memeriksa kelengkapan bukti satu lokasi (B6).</td></tr>
+    <tr><td><b>Pengguna</b></td><td>Membuat/mengatur akun lapangan &amp; admin (B10).</td></tr>
+    <tr><td><b>Input RAB</b></td><td>Mengisi RAB per lokasi (B11) — terbuka di tab baru.</td></tr>
+    <tr><td><b>Keluar Sistem</b></td><td>Kembali ke halaman login.</td></tr>
+  </table>
+  <div class="kotak tips">
+    <div class="judul">💡 Pilih lokasi dulu, baru Generate</div>
+    Tombol <span class="tombol">Generate</span> di pojok kanan atas meminta Anda memilih lokasi terlebih dahulu.
+    Jika belum memilih, muncul peringatan <i>"Pilih lokasi terlebih dahulu (tombol Generate di header)!"</i>.
+    Pemilihan lokasi ini juga dipakai oleh menu Audit Berkas.
+  </div>
+
+  <h2>B2. Mengenal dasbor &amp; kartu statistik</h2>
+  <p>Setelah masuk, layar Dashboard menampilkan empat kartu ringkasan:</p>
+  <table>
+    <tr><th style="width:30%">Kartu</th><th>Artinya</th></tr>
+    <tr><td><b>Total Proyek GODC</b></td><td>Jumlah seluruh proyek yang tersinkron dari GODC.</td></tr>
+    <tr><td><b>Need Evidence</b></td><td>Proyek yang <b>saat ini menunggu bukti kerja</b> dari lapangan.</td></tr>
+    <tr><td><b>Done Pemberkasan</b></td><td>Proyek yang berkasnya sudah lengkap.</td></tr>
+    <tr><td><b>GOLIVE-FINISH</b></td><td>Proyek yang sudah masuk tahap go-live/finish.</td></tr>
+  </table>
+  <p>Di bawah kartu terdapat chip ringkas <b>"Internal · Need Evidence"</b> dan <b>"Eksternal · Need Evidence"</b>
+  lengkap dengan nominal rupiah — untuk melihat cepat berapa nilai pekerjaan yang masih menunggu bukti.</p>
+
+  <h2>B3. Rekap Status — filter &amp; detail per lokasi</h2>
+  <p>Widget utama dasbor adalah <b>Rekap Status</b>: perkembangan pemberkasan seluruh lokasi, disusun berjenjang
+  <b>Tematik → PO → SP → Non PO</b>.</p>
+
+  <h3>Memakai filter</h3>
+  <div class="langkah">
+    <ol>
+      <li>Pilih <b>Internal</b> atau <b>Eksternal</b> (tombol berdampingan di atas tabel).</li>
+      <li>Pilih <b>Branch / Cabang</b> (mis. BOGOR, CIAWI) pada dropdown pertama.</li>
+      <li>Pilih <b>Status Pekerjaan</b> (mis. 04. INSTALASI, 07. TC) pada dropdown kedua — angka di tabel
+          akan dihitung ulang hanya untuk status itu.</li>
+      <li>Dropdown <b>Tematik</b> dan <b>SP</b> menyaring lebih halus lagi. Semua filter bisa digabung.</li>
+      <li>Menekan kolom <b>Total</b> mengurutkan baris; tombol 🔄 menyegarkan data dari master GODC.</li>
+    </ol>
+  </div>
+
+  <h3>Membaca kolom</h3>
+  <table>
+    <tr><th style="width:30%">Kolom</th><th>Artinya</th></tr>
+    <tr><td><b>Need Evidence</b></td><td>Jumlah lokasi yang buktinya masih diminta. <b>Klik angkanya</b> untuk membuka panel <b>Detail LOP</b> — daftar nama lokasi di dalamnya.</td></tr>
+    <tr><td><b>Progres</b></td><td>Lokasi yang buktinya sedang diunggah petugas lapangan.</td></tr>
+    <tr><td><b>Done Pemberkasan</b></td><td>Lokasi yang buktinya sudah lengkap.</td></tr>
+    <tr><td><b>Total LOP</b></td><td>Jumlah seluruh lokasi pada baris itu.</td></tr>
+  </table>
+
+  <h3>Tindakan di Detail LOP</h3>
+  <ul>
+    <li><b>[ undo ]</b> — mengembalikan status dokumen lokasi itu ke <b>Need Evidence</b>
+        (dipakai bila pemberkasan ditandai lengkap keliru).</li>
+    <li>Klik angka pada kolom dokumen di bagian bawah → membuka panel dokumen tersebut.</li>
+    <li><b>Koreksi status manual (khusus admin)</b> — mengubah status dokumen
+        BELUM → TERGENERATE → NA sesuai keadaan sebenarnya.</li>
+    <li><b>Ekspor CSV</b> (ikon di judul widget) → mengunduh rekap sesuai filter aktif menjadi
+        file <span class="jalan">rekap_status_TANGGAL.csv</span>.</li>
+    <li>Ikon 🌙 mengganti tema gelap/terang.</li>
+  </ul>
+
+  <h2>B4. Sinkronisasi GODC</h2>
+  <p>Semua data proyek &amp; status pekerjaan berasal dari <b>GODC</b>. Dasbor menariknya secara otomatis
+  <b>setiap 60 detik</b>, dan bisa disinkronkan paksa kapan saja.</p>
+  <div class="langkah">
+    <ol>
+      <li>Buka kartu <b>GODC</b> di dasbor (atau tampilan laporan GODC).</li>
+      <li>Tekan tombol <b>Sinkronisasi Data</b> — sistem mengambil ulang data terbaru, termasuk
+          status pekerjaan baru dan proyek baru.</li>
+      <li>Centang <b>Auto-refresh 60 dtk</b> bila ingin tampilan selalu segar.</li>
+      <li>Tombol <b>Export Excel</b>, <b>Unduh Laporan</b> (CSV), dan <b>Buka di Sheets</b> tersedia untuk pelaporan.</li>
+    </ol>
+  </div>
+  <h3>Kartu penting di tampilan GODC</h3>
+  <table>
+    <tr><th style="width:30%">Kartu</th><th>Gunanya</th></tr>
+    <tr><td><b>PO · Input No. SP</b></td><td>Mengisi nomor SP untuk proyek berstatus PO.</td></tr>
+    <tr><td><b>Perlu Input Eviden</b></td><td>Daftar proyek yang menunggu bukti. Tombol <b>Input Eviden</b>
+        membuka halaman upload eviden (Bagian A) langsung pada lokasi itu — berguna bila Anda ingin
+        mengambil foto lapangan sendiri. Klik nama lokasi untuk menandainya masuk tahap <b>PROGRES</b>.</td></tr>
+  </table>
+  <div class="kotak catatan">
+    <div class="judul">📌 Kenapa lokasi muncul/lenyap sendiri</div>
+    Lokasi baru dibuat otomatis dari GODC ketika statusnya mencapai tahap yang diminta bukti
+    (03. MATDEV, 04. INSTALASI, 05–09, lihat Lampiran). Itu sebabnya daftar di HP petugas bisa bertambah
+    tanpa Anda menambah apa pun.
+  </div>
+
+  <h2>B5. Master Lokasi</h2>
+  <div class="langkah">
+    <ol>
+      <li>Buka menu <b>Master Lokasi</b>. Tiga kartu kecil di atas menunjukkan ringkasan jumlah lokasi.</li>
+      <li>Gunakan <b>chip tematik</b> dan <b>kolom pencarian</b> untuk menemukan lokasi.</li>
+      <li>Kolom <b>RAB</b> tiap baris menampilkan total RAB beserta jumlah item ("Belum ada RAB" bila belum diisi).</li>
+      <li><b>Export Data</b> → <b>Export ke Excel</b> (file CSV) atau <b>Export ke PDF</b> (jendela cetak).</li>
+    </ol>
+  </div>
+  <div class="kotak peringatan">
+    <div class="judul">⚠️ Menghapus lokasi = menghapus semuanya</div>
+    Tombol hapus pada sebuah lokasi memunculkan peringatan:
+    <b>"Semua berkas dan data progres akan ikut terhapus."</b> Artinya seluruh foto, hasil ukur, dan
+    progres lokasi itu hilang permanen. Hapus lokasi hanya untuk data keliru dari GODC — dan
+    <b>tidak ada tombol "kembalikan"</b> setelah dihapus.
+  </div>
+
+  <h2>B6. Audit Berkas — memeriksa kelengkapan bukti</h2>
+  <p>Menu <b>Audit Berkas</b> adalah tempat memeriksa satu lokasi secara menyeluruh: apa yang sudah diunggah
+  petugas, apa yang masih kurang, dan menambah bukti sendiri bila perlu.</p>
+  <div class="langkah">
+    <ol>
+      <li><b>Pilih lokasi</b> lewat tombol Generate di kanan atas (pemilihan lokasi dipakai bersama).</li>
+      <li>Layar audit menampilkan dua kartu: <b>"Berkas Sudah Terisi"</b> dan <b>"Berkas Masih Kurang"</b>.</li>
+      <li>Tombol pada tiap berkas:
+        <ul>
+          <li><b>Lihat Semua</b> — membuka galeri foto/dokumen berkas tersebut.</li>
+          <li><b>Unggah</b> — menambahkan berkas sendiri dari komputer. Untuk kategori titik
+              (Hasil Ukur OPM, Pemasangan ODP, Coluser, Instalasi ODP/OTB, Redaman ODP/OTB)
+              <b>nama ODP/titik wajib diisi</b>, contoh: <span class="jalan">FAT A05</span>.</li>
+          <li><b>Tidak Berlaku</b> — menandai berkas tidak dihitung (mis. tidak sesuai tematik);
+              tombol <b>Kembalikan</b> mengembalikannya ke daftar wajib.</li>
+        </ul>
+      </li>
+      <li>Tombol atas: <b>Isi / Edit Laporan</b>, <b>Download Dokumen Word</b>, <b>Refresh Audit</b>,
+          dan (khusus admin) <b>Verifikasi Semua</b> (B9).</li>
+      <li>Panel <b>RAB</b> &amp; <b>BOQ</b> di bawah menampilkan ringkasan material, jasa, dan grand total;
+          tersedia tombol <b>Lihat RAB</b> (untuk tematik HEM, MICRODEMAND, NODE B) dan <b>Edit RAB</b>.</li>
+  </ol>
+  </div>
+  <div class="kotak tips">
+    <div class="judul">💡 Panel Input Khusus</div>
+    Beberapa data (RFC, Bon Material, dll.) tampil di panel <b>Input Khusus</b> dengan tombol
+    <b>Edit</b> dan <b>Hapus</b> — untuk memperbaiki data yang salah isi tanpa meminta lapangan mengunggah ulang.
+  </div>
+
+  <h2>B7. Generate dokumen (LACT, BAUT, BA Prelim, dll.)</h2>
+  <div class="langkah">
+    <ol>
+      <li>Tekan tombol <b>Generate</b> di pojok kanan atas → panel dokumen terbuka.</li>
+      <li>Pilih format: sakelar <b>DOCX</b> (Word) atau <b>PDF</b>. Catatan bila memilih PDF:
+          <i>"dokumen dikonversi otomatis oleh MS Word (±2–4 detik)"</i>.</li>
+      <li><b>Pilih lokasi</b> di kolom pencarian panel (wajib — dokumen terikat satu lokasi).</li>
+      <li>Pilih jenis dokumen:</li>
+    </ol>
+  </div>
+  <table>
+    <tr><th style="width:26%">Kelompok</th><th>Jenis dokumen</th></tr>
+    <tr><td><b>LACT</b></td><td>LACT RELOKASI · LACT MICRODEMAND · LACT HEM · LACT NODE B</td></tr>
+    <tr><td><b>BA PENDUKUNG</b></td><td>BA Prelim · BA Tambah Kurang · MOM Redesign</td></tr>
+    <tr><td><b>BAUT</b></td><td>BAUT RELOKASI · BAUT HEM · BAUT NODE B · BAUT MICRODEMAND</td></tr>
+    <tr><td><b>Lainnya</b></td><td>KML TEMATIK (unduh peta lokasi)</td></tr>
+    <tr><td><b>Dokumen Lain</b><br><span class="kecil-teks">badge "Siapkan Template"</span></td>
+        <td>BA Lapangan · BA Perubahan Design · Surat Penawaran Harga — tombol ada, tetapi
+        <b>templatenya belum dipasang</b> di server. Bila ditekan muncul pesan
+        <i>"Template tidak tersedia di server."</i></td></tr>
+  </table>
+
+  <h3>Isi form dokumen (BAUT / LACT / BA Pendukung)</h3>
+  <p>Sebelum dokumen dicetak, isikan data lokasi yang diminta, misalnya: proyek, kontrak, surat pesanan,
+  district, pelaksana, hari/tanggal/bulan CT, nama &amp; NIK waspang, dan lain-lain. Untuk Node B tersedia
+  tambahan tanggal (CT, barang tiba, OPM) dan 5 baris material aset. Beberapa isian tersedia otomatis
+  (mis. tanggal Node B bisa diisi sekali klik dari date picker).</p>
+  <ul>
+    <li><b>BAUT</b> — tombol Generate BAUT; untuk BAUT NODE B tersedia 5 slot lampiran:
+        NOTA DINAS · PERMOHONAN TIM UT · PENUNJUKAN TIM UT · FORM CEKLIS · BA PRELIM.
+        Lampiran SP &amp; SSBOQ juga bisa diunggah (PDF otomatis diubah menjadi gambar).</li>
+    <li><b>BA Prelim</b> — tersedia 15 slot lampiran (BA Kesepakatan &amp; Negosiasi, Penunjukan Vendor,
+        BOQ, Invoice, Kwitansi, KTP &amp; NPWP, Surat Pemkot, Dokumentasi, dll.) dan isian nilai rupiah.</li>
+    <li><b>KML Tematik</b> — mengunduh file peta; pesan bila belum tersedia:
+        <i>"File KML asli belum tersedia untuk tematik ini."</i></li>
+    <li>Setelah <b>Simpan &amp; Cetak Word</b>, dokumen langsung terunduh (Word atau PDF sesuai pilihan).</li>
+  </ul>
+
+  <h2>B8. Rekap OPM</h2>
+  <p>Fitur untuk menyusun lampiran rekap hasil ukur OPM seluruh ODP pada satu lokasi — sekaligus mempercepat
+  pengisian karena hasil ukur dari foto lapangan bisa dibaca otomatis.</p>
+  <div class="langkah">
+    <ol>
+      <li>Buka <b>Audit Berkas</b> → pilih lokasi → tombol <b>Rekap OPM</b> pada berkas terkait.</li>
+      <li><b>Pilih ODP</b> yang akan direkap → tekan <span class="tombol">Lanjut ke Preview</span>.</li>
+      <li>Sistem <b>memindai otomatis</b> hasil ukur dari foto (hanya kolom yang masih kosong).
+          Untuk hasil manual: tombol <b>Scan OPM (AI)</b> atau scan per port, dan kolom <b>Catuan</b>
+          untuk mencatat sendiri.</li>
+      <li>Periksa pratinjau, lalu <span class="tombol hijau">Simpan &amp; Buat Lampiran</span> —
+          muncul pesan <i>"N lampiran rekap OPM dibuat untuk M ODP."</i></li>
+      <li>Selesai: tekan <b>Generate / Download LACT Relokasi</b> untuk mencetak dokumennya.</li>
+    </ol>
+  </div>
+  <p class="kecil-teks">Tombol "Ubah Pilihan" mengembalikan Anda ke daftar ODP tanpa kehilangan data.</p>
+
+  <h2>B9. Verifikasi keaslian foto (AI)</h2>
+  <p>Setiap foto bukti bisa diperiksa otomatis untuk mendeteksi foto editan atau foto pinjaman.
+  Tersedia pada <b>Galeri</b> (per lokasi) dan tombol <b>Verifikasi Semua</b> di Audit Berkas
+  (hak khusus admin).</p>
+  <table>
+    <tr><th style="width:26%">Status foto</th><th>Artinya</th></tr>
+    <tr><td>✅ <b>Valid</b></td><td>Lolos pemeriksaan (skor ≥ 80, tanpa temuan berat).</td></tr>
+    <tr><td>⚠️ <b>Perlu dicek</b></td><td>Ada hal yang belum pasti — perlu dilihat manusia.</td></tr>
+    <tr><td>❌ <b>Dicurigai</b></td><td>Ada indikasi editan atau masalah berat.</td></tr>
+    <tr><td>⏳ <b>Belum diverifikasi</b></td><td>Belum diproses.</td></tr>
+  </table>
+  <p>Klik satu foto untuk membuka <b>Detail lengkap (4 lapis)</b>:</p>
+  <ol>
+    <li><b>Metadata &amp; Integritas</b> — informasi kamera, tanggal, GPS, jarak ke titik lokasi, dan pengecekan foto ganda.</li>
+    <li><b>Forensik Piksel (ELA)</b> — mendeteksi bagian gambar yang disunting.</li>
+    <li><b>AI Vision</b> — penilaian keaslian, jenis foto, kecocokan isi dengan kategori bukti.</li>
+    <li><b>Status Akhir</b> — keputusan gabungan: Valid / Perlu dicek / Dicurigai.</li>
+  </ol>
+  <div class="kotak peringatan">
+    <div class="judul">⚠️ Hasil AI hanya panduan</div>
+    Hasil verifikasi otomatis <b>bersifat panduan, bukan bukti mutlak</b>. Keputusan akhir tetap melalui
+    konfirmasi admin. Jika Anda yakin hasil AI keliru, gunakan kotak <b>Override Hasil (Admin)</b>
+    untuk mengubah status menjadi Valid / Perlu dicek / Dicurigai, lengkapi catatan, lalu
+    <b>Simpan Override</b>.
+  </div>
+  <p class="kecil-teks">Foto bisa dihapus dari galeri (permanen) dengan konfirmasi. Hapus hanya bila
+  foto benar-benar salah unggah.</p>
+
+  <h2>B10. Manajemen pengguna &amp; akses</h2>
+  <div class="langkah">
+    <ol>
+      <li>Buka menu <b>Pengguna</b>.</li>
+      <li>Isi kolom <b>Daftarkan akun baru</b>:
+        <ul>
+          <li><b>Username</b> — 3–32 karakter, huruf/angka/titik/garis bawah/garis miring.</li>
+          <li><b>Peran</b> — <b>Lapangan</b> (login cukup username) atau <b>Admin</b> (wajib password).</li>
+          <li><b>Tematik tugas</b> — pilih satu atau lebih tematik (HEM, Node B, Relokasi, dll.).
+              Inilah yang menentukan <b>lokasi mana yang terlihat</b> di HP orang tersebut.</li>
+        </ul>
+      </li>
+      <li>Tekan <b>Daftarkan akun</b>.</li>
+      <li>Daftar akun bisa disaring (Semua / Lapangan / Admin), dicari, dan diedit langsung di barisnya.</li>
+  </ol>
+  </div>
+  <div class="kotak catatan">
+    <div class="judul">📌 Hal yang perlu diingat</div>
+    <ul style="margin:4px 0 0 0;">
+      <li>Akun <b>lapangan tidak memakai password</b> — keamanannya ada pada kerahasiaan username.
+          Jangan bagikan username ke sembarang orang.</li>
+      <li>Akun admin utama bertanda <b>"akun terkunci"</b> — tidak bisa diedit atau dihapus.</li>
+      <li>Jika seorang petugas melihat lokasi yang bukan tugasnya, periksa kolom <b>Tematik tugas</b> akunnya.</li>
+      <li>Perubahan tematik langsung berlaku pada login berikutnya.</li>
+    </ul>
+  </div>
+
+  <h2>B11. Input RAB</h2>
+  <p>Menu <b>Input RAB</b> membuka halaman pengisian RAB di tab baru (alamat:
+  <span class="jalan">/rab?lokasi=&lt;id&gt;</span>). Data yang tersimpan tampil di kolom RAB Master Lokasi
+  dan panel RAB pada Audit Berkas (tematik HEM, MICRODEMAND, NODE B).</p>
+
+  <h2>B12. Peringatan penting sebelum menghapus</h2>
+  <table>
+    <tr><th style="width:34%">Tindakan</th><th>Akibat</th></tr>
+    <tr><td><b>Hapus lokasi</b> (Master Lokasi)</td><td>Semua berkas, foto, hasil ukur, dan progres lokasi ikut terhapus permanen.</td></tr>
+    <tr><td><b>Hapus berkas</b> (Galeri)</td><td>Foto/dokumen hilang permanen dari server.</td></tr>
+    <tr><td><b>Hapus ODP</b> (panel Audit)</td><td>Data port, catatan berkas, <b>dan file foto</b> di server ikut terhapus.</td></tr>
+    <tr><td><b>Hapus akun pengguna</b></td><td>Orang tersebut tidak bisa login lagi (riwayat unggahannya tetap tersimpan).</td></tr>
+  </table>
+  <div class="kotak peringatan">
+    <div class="judul">⚠️ Tidak ada tombol "reset seluruh progres"</div>
+    Sistem <b>tidak memiliki</b> tombol penghapus seluruh progres sekaligus. Penghapusan hanya terjadi
+    per lokasi/berkas sebagaimana tabel di atas — jadi tidak ada risiko progres hilang karena salah tekan
+    satu tombol. Namun tetap berhati-hatilah pada empat tindakan di atas karena tidak bisa dibatalkan.
+  </div>
+</section>
+<!-- ===================== BAGIAN C ===================== -->
+<section>
+  <h1 class="bab"><span class="kecil">BAGIAN C</span>Pemecahan Masalah (Troubleshooting)</h1>
+  <p>Cari gejala yang Anda alami pada tabel di bawah, lalu ikuti solusinya. Jika tidak menemukan,
+  hubungi admin sistem.</p>
+
+  <h2>Untuk petugas lapangan</h2>
+  <table>
+    <tr><th style="width:30%">Gejala</th><th style="width:30%">Penyebab umum</th><th>Solusi</th></tr>
+    <tr><td>"Username tidak terdaftar."</td><td>Akun belum dibuat.</td><td>Minta admin mendaftarkan akun Anda (B10).</td></tr>
+    <tr><td>Lokasi saya tidak muncul di daftar.</td><td>Status lokasi belum masuk tahap yang diminta bukti, atau lokasi itu bukan tematik Anda.</td><td>Cek indikator akses di pojok kanan atas (tematik Anda). Jika tematik benar, berarti statusnya belum wajib bukti — lapor admin bila menurut Anda keliru.</td></tr>
+    <tr><td>Foto iPhone ditolak (HEIC).</td><td>Format HEIC tidak didukung wizard.</td><td>Kirim foto ke diri sendiri lewat WhatsApp → unduh hasilnya (otomatis JPG) → unggah ulang.</td></tr>
+    <tr><td>"Ukuran file melebihi batas 15 MB."</td><td>Foto resolusi sangat besar.</td><td>Kirim dulu lewat WA (WA mengecilkan ukuran), lalu unggah hasilnya.</td></tr>
+    <tr><td>"File dari situs lain tidak bisa diambil."</td><td>Menyeret gambar langsung dari web/Telegram versi desktop.</td><td>Buka gambarnya → klik kanan → <i>Copy image</i> → <b>Ctrl+V</b> di kotak upload.</td></tr>
+    <tr><td>"Kategori ini wajib tepat 3 foto."</td><td>Kategori FAT/Pole mewajibkan 3 foto sekaligus.</td><td>Pilih 3 foto dulu (badge menunjukkan jumlahnya), baru tekan Kirim Eviden.</td></tr>
+    <tr><td>"Pilih tepat 1 file .kml atau .kmz."</td><td>Kategori Peta Rute hanya menerima 1 file.</td><td>Kosongkan pilihan, pilih ulang tepat satu file peta.</td></tr>
+    <tr><td>Port sudah penuh / "gunakan nama ODP baru".</td><td>Nama ODP yang sama sudah diisi 8/8 atau 16/16 port.</td><td>Periksa ulang nama ODP (jangan dobel). Bila memang ODP berbeda, ketik nama yang benar.</td></tr>
+    <tr><td>Tombol masih "Mengupload…" lama.</td><td>Jaringan lambat.</td><td>Tunggu; jangan tutup halaman. Bila macet &gt;2 menit, tutup dan ulangi — bukti yang sudah tersimpan tidak hilang.</td></tr>
+    <tr><td>"Sesi berakhir — kembali ke halaman login…"</td><td>Sesi habis (lama tidak dipakai).</td><td>Masuk lagi dengan username Anda.</td></tr>
+    <tr><td>BOQ tidak bisa diparsing.</td><td>Salin dari Excel dengan urutan kolom keliru.</td><td>Salin ulang mengikuti urutan kolom di A4-⑤; pastikan yang disalin benar-benar sel Excel (bukan gambar).</td></tr>
+  </table>
+
+  <h2>Untuk admin</h2>
+  <table>
+    <tr><th style="width:30%">Gejala</th><th style="width:30%">Penyebab umum</th><th>Solusi</th></tr>
+    <tr><td>Lokasi/status baru dari GODC belum tampil.</td><td>Sinkronisasi belum jalan.</td><td>Tekan <b>Sinkronisasi Data</b> di kartu GODC, atau tunggu auto-refresh 60 detik.</td></tr>
+    <tr><td>Petugas bilang tidak melihat lokasi tertentu.</td><td>Tematik akun petugas belum mencakup lokasi itu.</td><td>Buka menu <b>Pengguna</b> → sunting <b>Tematik tugas</b> akun tersebut (B10).</td></tr>
+    <tr><td>Pesan "Template tidak tersedia di server."</td><td>Jenis dokumen belum punya template (badge "Siapkan Template").</td><td>Gunakan jenis dokumen lain yang tersedia; atau minta template dipasang oleh pengelola sistem.</td></tr>
+    <tr><td>Generate PDF lambat / jendela muncul "Pop-up diblokir".</td><td>Konversi PDF memakai MS Word ±2–4 detik; browser memblokir jendela unduh/cetak.</td><td>Izinkan pop-up untuk alamat aplikasi, lalu ulangi.</td></tr>
+    <tr><td>Hasil Scan OPM (AI) tidak sesuai foto.</td><td>Foto buram/berkilau, atau hasil alat tidak lazim.</td><td>Koreksi manual lewat kolom per port / Catuan; hasil AI hanyalah panduan (B9).</td></tr>
+    <tr><td>Foto ditandai ⚠️ "Perlu dicek" / ❌ "Dicurigai".</td><td>Terdeteksi indikasi editan atau data EXIF hilang.</td><td>Buka <b>Detail lengkap (4 lapis)</b>, putuskan sendiri, gunakan <b>Override Hasil (Admin)</b> bila perlu.</td></tr>
+    <tr><td>Angka Rekap Status terasa basi.</td><td>Widget menampilkan data terakhir yang dimuat.</td><td>Tekan ikon 🔄 <b>Segarkan</b> di judul widget Rekap Status.</td></tr>
+    <tr><td>Salah menandai berkas lengkap.</td><td>Status dokumen berpindah otomatis.</td><td>Buka <b>Detail LOP</b> → klik <b>[ undo ]</b> untuk mengembalikan ke Need Evidence (B3).</td></tr>
+    <tr><td>Perlu memeriksa seluruh foto satu lokasi.</td><td>—</td><td>Audit Berkas → <b>Verifikasi Semua</b> (hak khusus admin); hasilnya berupa ringkasan lolos/perlu dicek/tidak lolos.</td></tr>
+    <tr><td>Ada data salah di Input Khusus (RFC, dll.).</td><td>Salah isi oleh lapangan/admin.</td><td>Panel Input Khusus → <b>Edit</b> atau <b>Hapus</b> (B6) — petugas lapangan juga bisa memperbaikinya sendiri dari HP.</td></tr>
+  </table>
+
+  <div class="kotak tips">
+    <div class="judul">💡 Aturan emas bila ragu</div>
+    <b>Jangan menghapus apa pun</b> sebelum yakin (lihat B12). Untuk hal lain — lokasi hilang, bukti tidak bisa
+    diunggah, dokumen tidak bisa dicetak — <b>tanya dulu ke admin sistem</b>. Sebagian besar masalah diselesaikan
+    lewat sinkronisasi GODC atau pengaturan tematik akun, tanpa menghapus data.
+  </div>
+</section>
+
+<!-- ===================== LAMPIRAN ===================== -->
+<section>
+  <h1 class="bab"><span class="kecil">LAMPIRAN</span>Daftar Status, Kategori Berkas &amp; Aturan File</h1>
+
+  <h2>Lampiran 1 — Status pekerjaan &amp; kapan bukti diminta</h2>
+  <table>
+    <tr><th style="width:8%">No.</th><th style="width:30%">Status pekerjaan</th><th style="width:18%">Muncul di HP?</th><th>Keterangan</th></tr>
+    <tr><td>00</td><td>DROP</td><td>❌ Tidak</td><td>Tahap awal, belum wajib bukti.</td></tr>
+    <tr><td>02</td><td>PERIJINAN</td><td>❌ Tidak</td><td>Pengurusan izin.</td></tr>
+    <tr><td>03</td><td>MATDEV</td><td>✅ Ya</td><td>Pengadaan/persiapan material — bukti mulai diminta.</td></tr>
+    <tr><td>04</td><td>INSTALASI</td><td>✅ Ya</td><td>Pemasangan di lapangan.</td></tr>
+    <tr><td>05</td><td>FINISH INSTALASI / OA</td><td>✅ Ya</td><td>Instalasi selesai.</td></tr>
+    <tr><td>06</td><td>GO LIVE</td><td>✅ Ya</td><td>Layanan sudah aktif.</td></tr>
+    <tr><td>07</td><td>TC (Test Call)</td><td>✅ Ya</td><td>Uji panggilan.</td></tr>
+    <tr><td>08</td><td>UT (User Trial)</td><td>✅ Ya</td><td>Uji coba pelanggan.</td></tr>
+    <tr><td>09</td><td>REKON (Rekonsiliasi)</td><td>✅ Ya</td><td>Pencocokan data akhir.</td></tr>
+    <tr><td>10</td><td>BAST</td><td>❌ Tidak</td><td>Berita acara serah terima.</td></tr>
+  </table>
+  <p class="kecil-teks">Selain status, lokasi hanya tampil bila termasuk <b>tematik</b> akun Anda (lihat A6).</p>
+
+  <h2>Lampiran 2 — Aturan file singkat</h2>
+  <table>
+    <tr><th style="width:34%">Hal</th><th>Aturan</th></tr>
+    <tr><td>Ukuran maksimal</td><td><b>15 MB per file</b></td></tr>
+    <tr><td>Foto</td><td>JPG · PNG · WEBP (HEIC harus diubah dulu)</td></tr>
+    <tr><td>Dokumen</td><td>PDF (ABD juga menerima .dwg / .dxf)</td></tr>
+    <tr><td>Peta</td><td>KML atau KMZ — <b>tepat 1 file</b> per pengiriman</td></tr>
+    <tr><td>OTDR</td><td>File <b>.SOR</b> disimpan apa adanya; boleh banyak file</td></tr>
+    <tr><td>Nama ODP/closure</td><td>Wajib diisi untuk kategori titik; karakter terlarang diganti tanda -</td></tr>
+    <tr><td>Foto wajib 3</td><td>Kategori -Istalasi Per FAT dan -Instalasi Pole</td></tr>
+  </table>
+
+  <h2>Lampiran 3 — Contoh daftar kategori berkas (menurut tematik)</h2>
+  <p>Daftar berikut adalah kategori bawaan yang muncul di dropdown lapangan. Tematik lain mengikuti
+  pola serupa; daftar pasti selalu mengikuti pengaturan terbaru di sistem.</p>
+  <table>
+    <tr><th style="width:20%">Tematik</th><th>Contoh kategori berkas</th></tr>
+    <tr><td><b>MyRepublik</b></td><td>Penarikan (maks 6 foto) · Pemasangan Tiang · Pengecoran · Instalasi FDT · Instalasi JC · Instalasi Per FAT · Instalasi Pole · Redaman Spliter · Redaman FAT</td></tr>
+    <tr><td><b>Jlm</b></td><td>Marking Kabel · Subdact · Penarikan Kabel KU/DC · HH Portable · Instalasi ODP · Tali Tambang · Roset · J-Closure · Galian · Boring · Clean out · ODC · Bobok Beton (±17 kategori)</td></tr>
+    <tr><td><b>Relokasi</b></td><td>Masukan Bukti Pekerjaan · Pemasangan ODP · Hasil Ukur OPM · Input Rekap OPM · Coluser · Dismantling · Lampiran Data Pengukuran OPM · Mancore · Hasil Uji Kedalaman Galian · Lampiran CO</td></tr>
+    <tr><td><b>M-tel</b></td><td>Hasil Ukur OPM · Lampiran Data Pengukuran OPM · Mancore · Grounding</td></tr>
+    <tr><td><b>HEM &amp;<br>MICRODEMAND</b></td><td>Mancore · ABD (PDF/DWG/DXF) · KML · BOQ Aktual · Bon Material · Input RFC · Penarikan Kabel · Pemasangan Acc/Tiang · Instalasi ODP/OTB · Jumper · Redaman ODP/OTB · HDPE · OTDR · Galian · HH Akses · HH ODP</td></tr>
+    <tr><td><b>Node B</b></td><td>Semua kategori HEM, ditambah: <b>BOQ Barang Tiba</b> · <b>Form Pengukuran OPM</b> · <b>OTDR (.SOR)</b></td></tr>
+  </table>
+
+  <h2>Lampiran 4 — Kategori yang boleh diisi berulang</h2>
+  <p>Sebagian kategori memang diulang per titik (per ODP, per FAT, per port). Contohnya:
+  Hasil Ukur OPM · Input Rekap OPM · Pemasangan ODP · Coluser · Lampiran Data Pengukuran OPM ·
+  Instalasi Per FAT · Instalasi Pole · Bon Material · Instalasi ODP/OTB · Redaman ODP/OTB ·
+  Masukan Bukti Pekerjaan. Di bawah dropdown kategori tertulis:
+  <i>"M berkas dapat diisi berulang (contoh: 1 ODP / port)"</i>.</p>
+
+  <h2>Lampiran 5 — Alur informasi dalam satu gambar</h2>
+  <div class="kotak catatan hindari-potong">
+    <div class="judul">📌 Rangkuman alur kerja</div>
+    <ol style="margin:4px 0 0 0;">
+      <li><b>GODC</b> (sistem induk) menentukan status tiap proyek.</li>
+      <li><b>Admin</b> menyinkronkan GODC → lokasi yang masuk tahap 03–09 otomatis <b>butuh eviden</b>.</li>
+      <li><b>Petugas lapangan</b> melihat lokasi di HP → mengunggah foto/hasil ukur/dokumen → progres naik.</li>
+      <li><b>Admin</b> memeriksa di <b>Audit Berkas</b> &amp; <b>Rekap Status</b>, memverifikasi keaslian foto (AI), lalu
+          <b>menerbitkan dokumen</b> (LACT, BAUT, BA Prelim) dalam format Word/PDF.</li>
+      <li>Dokumen siap untuk <b>BAST</b> dan pelaporan.</li>
+    </ol>
+  </div>
+
+  <p class="kecil-teks center" style="margin-top:24px;">— Akhir Panduan —<br>
+  Dokumen ini mengikuti tampilan aplikasi versi terkini. Bila tampilan berbeda dengan panduan,
+  ikuti petunjuk yang muncul di layar dan laporkan ke admin agar panduan diperbarui.</p>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem RAB & Rekonsiliasi Konstruksi</title>
+  <link rel="icon" type="image/png" href="assets/img/favicon-ta.png">
+  <meta name="theme-color" content="#D32F2F">
+  <meta name="application-name" content="Sistem Rekonsiliasi Konstruksi">
+  <meta name="description" content="Sistem RAB & Rekonsiliasi Konstruksi PT Telkom Akses — kalkulasi RAB, DRM vs REKON, dan generate BA Tambah Kurang.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/rab.css">
+  <script src="assets/js/util.js"></script>
+  <script>
+    /* Ikuti tema dashboard: localStorage('theme') atau preferensi sistem */
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('theme'); } catch (e) {}
+      if (t !== 'dark' && t !== 'light') {
+        t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      }
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
+</head>
+<body class="rab-body">
+
+<!-- ═══ HEADER ═══ -->
+<div class="rab-header">
+  <div class="rab-header-top">
+    <div class="logo-box">
+      <img src="assets/img/logo-ta.png" alt="Telkom Akses">
+    </div>
+    <div>
+      <div class="rh-title">Sistem RAB & Rekonsiliasi</div>
+      <div class="rh-sub">Kalkulasi RAB · DRM vs REKON · Nilai Sinkron · BA Tambah Kurang</div>
+    </div>
+
+    <div style="flex:1;min-width:0;max-width:360px;">
+      <label style="display:block;font-size: 8px;font-weight: 600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-sub);margin-bottom:5px;">
+        <i class="fa-solid fa-location-dot" style="color:#f87171;margin-right:4px;"></i>Lokasi Proyek
+      </label>
+      <div style="position:relative;">
+        <i class="fa-solid fa-magnifying-glass lok-ico left"></i>
+        <input type="text" id="lokasi_input" class="lok-input" placeholder="Ketik nama lokasi..."
+          oninput="filterLokasi(this.value)" onfocus="openLokasi()" autocomplete="off">
+        <i class="fa-solid fa-chevron-down lok-ico right" id="lokasi_arrow"></i>
+        <div id="lokasi_panel" class="lok-panel">
+          <div id="lokasi_list" class="lok-list"></div>
+          <div id="lokasi_count" class="lok-count"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rab-header-actions">
+      <div class="tab-wrap">
+        <button class="tab-btn active" id="tab_rab" onclick="setMode('rab')">
+          <i class="fa-solid fa-file-invoice-dollar" style="font-size: 8px;"></i> Input RAB
+        </button>
+        <button class="tab-btn" id="tab_rekon" onclick="setMode('rekon')">
+          <i class="fa-solid fa-arrows-left-right" style="font-size: 8px;"></i> DRM vs REKON
+        </button>
+      </div>
+      <a href="/admin.html" class="btn-back">
+        <i class="fa-solid fa-arrow-left" style="font-size: 8px;"></i> Kembali
+      </a>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <div id="btns_rab" style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="togglePasteArea()">
+        <i class="fa-solid fa-clipboard-list" style="font-size: 9px;"></i> Paste Excel
+      </button>
+      <button class="btn btn-green" onclick="simpanData()">
+        <i class="fa-solid fa-floppy-disk" style="font-size: 9px;"></i> Simpan RAB
+      </button>
+    </div>
+
+    <div id="btns_rekon" style="display:none;flex-wrap:wrap;gap:8px;">
+      <button class="btn btn-ghost" onclick="hitungRekonsiliasi()">
+        <i class="fa-solid fa-calculator" style="font-size: 9px;"></i> Hitung Rekonsiliasi
+      </button>
+      <button class="btn btn-purple" onclick="bukaModalBATK()">
+        <i class="fa-solid fa-file-contract" style="font-size: 9px;"></i> Generate BA Tambah Kurang
+      </button>
+      <button class="btn btn-green" onclick="simpanRekon()">
+        <i class="fa-solid fa-floppy-disk" style="font-size: 9px;"></i> Simpan Rekon
+      </button>
+      <button class="btn btn-red-ghost" onclick="clearRekon()">
+        <i class="fa-solid fa-rotate-left" style="font-size: 9px;"></i> Reset
+      </button>
+    </div>
+
+    <div style="margin-left:auto;">
+      <div id="lokasi_aktif" style="display:none;text-align:right;">
+        <div class="aktif-label">Lokasi Aktif</div>
+        <div id="lokasi_aktif_nama" class="aktif-nama"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SUMMARY CARDS ═══ -->
+<div class="summary-grid">
+  <div class="summary-card card-blue">
+    <i class="fa-solid fa-boxes-stacked bg-icon"></i>
+    <p>TOTAL MATERIAL</p>
+    <h3 id="sum_mat">Rp 0</h3>
+  </div>
+  <div class="summary-card card-amber">
+    <i class="fa-solid fa-helmet-safety bg-icon"></i>
+    <p>TOTAL JASA</p>
+    <h3 id="sum_jasa">Rp 0</h3>
+  </div>
+  <div class="summary-card card-green">
+    <i class="fa-solid fa-sack-dollar bg-icon"></i>
+    <p>GRAND TOTAL</p>
+    <h3 id="sum_grand">Rp 0</h3>
+  </div>
+</div>
+
+<!-- ═══ PASTE AREA ═══ -->
+<div id="paste_area" class="paste-area hidden">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+    <div>
+      <div class="paste-title">
+        <i class="fa-solid fa-clipboard-list" style="margin-right:6px;"></i>Area Paste Data Excel
+      </div>
+      <div class="format-info">
+        <strong>Format kolom:</strong><br>
+        <code>designator</code> → <code>uraian pekerjaan</code> → <code>satuan</code> → <code>material</code> → <code>jasa</code> → <code>volume (TOTAL)</code><br>
+        <span class="format-ok">✓ Contoh: <code>M-DC-OF-SM-48D &nbsp; Pengadaan dan pemasangan kabel duct fiber optik single mode 48 core g 652 d &nbsp; meter &nbsp; 12.100 &nbsp; &nbsp; 870</code></span>
+        <span class="format-warn">✓ Baris header grup (mis. <code>OSP FO FTTH</code>) otomatis menjadi kategori. Pisah kolom dengan Tab.</span>
+      </div>
+    </div>
+    <button onclick="togglePasteArea()" style="color:var(--text-sub);background:none;border:none;cursor:pointer;font-size: 15px;" aria-label="Tutup area paste">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+  <textarea id="excel_input" class="input-area" rows="8"
+    placeholder="Paste dari Excel (Tab-separated):&#10;designator&#9;uraian pekerjaan&#9;satuan&#9;material&#9;jasa&#9;volume(TOTAL)&#10;OSP FO FTTH&#10;M-DC-OF-SM-48D&#9;Pengadaan dan pemasangan kabel duct fiber optik single mode 48 core g 652 d&#9;meter&#9;12.100&#9;&#9;870&#10;J-DC-OF-SM-48D&#9;Pengadaan dan pemasangan kabel duct fiber optik single mode 48 core g 652 d&#9;meter&#9;&#9;3.156&#9;870"></textarea>
+  <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+    <button class="btn btn-purple" onclick="prosesExcel()">
+      <i class="fa-solid fa-wand-magic-sparkles"></i> Proses & Kalkulasi Data
+    </button>
+  </div>
+</div>
+
+<!-- ═══ ACUAN BERKAS ═══ -->
+<div id="acuan_panel" class="acuan-panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <div>
+      <div class="acuan-title">
+        <i class="fa-solid fa-list-check" style="margin-right:6px;"></i>Acuan Berkas Lapangan
+      </div>
+      <div class="acuan-sub">Berkas WAJIB berdasarkan designator yang diinput</div>
+    </div>
+    <button onclick="document.getElementById('acuan_panel').classList.remove('active')" style="background:none;border:none;color:var(--text-faint);cursor:pointer;font-size: 15px;" aria-label="Tutup panel acuan berkas">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+  <div id="acuan_content"></div>
+</div>
+
+<!-- ═══ TABEL RAB ═══ -->
+<div class="rab-wrap" id="rab_section">
+  <div id="rab_empty" class="empty-state">
+    <i class="fa-solid fa-file-invoice-dollar"></i>
+    <h3>Tabel RAB Masih Kosong</h3>
+    <p style="font-size: 10px;">Pilih lokasi, lalu gunakan <strong>Paste Excel</strong> untuk memasukkan data.</p>
+  </div>
+  <div id="rab_table_wrap" class="overflow-x-auto" style="display:none;">
+    <table class="rab-table">
+      <thead>
+        <tr>
+          <th rowspan="2" style="text-align:center;width:44px;border-right:2px solid #e2e8f0;">NO</th>
+          <th rowspan="2" style="border-right:2px solid #e2e8f0;min-width:180px;">DESIGNATOR</th>
+          <th rowspan="2" style="border-right:2px solid #e2e8f0;">URAIAN / KATEGORI</th>
+          <th rowspan="2" style="text-align:center;border-right:2px solid #e2e8f0;width:80px;">SATUAN</th>
+          <th rowspan="2" style="text-align:center;border-right:2px solid #e2e8f0;width:90px;">VOLUME</th>
+          <th colspan="2" style="text-align:center;border-bottom:1px solid #e2e8f0;border-right:2px solid #e2e8f0;">HARGA SATUAN (Rp)</th>
+          <th colspan="2" style="text-align:center;border-bottom:1px solid #e2e8f0;background:#fdecec;border-right:2px solid #e2e8f0;">JUMLAH HARGA (Rp)</th>
+          <th rowspan="2" style="text-align:center;width:50px;">AKSI</th>
+        </tr>
+        <tr>
+          <th style="text-align:right;border-right:1px solid #e2e8f0;color:#64748b;width:110px;">JASA</th>
+          <th style="text-align:right;border-right:2px solid #e2e8f0;color:#64748b;width:110px;">MATERIAL</th>
+          <th style="text-align:right;border-right:1px solid #e2e8f0;color:#D32F2F;background:#fdecec;width:120px;">JASA</th>
+          <th style="text-align:right;border-right:2px solid #e2e8f0;color:#D32F2F;background:#fdecec;width:120px;">MATERIAL</th>
+        </tr>
+      </thead>
+      <tbody id="rab_tbody"></tbody>
+      <tfoot id="rab_tfoot"></tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ REKON SECTION ═══ -->
+<div id="rekon_section" class="rekon-section">
+
+  <div class="rekon-grid">
+    <!-- DRM -->
+    <div class="rekon-panel">
+      <div class="rekon-panel-header">
+        <div class="rekon-panel-icon" style="background:rgba(96,165,250,0.15);">
+          <i class="fa-solid fa-file-alt" style="color:var(--c-drm);"></i>
+        </div>
+        <div>
+          <div class="rekon-label drm">Input RAB / DRM</div>
+          <div class="rekon-hint">Format: designator [Tab] jasa [Tab] material [Tab] volume [Tab] satuan</div>
+        </div>
+      </div>
+      <textarea id="drm_input" class="input-area" rows="8"
+        placeholder="Paste dari Excel:&#10;M-DC-OF-SM-144D&#9;42.500&#9;&#9;272&#9;Mtr&#10;J-CO-OF&#9;&#9;32.150&#9;727&#9;Core&#10;M-PROT-SLV&#9;750&#9;&#9;480&#9;Pcs"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+        <span id="drm_count" class="rekon-count">0 item</span>
+        <button class="btn btn-ghost" onclick="prosesDRM()" style="font-size: 9px;padding:6px 14px;">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Proses DRM
+        </button>
+      </div>
+    </div>
+    <!-- REKON -->
+    <div class="rekon-panel">
+      <div class="rekon-panel-header">
+        <div class="rekon-panel-icon" style="background:rgba(110,231,183,0.15);">
+          <i class="fa-solid fa-clipboard-check" style="color:var(--c-rek);"></i>
+        </div>
+        <div>
+          <div class="rekon-label rek">Input Aktual / REKON</div>
+          <div class="rekon-hint">Format: designator [Tab] jasa [Tab] material [Tab] volume [Tab] satuan</div>
+        </div>
+      </div>
+      <textarea id="rekon_input" class="input-area" rows="8"
+        placeholder="Paste dari Excel:&#10;M-DC-OF-SM-144D&#9;42.500&#9;&#9;290&#9;Mtr&#10;J-CO-OF&#9;&#9;32.150&#9;700&#9;Core"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+        <span id="rekon_count" class="rekon-count">0 item</span>
+        <button class="btn btn-rekon-ghost" onclick="prosesRekonInput()" style="font-size: 9px;padding:6px 14px;">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Proses REKON
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+    <button class="btn btn-purple" onclick="hitungRekonsiliasi()" style="font-size: 11px;padding:10px 22px;">
+      <i class="fa-solid fa-calculator"></i> Hitung Rekonsiliasi (DRM − REKON)
+    </button>
+    <div id="rekon_badge" style="display:none;" class="badge badge-indigo"></div>
+  </div>
+
+  <!-- Summary nilai rekon -->
+  <div id="rekon_summary_bar" class="rekon-summary-bar" style="display:none;">
+    <div class="rscard drm">
+      <p><i class="fa-solid fa-circle" style="font-size: 7px;margin-right:4px;"></i>Nilai DRM</p>
+      <h4 id="rs_drm">Rp 0</h4>
+    </div>
+    <div class="rscard rek">
+      <p><i class="fa-solid fa-circle" style="font-size: 7px;margin-right:4px;"></i>Nilai REKON</p>
+      <h4 id="rs_rek">Rp 0</h4>
+    </div>
+    <div class="rscard plus">
+      <p><i class="fa-solid fa-plus" style="font-size: 7px;margin-right:4px;"></i>Total Tambah (Rp)</p>
+      <h4 id="rs_plus">Rp 0</h4>
+    </div>
+    <div class="rscard min">
+      <p><i class="fa-solid fa-minus" style="font-size: 7px;margin-right:4px;"></i>Total Kurang (Rp)</p>
+      <h4 id="rs_min">Rp 0</h4>
+    </div>
+    <div class="rscard dev">
+      <p><i class="fa-solid fa-right-left" style="font-size: 7px;margin-right:4px;"></i>Nilai Deviasi</p>
+      <h4 id="rs_dev">Rp 0</h4>
+    </div>
+  </div>
+
+  <!-- Tabel rekon -->
+  <div id="rekon_table_wrap" class="rekon-table-wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--brand-tint);border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-size: 11px;font-weight: 700;color:var(--text-main);">
+          <i class="fa-solid fa-arrows-left-right" style="color:var(--brand);margin-right:6px;"></i>Hasil Rekonsiliasi Volume & Nilai
+        </div>
+        <div style="font-size: 8px;color:var(--text-sub);margin-top:2px;">TAMBAH = Rekon &gt; DRM &nbsp;·&nbsp; KURANG = DRM &gt; Rekon &nbsp;·&nbsp; Nilai dihitung dari harga satuan RAB</div>
+      </div>
+      <div style="display:flex;gap:12px;font-size: 8px;font-weight: 600;">
+        <span style="color:var(--c-drm);"><i class="fa-solid fa-circle" style="font-size: 7px;margin-right:4px;"></i>DRM</span>
+        <span style="color:var(--c-rek);"><i class="fa-solid fa-circle" style="font-size: 7px;margin-right:4px;"></i>REKON</span>
+        <span style="color:var(--c-plus);"><i class="fa-solid fa-plus" style="font-size: 7px;margin-right:4px;"></i>TAMBAH</span>
+        <span style="color:var(--c-min);"><i class="fa-solid fa-minus" style="font-size: 7px;margin-right:4px;"></i>KURANG</span>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="rekon-table">
+        <thead>
+          <tr>
+            <th style="text-align:left;width:160px;">DESIGNATOR</th>
+            <th style="text-align:right;width:90px;">VOL DRM</th>
+            <th style="text-align:right;width:90px;">VOL REKON</th>
+            <th style="text-align:right;width:80px;">TAMBAH</th>
+            <th style="text-align:right;width:80px;">KURANG</th>
+            <th style="text-align:center;width:60px;">SAT</th>
+            <th style="text-align:right;width:100px;">H.SAT (Rp)</th>
+            <th style="text-align:right;width:110px;">NILAI DRM (Rp)</th>
+            <th style="text-align:right;width:110px;">NILAI REKON (Rp)</th>
+            <th style="text-align:right;width:110px;">NILAI TAMBAH (Rp)</th>
+            <th style="text-align:right;width:110px;">NILAI KURANG (Rp)</th>
+            <th style="text-align:center;width:80px;">STATUS</th>
+          </tr>
+        </thead>
+        <tbody id="rekon_tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="ba_preview" class="ba-preview"></div>
+</div>
+
+<!-- ═══ MODAL BA TAMBAH KURANG ═══ -->
+<div id="modal_batk" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div style="font-size: 12px;font-weight: 700;color:var(--brand);">
+        <i class="fa-solid fa-file-contract" style="margin-right:8px;"></i>Input Data BA Tambah Kurang
+      </div>
+      <button onclick="tutupModal()" style="background:none;border:none;color:var(--text-sub);cursor:pointer;font-size: 16px;" aria-label="Tutup modal">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div style="background:var(--brand-tint);border:1px solid var(--brand-tint-b);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size: 9px;color:var(--brand-fg);">
+      <i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>
+      Isi data di bawah untuk mengisi template <strong>Berita Acara Pekerjaan Tambah Kurang</strong>.
+    </div>
+
+    <div class="modal-grid">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="field">
+          <label>Nama Proyek <code style="font-size: 7px;background:var(--chip-bg);color:var(--chip-fg);padding:1px 5px;border-radius:4px;">{proyektk}</code></label>
+          <input type="text" id="f_proyek" placeholder="Nama proyek...">
+        </div>
+        <div class="field">
+          <label>Nomor Kontrak <code style="font-size: 7px;background:var(--chip-bg);color:var(--chip-fg);padding:1px 5px;border-radius:4px;">{kontraktk}</code></label>
+          <input type="text" id="f_kontrak" placeholder="No. Kontrak...">
+        </div>
+        <div class="field">
+          <label>Surat Pesanan <code style="font-size: 7px;background:var(--chip-bg);color:var(--chip-fg);padding:1px 5px;border-radius:4px;">{sptk}</code></label>
+          <input type="text" id="f_sp" placeholder="No. Surat Pesanan...">
+        </div>
+        <div class="field">
+          <label>No. Surat Pesanan <code style="font-size: 7px;background:var(--chip-bg);color:var(--chip-fg);padding:1px 5px;border-radius:4px;">{nosptk}</code></label>
+          <input type="text" id="f_nosp" placeholder="Nomor SP...">
+        </div>
+        <div class="field">
+          <label>Lokasi BA <code style="font-size: 7px;background:var(--chip-bg);color:var(--chip-fg);padding:1px 5px;border-radius:4px;">{loktk}</code></label>
+          <input type="text" id="f_lok" placeholder="Nama lokasi BA...">
+        </div>
+        <div class="field">
+          <label>Pejabat Penandatangan 1 (Pemberi Kerja)</label>
+          <input type="text" id="f_ttd1" placeholder="Nama pejabat / pihak 1...">
+          <div class="hint">Jabatan:</div>
+          <input type="text" id="f_ttd1_jab" placeholder="Jabatan..." style="margin-top:4px;">
+        </div>
+        <div class="field">
+          <label>Pejabat Penandatangan 2 (Penerima Kerja)</label>
+          <input type="text" id="f_ttd2" placeholder="Nama pejabat / pihak 2...">
+          <div class="hint">Jabatan:</div>
+          <input type="text" id="f_ttd2_jab" placeholder="Jabatan..." style="margin-top:4px;">
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="field">
+          <label>Hari BA <code style="font-size: 7px;background:var(--chip-bg);color:var(--chip-fg);padding:1px 5px;border-radius:4px;">{haritk}</code></label>
+          <input type="text" id="f_hari" placeholder="Senin, Selasa, ...">
+        </div>
+        <div class="field">
+          <label>Tanggal BA <code style="font-size: 7px;background:var(--chip-bg);color:var(--chip-fg);padding:1px 5px;border-radius:4px;">{tgltk}</code></label>
+          <input type="text" id="f_tgl" placeholder="17">
+        </div>
+        <div class="field">
+          <label>Bulan BA <code style="font-size: 7px;background:var(--chip-bg);color:var(--chip-fg);padding:1px 5px;border-radius:4px;">{blntk}</code></label>
+          <input type="text" id="f_bln" placeholder="Juli">
+        </div>
+        <div class="field">
+          <label>Tahun BA <code style="font-size: 7px;background:var(--chip-bg);color:var(--chip-fg);padding:1px 5px;border-radius:4px;">{thntk}</code></label>
+          <input type="text" id="f_thn" placeholder="2026">
+        </div>
+        <div class="field">
+          <label>Nilai Kontrak Awal (Rp)</label>
+          <input type="text" id="f_nilai_awal" placeholder="0" oninput="formatRpField(this)">
+        </div>
+        <div class="field">
+          <label>Catatan / Alasan Perubahan</label>
+          <input type="text" id="f_catatan" placeholder="Alasan pekerjaan tambah kurang...">
+        </div>
+        <div class="field">
+          <label>Tipe Dokumen</label>
+          <select id="f_tipe_dok">
+            <option value="preview">Preview di Browser (Print/PDF)</option>
+            <option value="download">Download HTML</option>
+            <option value="docx">Download Word (.docx) — Template Resmi</option>
+            <option value="pdf">Download PDF (.docx dikonversi otomatis)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-neutral" onclick="tutupModal()">Batal</button>
+      <button class="btn btn-purple" onclick="generateBA()">
+        <i class="fa-solid fa-file-export"></i> Generate Dokumen BA
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div id="toast" class="toast">
+  <div id="toast_inner" class="toast-inner toast-info">
+    <i id="toast_icon" class="fa-solid fa-circle-info" style="font-size: 15px;"></i>
+    <span id="toast_msg">Notifikasi</span>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  DESIGNATOR MAP
+// ══════════════════════════════════════════════════════════════
+const DESIGNATOR_MAP = {
+  'M-DC-OF':  { label:'Kabel Optik Drop Cable', tipe:'material', berkas:['-EVIDEN PENARIKAN','-LAMPIRAN DATA PENGUKURAN OPM','-EVIDENT HASIL UKUR OPM','-MANCORE'] },
+  'M-AC-OF':  { label:'Kabel Optik Access Cable', tipe:'material', berkas:['-EVIDEN PENARIKAN','-LAMPIRAN DATA PENGUKURAN OPM','-EVIDENT HASIL UKUR OPM','-MANCORE'] },
+  'M-SC-OF':  { label:'Kabel Optik SC', tipe:'material', berkas:['-EVIDEN PENARIKAN','-LAMPIRAN DATA PENGUKURAN OPM','-EVIDENT HASIL UKUR OPM'] },
+  'M-ODP':    { label:'ODP (Optical Distribution Point)', tipe:'material', berkas:['-EVIDEN PEMASANGAN ODP','-EVIDENT HASIL UKUR OPM','-LAMPIRAN DATA PENGUKURAN OPM'] },
+  'M-TIANG':  { label:'Tiang Telekomunikasi', tipe:'material', berkas:['-EVIDEN PEMASANGAN TIANG','-LAMPIRAN HASIL UJI KEDALAMAN GALIAN','-EVIDEN GALIAN DAN DIMENSI HANDHOLE'] },
+  'M-GND':    { label:'Grounding / Pembumian', tipe:'material', berkas:['-GROUNDING'] },
+  'M-HH':     { label:'Handhole', tipe:'material', berkas:['-EVIDEN GALIAN DAN DIMENSI HANDHOLE','-LAMPIRAN HASIL UJI KEDALAMAN GALIAN'] },
+  'M-ODC':    { label:'ODC (Optical Distribution Cabinet)', tipe:'material', berkas:['-EVIDENT HASIL UKUR OPM','-LAMPIRAN DATA PENGUKURAN OPM','-EVIDEN PENARIKAN','-MANCORE'] },
+  'M-ROSET':  { label:'Roset / Roset Box', tipe:'material', berkas:['-INSTALASI ROSET'] },
+  'M-COND':   { label:'Konduit / Pipa Pelindung', tipe:'material', berkas:['-EVIDEN GALIAN DAN DIMENSI HANDHOLE','-LAMPIRAN HASIL UJI KEDALAMAN GALIAN'] },
+  'M-CLOS':   { label:'Closure / Joint Closure', tipe:'material', berkas:['-MANCORE','-EVIDEN PENARIKAN'] },
+  'M-PROT':   { label:'Protector / Pelindung', tipe:'material', berkas:['-EVIDEN PEMASANGAN PROTECTOR'] },
+  'J-CO-OF':  { label:'Pekerjaan Cut Over Kabel Optik', tipe:'jasa', berkas:['-EVIDEN CUT OVER','-LAMPIRAN CO','-EVIDEN DISMANTLING','-EVIDENT HASIL UKUR OPM','-LAMPIRAN DATA PENGUKURAN OPM'] },
+  'J-SC-OF':  { label:'Pekerjaan Splicing Kabel SC', tipe:'jasa', berkas:['-MANCORE','-EVIDENT HASIL UKUR OPM','-LAMPIRAN DATA PENGUKURAN OPM'] },
+  'J-TARIK':  { label:'Pekerjaan Penarikan Kabel', tipe:'jasa', berkas:['-EVIDEN PENARIKAN','-LAMPIRAN DATA PENGUKURAN OPM','-EVIDENT HASIL UKUR OPM'] },
+  'J-GALIAN': { label:'Pekerjaan Galian', tipe:'jasa', berkas:['-EVIDEN GALIAN DAN DIMENSI HANDHOLE','-LAMPIRAN HASIL UJI KEDALAMAN GALIAN'] },
+  'J-PASANG': { label:'Pekerjaan Pemasangan Tiang', tipe:'jasa', berkas:['-EVIDEN PEMASANGAN TIANG','-LAMPIRAN HASIL UJI KEDALAMAN GALIAN'] },
+  'J-PASODP': { label:'Pekerjaan Pemasangan ODP', tipe:'jasa', berkas:['-EVIDEN PEMASANGAN ODP','-EVIDENT HASIL UKUR OPM','-LAMPIRAN DATA PENGUKURAN OPM'] },
+  'J-SPLIS':  { label:'Pekerjaan Splicing / Sambungan', tipe:'jasa', berkas:['-MANCORE','-EVIDENT HASIL UKUR OPM','-LAMPIRAN DATA PENGUKURAN OPM'] },
+  'J-DIST':   { label:'Pekerjaan Dismantling', tipe:'jasa', berkas:['-EVIDEN DISMANTLING'] },
+  'J-GROUND': { label:'Pekerjaan Grounding', tipe:'jasa', berkas:['-GROUNDING'] },
+  'J-BORING': { label:'Pekerjaan Boring / Pengeboran', tipe:'jasa', berkas:['-EVIDEN GALIAN DAN DIMENSI HANDHOLE','-LAMPIRAN HASIL UJI KEDALAMAN GALIAN'] },
+  'J-PROT':   { label:'Pekerjaan Pemasangan Protector', tipe:'jasa', berkas:['-EVIDEN PEMASANGAN PROTECTOR'] },
+  'J-PROT-SLV': { label:'Pekerjaan Pasang Sleeve Protector', tipe:'jasa', berkas:['-EVIDEN PEMASANGAN PROTECTOR'] },
+};
+
+function lookupDes(des) {
+  if (!des) return null;
+  const u = des.toUpperCase().trim();
+  for (const [k, v] of Object.entries(DESIGNATOR_MAP)) {
+    if (u.startsWith(k.toUpperCase())) return { key: k, ...v };
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════
+let rabItems    = [];   // [{ designator, jasa, material, volume, satuan, kategori }]
+let drmData     = [];   // [{ designator, jasa, material, volume, satuan }]
+let rekonData   = [];   // [{ designator, jasa, material, volume, satuan }]
+let rekonResult = [];   // [{ designator, drm, rekon, tambah, kurang, satuan, harga_satuan, ... }]
+let selectedLokasi = null;
+let allLokasi   = [];
+let lokasiDdOpen = false;
+
+// ══════════════════════════════════════════════════════════════
+//  HELPERS FORMAT
+// ══════════════════════════════════════════════════════════════
+function fmtNum(n) {
+  if (!n && n !== 0) return '0';
+  return parseFloat(n).toLocaleString('id-ID');
+}
+function fmtRp(n) {
+  if (!n && n !== 0) return 'Rp 0';
+  return 'Rp ' + parseFloat(n).toLocaleString('id-ID');
+}
+function fmtVol(n) {
+  if (!n && n !== 0) return '-';
+  return parseFloat(n).toLocaleString('id-ID', { maximumFractionDigits: 2 });
+}
+
+/**
+ * parseNum — robust number parser for Indonesian & Excel formats
+ * "42.500" (ribuan) → 42500
+ * "1.234.567" → 1234567
+ * "32.150,50" → 32150.5
+ * "32,150.50" → 32150.5
+ */
+function parseNum(s) {
+  if (s === null || s === undefined || s === '') return 0;
+  if (typeof s === 'number') return s;
+  let str = String(s).replace(/[Rp\s]/g, '').trim();
+  if (!str) return 0;
+
+  // Deteksi format Indonesia: 1.234 atau 1.234.567 (titik = pemisah ribuan)
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(str)) {
+    // ribuan pakai titik, desimal pakai koma
+    str = str.replace(/\./g, '').replace(',', '.');
+  } else if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(str)) {
+    // ribuan pakai koma, desimal pakai titik (format US)
+    str = str.replace(/,/g, '');
+  } else {
+    // fallback: buang koma, pertahankan titik terakhir sebagai desimal
+    const lastComma = str.lastIndexOf(',');
+    const lastDot   = str.lastIndexOf('.');
+    if (lastComma > lastDot) {
+      // koma adalah desimal
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+      // titik adalah desimal (atau tidak ada desimal)
+      str = str.replace(/,/g, '');
+    }
+  }
+  return parseFloat(str) || 0;
+}
+
+function formatRpField(el) {
+  const raw = parseNum(el.value);
+  if (!isNaN(raw) && raw > 0) el.value = fmtNum(raw);
+}
+function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+// ══════════════════════════════════════════════════════════════
+//  BUILD PRICE MAP dari rabItems
+//  Mengembalikan: { "DESIGNATOR_UPPER": harga_satuan_total }
+// ══════════════════════════════════════════════════════════════
+function buildPriceMap(items) {
+  const map = {};
+  (items || []).forEach(item => {
+    if (!item || !item.designator) return;
+    const k = item.designator.toUpperCase().trim();
+    const jasa = parseNum(item.jasa);
+    const mat  = parseNum(item.material);
+    map[k] = jasa + mat;
+  });
+  return map;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PARSE EXCEL PASTE (RAB) — 6 kolom
+//  designator | uraian pekerjaan | satuan | material | jasa | volume(TOTAL)
+//  Baris tanpa designator (mis. "OSP FO FTTH") = header grup → jadi kategori
+// ══════════════════════════════════════════════════════════════
+function parseExcelPaste(text) {
+  const result = [];
+  let group = null;
+  const lines = text.split('\n');
+  lines.forEach(line => {
+    line = line.trim();
+    if (!line) return;
+    const cols = line.split('\t');
+    const des = (cols[0] || '').trim();
+    if (!des) return;
+    const desLower = des.toLowerCase();
+    if (desLower === 'designator' || desLower === 'no' || des === '#') return;
+
+    const isDesignator = /^[A-Z0-9]+-[A-Z0-9-]+$/i.test(des);
+    const material = parseNum(cols[3] || '0');
+    const jasa     = parseNum(cols[4] || '0');
+    const volume   = parseNum(cols[5] || '0');
+
+    // Baris header grup: teks biasa tanpa kolom harga/volume (mis. "OSP FO FTTH")
+    if (!isDesignator) {
+      if (!(cols[1] || '').trim() && !(cols[2] || '').trim() && material === 0 && jasa === 0 && volume === 0) {
+        group = des;
+      }
+      return;
+    }
+
+    const uraian = (cols[1] || '').trim();
+    const satuan = (cols[2] || '').trim();
+
+    const exist = result.find(r => r.designator.toUpperCase() === des.toUpperCase());
+    if (exist) {
+      exist.volume += volume;
+      if (!exist.uraian && uraian) exist.uraian = uraian;
+      if (!exist.satuan && satuan) exist.satuan = satuan;
+      if (!exist.kategori && group) exist.kategori = group;
+    } else {
+      result.push({ designator: des, uraian, kategori: group, satuan, material, jasa, volume });
+    }
+  });
+  return result;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PARSE REKON PASTE — sama format, baca jasa+material+volume
+// ══════════════════════════════════════════════════════════════
+function parseRekonPaste(text) {
+  const result = [];
+  text.split('\n').forEach(line => {
+    line = line.trim();
+    if (!line) return;
+    const cols  = line.split('\t');
+    const des   = (cols[0] || '').trim();
+    if (!des || des.toLowerCase() === 'designator') return;
+
+    const jasa     = parseNum(cols[1] || '0');
+    const material = parseNum(cols[2] || '0');
+    const volume   = parseNum(cols[3] || '0');
+    const satuan   = (cols[4] || '').trim();
+
+    const exist = result.find(r => r.designator.toUpperCase() === des.toUpperCase());
+    if (exist) {
+      exist.volume   += volume;
+    } else {
+      result.push({ designator: des, jasa, material, volume, satuan });
+    }
+  });
+  return result;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  LOKASI DROPDOWN
+// ══════════════════════════════════════════════════════════════
+async function muatLokasi() {
+  try {
+    const res = await fetch('/api/get-lokasi');
+    if (!res.ok) throw new Error('Gagal fetch lokasi');
+    allLokasi = await res.json();
+    buildLokasi(allLokasi);
+  } catch (e) {
+    console.error('GAGAL MEMUAT LOKASI:', e);
+    allLokasi = [];
+    buildLokasi([]);
+    showToast('error', 'Gagal memuat lokasi dari server!');
+  }
+}
+
+function buildLokasi(list) {
+  const cont  = document.getElementById('lokasi_list');
+  const count = document.getElementById('lokasi_count');
+  if (!list.length) {
+    cont.innerHTML = '<div class="lok-empty">Tidak ada lokasi tersedia</div>';
+    if (count) count.textContent = '';
+    return;
+  }
+  cont.innerHTML = '';
+  list.forEach(loc => {
+    const item = document.createElement('div');
+    item.className = 'lok-item';
+
+    // SWAP: loc.pid (atau properti nama lokasi asli) diposisikan di atas sebagai teks utama yang tebal,
+    // dan loc.nama_lokasi (kode) ditaruh di bawah sebagai sub-teks monospace.
+    const namaTampil = loc.nama_lokasi || loc.pid;
+    const kodePid    = loc.pid || '-';
+
+    item.innerHTML = esc`
+  <div style="flex:1;min-width:0;">
+    <div class="lok-name">${loc.nama_lokasi || '—'}</div>
+    <div class="lok-pid">${loc.pid || '—'}</div>
+  </div>
+      <span class="lok-tag">${loc.tematik||'-'}</span>`;
+      
+    item.onclick = () => selectLokasi(loc);
+    cont.appendChild(item);
+  });
+  if (count) count.textContent = list.length + ' lokasi';
+}
+
+function filterLokasi(q) {
+  if (!lokasiDdOpen) openLokasi();
+  const f = allLokasi.filter(l => ((l.nama_lokasi||'')+(l.tematik||'')+(l.pid||'')).toLowerCase().includes(q.toLowerCase()));
+  buildLokasi(f);
+}
+
+function openLokasi() {
+  if (lokasiDdOpen) return;
+  lokasiDdOpen = true;
+  document.getElementById('lokasi_panel').style.display = 'block';
+  document.getElementById('lokasi_arrow').style.transform = 'translateY(-50%) rotate(180deg)';
+}
+function closeLokasi() {
+  lokasiDdOpen = false;
+  document.getElementById('lokasi_panel').style.display = 'none';
+  document.getElementById('lokasi_arrow').style.transform = 'translateY(-50%)';
+}
+document.addEventListener('click', e => {
+  const w = document.getElementById('lokasi_input')?.closest('div');
+  if (w && !w.parentElement.contains(e.target)) closeLokasi();
+});
+
+function selectLokasi(loc) {
+  selectedLokasi = loc;
+  const namaTampil = loc.nama_lokasi || loc.pid;
+  
+  document.getElementById('lokasi_input').value = namaTampil;
+  document.getElementById('lokasi_input').style.borderColor = 'var(--brand)';
+  closeLokasi();
+  buildLokasi(allLokasi);
+
+  const box  = document.getElementById('lokasi_aktif');
+  const nama = document.getElementById('lokasi_aktif_nama');
+  if (box)  box.style.display  = 'block';
+  if (nama) nama.textContent   = namaTampil + ' [' + (loc.tematik||'-') + ']';
+
+  muatRABTersimpan(loc.id);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  LOAD RAB TERSIMPAN
+// ══════════════════════════════════════════════════════════════
+async function muatRABTersimpan(id) {
+  try {
+    const res   = await fetch(`/api/rab/${id}`);
+    const items = await res.json();
+    if (Array.isArray(items) && items.length) {
+      rabItems = items.map(r => ({
+        designator: r.designator,
+        uraian:     r.des_material || r.des_jasa || '',
+        kategori:   (r.kategori && r.kategori !== '-') ? r.kategori : '',
+        satuan:     r.satuan,
+        jasa:       parseNum(r.jasa),
+        material:   parseNum(r.material),
+        volume:     parseNum(r.volume),
+      }));
+      renderRAB();
+      updateAcuan();
+      showToast('info', `${items.length} item RAB dimuat.`);
+    } else {
+      rabItems = [];
+      renderRAB();
+      updateAcuan();
+    }
+  } catch (e) {
+    rabItems = [];
+    renderRAB();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER RAB TABLE
+// ══════════════════════════════════════════════════════════════
+function renderRAB() {
+  const empty = document.getElementById('rab_empty');
+  const wrap  = document.getElementById('rab_table_wrap');
+  const tbody = document.getElementById('rab_tbody');
+  const tfoot = document.getElementById('rab_tfoot');
+
+  let totalMat = 0, totalJasa = 0;
+
+  if (!rabItems.length) {
+    empty.style.display = 'block';
+    wrap.style.display  = 'none';
+    document.getElementById('sum_mat').textContent   = 'Rp 0';
+    document.getElementById('sum_jasa').textContent  = 'Rp 0';
+    document.getElementById('sum_grand').textContent = 'Rp 0';
+    return;
+  }
+
+  empty.style.display = 'none';
+  wrap.style.display  = 'block';
+  tbody.innerHTML = '';
+
+  rabItems.forEach((item, i) => {
+    const vol  = parseNum(item.volume);
+    const mat  = parseNum(item.material);
+    const jas  = parseNum(item.jasa);
+    const jMat = mat * vol;
+    const jJas = jas * vol;
+    totalMat  += jMat;
+    totalJasa += jJas;
+    const info = lookupDes(item.designator);
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = esc`
+      <td style="text-align:center;font-size: 9px;font-weight: 500;color:#94a3b8;border-right:2px solid #e2e8f0;">${i+1}</td>
+      <td style="border-right:2px solid #e2e8f0;">
+        <div style="font-family:'JetBrains Mono',monospace;font-weight: 600;color:#D32F2F;font-size: 10px;">${item.designator||'-'}</div>
+        ${raw(info?`<div style="font-size: 8px;color:#94a3b8;margin-top:2px;"><span class="tag ${info.tipe==='material'?'tag-m':'tag-j'}">${info.tipe==='material'?'M':'J'}</span></div>`:'')}
+      </td>
+      <td style="border-right:2px solid #e2e8f0;">
+        <div style="font-size: 10px;color:#374151;font-weight: 400;">${item.uraian||item.kategori||'-'}</div>
+        ${raw(item.uraian && item.kategori ? `<div style="font-size: 8px;color:#818cf8;font-weight: 600;margin-top:2px;">${window.escapeHtml(item.kategori)}</div>` : '')}
+      </td>
+      <td style="text-align:center;font-size: 9px;font-weight: 500;color:#64748b;border-right:2px solid #e2e8f0;">${item.satuan||'-'}</td>
+      <td style="text-align:center;font-family:'JetBrains Mono',monospace;font-weight: 700;color:#D32F2F;font-size: 11px;border-right:2px solid #e2e8f0;background:#fdecec20;">${fmtNum(vol)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size: 10px;color:#374151;border-right:1px solid #e2e8f0;">${fmtNum(jas)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size: 10px;color:#374151;border-right:2px solid #e2e8f0;">${fmtNum(mat)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size: 10px;color:${jJas>0?'#059669':'#94a3b8'};font-weight: 500;border-right:1px solid #e2e8f0;background:#f0fdf420;">${fmtNum(jJas)}</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size: 10px;color:${jMat>0?'#059669':'#94a3b8'};font-weight: 500;border-right:2px solid #e2e8f0;background:#f0fdf420;">${fmtNum(jMat)}</td>
+      <td style="text-align:center;">
+        <button onclick="hapusBaris(${i})" style="width:30px;height:30px;border-radius:8px;background:#fff1f2;border:1px solid #fecdd3;color:#f43f5e;cursor:pointer;font-size: 10px;transition:all 0.15s;" onmouseenter="this.style.background='#f43f5e';this.style.color='#fff';" onmouseleave="this.style.background='#fff1f2';this.style.color='#f43f5e';" aria-label="Hapus baris ${i+1}">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  tfoot.innerHTML = esc`
+    <tr>
+      <td colspan="7" style="text-align:right;font-size: 10px;font-weight: 700;color:#D32F2F;border-top:2px solid #e2e8f0;">TOTAL JASA</td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size: 11px;color:#059669;background:#ecfdf5;">${fmtNum(totalJasa)}</td>
+      <td colspan="2" style="background:#ecfdf5;"></td>
+    </tr>
+    <tr>
+      <td colspan="7" style="text-align:right;font-size: 10px;font-weight: 700;color:#D32F2F;">TOTAL MATERIAL</td>
+      <td style="background:#eff6ff;"></td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size: 11px;color:#059669;background:#eff6ff;">${fmtNum(totalMat)}</td>
+      <td style="background:#eff6ff;"></td>
+    </tr>
+    <tr style="background:#fdecec;">
+      <td colspan="7" style="text-align:right;font-size: 11px;font-weight: 700;color:#4338ca;">GRAND TOTAL</td>
+      <td colspan="2" style="text-align:right;font-family:'JetBrains Mono',monospace;font-size: 11px;font-weight: 700;color:#4338ca;">${fmtNum(totalMat+totalJasa)}</td>
+      <td></td>
+    </tr>`;
+
+  document.getElementById('sum_mat').textContent   = fmtRp(totalMat);
+  document.getElementById('sum_jasa').textContent  = fmtRp(totalJasa);
+  document.getElementById('sum_grand').textContent = fmtRp(totalMat + totalJasa);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ACUAN BERKAS
+// ══════════════════════════════════════════════════════════════
+function updateAcuan() {
+  const panel = document.getElementById('acuan_panel');
+  const cont  = document.getElementById('acuan_content');
+  if (!rabItems.length) { panel.classList.remove('active'); return; }
+
+  const berkasMap = new Map();
+  rabItems.forEach(item => {
+    const info = lookupDes(item.designator);
+    if (info && info.berkas) {
+      info.berkas.forEach(b => {
+        if (!berkasMap.has(b)) berkasMap.set(b, []);
+        berkasMap.get(b).push({ des: item.designator, tipe: info.tipe });
+      });
+    }
+  });
+
+  if (!berkasMap.size) { panel.classList.remove('active'); return; }
+
+  let html = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">`;
+  const desUsed = new Set(rabItems.map(r => r.designator));
+  desUsed.forEach(des => {
+    const info = lookupDes(des);
+    if (info) html += `<span class="tag ${info.tipe==='material'?'tag-m':'tag-j'}" style="font-size: 8px;padding:3px 10px;">${des}</span>`;
+  });
+  html += `</div><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;">`;
+
+  const berkasList = [...berkasMap.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+  berkasList.forEach(([berkas, list], i) => {
+    const uniqDes = [...new Map(list.map(d=>[d.des,d])).values()];
+    html += `<div class="acuan-item" style="${i%2===0?'background:var(--row-bg)':'background:var(--bg-input)'}">
+      <div style="width:22px;height:22px;background:#ecfdf5;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+        <i class="fa-solid fa-file" style="font-size: 7px;color:#059669;"></i>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size: 10px;font-weight: 500;color:var(--text-main);">${berkas}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+          ${uniqDes.map(d=>`<span class="tag ${d.tipe==='material'?'tag-m':'tag-j'}" style="font-size: 7px;">${d.des}</span>`).join('')}
+        </div>
+      </div>
+      <span class="tag tag-wajib">WAJIB</span>
+    </div>`;
+  });
+  html += `</div>`;
+  cont.innerHTML = html;
+  panel.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PROSES EXCEL (RAB)
+// ══════════════════════════════════════════════════════════════
+function prosesExcel() {
+  const text = document.getElementById('excel_input').value;
+  if (!text.trim()) { showToast('error', 'Harap paste data terlebih dahulu!'); return; }
+  const newData = parseExcelPaste(text);
+  if (!newData.length) {
+    showToast('error', 'Gagal parsing. Pastikan format: designator [Tab] uraian [Tab] satuan [Tab] material [Tab] jasa [Tab] volume(TOTAL)');
+    return;
+  }
+  rabItems = [...rabItems, ...newData];
+  renderRAB();
+  updateAcuan();
+  document.getElementById('excel_input').value = '';
+  document.getElementById('paste_area').classList.add('hidden');
+  showToast('success', `${newData.length} baris berhasil ditambahkan!`);
+}
+
+function hapusBaris(i) {
+  rabItems.splice(i, 1);
+  renderRAB();
+  updateAcuan();
+  showToast('info', 'Baris dihapus.');
+}
+
+function togglePasteArea() {
+  document.getElementById('paste_area').classList.toggle('hidden');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SIMPAN RAB
+// ══════════════════════════════════════════════════════════════
+async function simpanData() {
+  if (!selectedLokasi) { showToast('error','Pilih lokasi terlebih dahulu!'); return; }
+  if (!rabItems.length) { showToast('error','Data RAB masih kosong!'); return; }
+
+  let totalMat = 0, totalJasa = 0;
+  const items = rabItems.map((item, idx) => {
+    const vol = parseNum(item.volume);
+    const mat = parseNum(item.material);
+    const jas = parseNum(item.jasa);
+    totalMat  += mat * vol;
+    totalJasa += jas * vol;
+    const isJasa = /^J-/i.test((item.designator || '').trim());
+    return {
+      no: idx+1,
+      designator: item.designator,
+      des_material: isJasa ? null : (item.uraian || null),
+      des_jasa:     isJasa ? (item.uraian || null) : null,
+      kategori: item.kategori || 'Gabungan',
+      satuan: item.satuan,
+      material: mat, jasa: jas, volume: vol
+    };
+  });
+
+  try {
+    const res  = await fetch(`/api/rab/${selectedLokasi.id}`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ items, totalMaterial: totalMat, totalJasa, grandTotal: totalMat+totalJasa })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showToast('success', `RAB disimpan (${items.length} item)`);
+      setTimeout(()=>{ window.location.href='/admin.html'; }, 1400);
+    } else {
+      showToast('error', 'Gagal: ' + (data.error||'Error'));
+    }
+  } catch (e) { showToast('error', 'Gangguan koneksi.'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MODE SWITCHING
+// ══════════════════════════════════════════════════════════════
+let currentMode = 'rab';
+function setMode(mode) {
+  currentMode = mode;
+  const isRab = mode === 'rab';
+  document.getElementById('tab_rab').className   = 'tab-btn' + (isRab?' active':'');
+  document.getElementById('tab_rekon').className = 'tab-btn' + (!isRab?' active':'');
+  document.getElementById('btns_rab').style.display    = isRab ? 'flex' : 'none';
+  document.getElementById('btns_rekon').style.display  = !isRab ? 'flex' : 'none';
+  document.getElementById('rekon_section').className   = 'rekon-section' + (!isRab ? ' active' : '');
+  document.getElementById('rab_section').style.display = isRab ? 'block' : 'none';
+  document.getElementById('acuan_panel').classList[isRab ? 'add' : 'remove']('active');
+  if (isRab) updateAcuan();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  REKON — PROSES INPUT
+// ══════════════════════════════════════════════════════════════
+function prosesDRM() {
+  drmData = parseRekonPaste(document.getElementById('drm_input').value);
+  document.getElementById('drm_count').textContent = drmData.length + ' item';
+  if (!drmData.length) showToast('error','Tidak ada data DRM valid!');
+  else showToast('success', drmData.length + ' item DRM diparsing.');
+}
+
+function prosesRekonInput() {
+  rekonData = parseRekonPaste(document.getElementById('rekon_input').value);
+  document.getElementById('rekon_count').textContent = rekonData.length + ' item';
+  if (!rekonData.length) showToast('error','Tidak ada data REKON valid!');
+  else showToast('success', rekonData.length + ' item REKON diparsing.');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  HITUNG REKONSILIASI — INTI PERBAIKAN
+//  Sumber harga: rabItems (sudah dimuat) atau server jika rabItems kosong
+// ══════════════════════════════════════════════════════════════
+async function hitungRekonsiliasi() {
+  // Parse input jika belum
+  if (!drmData.length)   drmData   = parseRekonPaste(document.getElementById('drm_input').value);
+  if (!rekonData.length) rekonData = parseRekonPaste(document.getElementById('rekon_input').value);
+
+  if (!drmData.length && !rekonData.length) {
+    showToast('error','Paste data DRM dan/atau REKON dulu!');
+    return;
+  }
+
+  // ── 1. Pastikan harga tersedia di rabItems ──────────────────
+  let hargaItems = rabItems;
+  if (!hargaItems.length && selectedLokasi) {
+    showToast('info', 'Memuat harga dari server...');
+    try {
+      const r   = await fetch(`/api/rab/${selectedLokasi.id}`);
+      const raw = await r.json();
+      hargaItems = raw.map(x => ({
+        designator: x.designator,
+        jasa:       parseNum(x.jasa),
+        material:   parseNum(x.material),
+        volume:     parseNum(x.volume),
+        satuan:     x.satuan,
+        uraian:     x.des_material || x.des_jasa || '',
+        kategori:   (x.kategori && x.kategori !== '-') ? x.kategori : '',
+      }));
+      if (hargaItems.length) {
+        rabItems = hargaItems; // sinkronkan state
+        renderRAB();
+      }
+    } catch(e) {
+      console.warn('Gagal fetch RAB:', e);
+    }
+  }
+
+  // ── 2. Build price map: designator → jasa+material (harga satuan) ──
+  const priceMap = buildPriceMap(hargaItems);
+  console.log('[REKON] priceMap:', priceMap);
+
+  // ── 3. Gabungkan semua designator ──────────────────────────
+  const allDes = new Set([
+    ...drmData.map(r => r.designator.toUpperCase()),
+    ...rekonData.map(r => r.designator.toUpperCase()),
+  ]);
+
+  rekonResult = [];
+  allDes.forEach(desUpper => {
+    const d      = drmData.find(r  => r.designator.toUpperCase()  === desUpper);
+    const r      = rekonData.find(r => r.designator.toUpperCase() === desUpper);
+    const vDrm   = d ? parseNum(d.volume) : 0;
+    const vRekon = r ? parseNum(r.volume) : 0;
+    const selisih = vRekon - vDrm;
+
+    // ── KUNCI: ambil harga satuan — prioritas:
+    //    (1) RAB (tab Input RAB / tersimpan di server)
+    //    (2) harga jasa+material yang ikut ter-paste di input DRM
+    //    (3) harga jasa+material yang ikut ter-paste di input REKON
+    const hDrm = d ? parseNum(d.jasa) + parseNum(d.material) : 0;
+    const hRek = r ? parseNum(r.jasa) + parseNum(r.material) : 0;
+    const hSat = priceMap[desUpper.trim()] || hDrm || hRek || 0;
+
+    rekonResult.push({
+      designator:   d ? d.designator : r.designator,
+      drm:          vDrm,
+      rekon:        vRekon,
+      tambah:       selisih > 0 ? selisih : 0,
+      kurang:       selisih < 0 ? Math.abs(selisih) : 0,
+      selisih,
+      satuan:       (d && d.satuan) || (r && r.satuan) || '-',
+      harga_satuan: hSat,           // ← tersimpan di state
+      nilai_drm:    vDrm   * hSat,
+      nilai_rekon:  vRekon * hSat,
+      nilai_tambah: (selisih > 0 ? selisih   : 0) * hSat,
+      nilai_kurang: (selisih < 0 ? Math.abs(selisih) : 0) * hSat,
+    });
+  });
+
+  // Urutkan: ada perubahan dulu
+  rekonResult.sort((a,b) => {
+    const aC = (a.tambah + a.kurang) > 0 ? 1 : 0;
+    const bC = (b.tambah + b.kurang) > 0 ? 1 : 0;
+    return bC - aC || a.designator.localeCompare(b.designator);
+  });
+
+  renderRekonTable();
+  const tanpaHarga = rekonResult.filter(x => x.harga_satuan === 0);
+  if (tanpaHarga.length) {
+    showToast('info', tanpaHarga.length + ' designator belum punya harga satuan: ' +
+      tanpaHarga.slice(0,3).map(x=>x.designator).join(', ') + (tanpaHarga.length > 3 ? ', dst.' : '') +
+      ' — paste harga RAB (kolom jasa/material) agar nominal muncul.');
+  } else {
+    showToast('success', rekonResult.length + ' designator direkonsiliasi.');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER TABEL REKON (dengan kolom nilai Rp)
+// ══════════════════════════════════════════════════════════════
+function renderRekonTable() {
+  const wrap  = document.getElementById('rekon_table_wrap');
+  const tbody = document.getElementById('rekon_tbody');
+  const badge = document.getElementById('rekon_badge');
+  const bar   = document.getElementById('rekon_summary_bar');
+  if (!rekonResult.length) { wrap.classList.remove('active'); bar.style.display='none'; return; }
+
+  wrap.classList.add('active');
+
+  const totalDrmRp  = rekonResult.reduce((s,r) => s + r.nilai_drm,    0);
+  const totalRekRp  = rekonResult.reduce((s,r) => s + r.nilai_rekon,  0);
+  const totalPlusRp = rekonResult.reduce((s,r) => s + r.nilai_tambah, 0);
+  const totalMinRp  = rekonResult.reduce((s,r) => s + r.nilai_kurang, 0);
+  const nilaiDev    = totalRekRp - totalDrmRp;
+  const nPerubahan  = rekonResult.filter(r => r.tambah > 0 || r.kurang > 0).length;
+
+  badge.textContent = rekonResult.length + ' designator · ' + nPerubahan + ' ada perubahan';
+  badge.style.display = 'inline-flex';
+
+  // Summary bar
+  bar.style.display = 'grid';
+  document.getElementById('rs_drm').textContent  = fmtRp(totalDrmRp);
+  document.getElementById('rs_rek').textContent  = fmtRp(totalRekRp);
+  document.getElementById('rs_plus').textContent = fmtRp(totalPlusRp);
+  document.getElementById('rs_min').textContent  = fmtRp(totalMinRp);
+  document.getElementById('rs_dev').textContent  = (nilaiDev < 0 ? '-' : '') + fmtRp(Math.abs(nilaiDev));
+
+  tbody.innerHTML = '';
+  rekonResult.forEach(row => {
+    const hasPlus = row.tambah > 0;
+    const hasMin  = row.kurang > 0;
+    const status  = hasPlus
+      ? '<span style="color:var(--c-plus);font-size: 8px;font-weight: 600;">▲ TAMBAH</span>'
+      : hasMin
+      ? '<span style="color:var(--c-min);font-size: 8px;font-weight: 600;">▼ KURANG</span>'
+      : '<span style="color:var(--c-zero);font-size: 8px;font-weight: 500;">= SAMA</span>';
+
+    const hSatDisplay = row.harga_satuan > 0
+      ? `<span style="color:var(--c-rp);font-size: 9px;font-family:'JetBrains Mono',monospace;">${fmtNum(row.harga_satuan)}</span>`
+      : `<span style="color:var(--c-zero);font-size: 8px;">—</span>`;
+
+    const tr = document.createElement('tr');
+    if (hasPlus) tr.className = 'has-change-plus';
+    if (hasMin)  tr.className = 'has-change-min';
+    tr.innerHTML = esc`
+      <td class="col-des">${row.designator}</td>
+      <td class="col-drm">${fmtVol(row.drm)}</td>
+      <td class="col-rek">${fmtVol(row.rekon)}</td>
+      <td class="${hasPlus?'col-plus':'col-zero'}">${hasPlus?'+'+fmtVol(row.tambah):'0'}</td>
+      <td class="${hasMin?'col-min':'col-zero'}">${hasMin?'-'+fmtVol(row.kurang):'0'}</td>
+      <td style="text-align:center;color:var(--text-sub);font-size: 9px;">${row.satuan}</td>
+      <td class="col-rp" style="text-align:right;">${hSatDisplay}</td>
+      <td class="col-rp" style="color:${row.nilai_drm>0?'var(--c-drm)':'var(--c-zero)'};text-align:right;">${row.nilai_drm>0?fmtNum(row.nilai_drm):'—'}</td>
+      <td class="col-rp" style="color:${row.nilai_rekon>0?'var(--c-rek)':'var(--c-zero)'};text-align:right;">${row.nilai_rekon>0?fmtNum(row.nilai_rekon):'—'}</td>
+      <td class="col-rp" style="color:${hasPlus?'var(--c-plus)':'var(--c-zero)'};text-align:right;">${hasPlus?fmtNum(row.nilai_tambah):'—'}</td>
+      <td class="col-rp" style="color:${hasMin?'var(--c-min)':'var(--c-zero)'};text-align:right;">${hasMin?fmtNum(row.nilai_kurang):'—'}</td>
+      <td style="text-align:center;">${status}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Total footer
+  const tf = document.createElement('tr');
+  tf.style.cssText = 'background:var(--bg-strip);border-top:2px solid var(--border-2);';
+  tf.innerHTML = esc`
+    <td style="color:var(--text-sub);font-weight: 600;font-size: 9px;padding:12px 14px;" colspan="7">TOTAL PERUBAHAN (Rp)</td>
+    <td class="col-rp" style="color:var(--c-drm);padding:12px 14px;">${fmtNum(totalDrmRp)}</td>
+    <td class="col-rp" style="color:var(--c-rek);padding:12px 14px;">${fmtNum(totalRekRp)}</td>
+    <td class="col-plus" style="padding:12px 14px;">+${fmtNum(totalPlusRp)}</td>
+    <td class="col-min"  style="padding:12px 14px;">-${fmtNum(totalMinRp)}</td>
+    <td></td>`;
+  tbody.appendChild(tf);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CLEAR REKON
+// ══════════════════════════════════════════════════════════════
+function clearRekon() {
+  drmData = []; rekonData = []; rekonResult = [];
+  document.getElementById('drm_input').value   = '';
+  document.getElementById('rekon_input').value = '';
+  document.getElementById('drm_count').textContent   = '0 item';
+  document.getElementById('rekon_count').textContent = '0 item';
+  document.getElementById('rekon_table_wrap').classList.remove('active');
+  document.getElementById('rekon_badge').style.display       = 'none';
+  document.getElementById('rekon_summary_bar').style.display = 'none';
+  document.getElementById('ba_preview').classList.remove('active');
+  showToast('info','Data rekon direset.');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SIMPAN REKON — kirim harga_satuan tersinkron ke server
+// ══════════════════════════════════════════════════════════════
+async function simpanRekon() {
+  if (!selectedLokasi) { showToast('error','Pilih lokasi dulu!'); return; }
+  if (!rekonResult.length) { showToast('error','Hitung rekonsiliasi dulu!'); return; }
+
+  // Pastikan harga_satuan sudah terisi di rekonResult
+  // (sudah diisi saat hitungRekonsiliasi(), tapi cross-check sekali lagi)
+  let hargaItems = rabItems;
+  if (!hargaItems.length) {
+    try {
+      const r   = await fetch(`/api/rab/${selectedLokasi.id}`);
+      hargaItems = await r.json();
+    } catch(e) { hargaItems = []; }
+  }
+  const priceMap = buildPriceMap(hargaItems);
+
+  const itemsToSave = rekonResult.map(r => ({
+    designator:   r.designator,
+    drm:          r.drm,
+    rekon:        r.rekon,
+    tambah:       r.tambah,
+    kurang:       r.kurang,
+    satuan:       r.satuan,
+    harga_satuan: priceMap[r.designator.toUpperCase().trim()] || r.harga_satuan || 0,
+  }));
+
+  try {
+    const res = await fetch(`/api/rekon/${selectedLokasi.id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: itemsToSave }),
+    });
+    const data = await res.json();
+    if (data.ok) showToast('success', 'Rekon berhasil disimpan!');
+    else showToast('error', data.error || 'Gagal simpan');
+  } catch(e) { showToast('error', 'Gangguan koneksi.'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MODAL BA TAMBAH KURANG
+// ══════════════════════════════════════════════════════════════
+function bukaModalBATK() {
+  if (!rekonResult.length) {
+    hitungRekonsiliasi().then(() => {
+      if (rekonResult.length) _bukaModalBATK();
+      else showToast('error','Hitung rekonsiliasi dulu!');
+    });
+    return;
+  }
+  _bukaModalBATK();
+}
+
+function _bukaModalBATK() {
+  if (selectedLokasi) {
+    const lok = document.getElementById('f_lok');
+    if (lok && !lok.value) lok.value = selectedLokasi.nama_lokasi || '';
+  }
+  const now   = new Date();
+  const hari  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][now.getDay()];
+  const bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][now.getMonth()];
+  if (!document.getElementById('f_hari').value) document.getElementById('f_hari').value = hari;
+  if (!document.getElementById('f_tgl').value)  document.getElementById('f_tgl').value  = now.getDate();
+  if (!document.getElementById('f_bln').value)  document.getElementById('f_bln').value  = bulan;
+  if (!document.getElementById('f_thn').value)  document.getElementById('f_thn').value  = now.getFullYear();
+  document.getElementById('modal_batk').classList.add('active');
+}
+
+function tutupModal() {
+  document.getElementById('modal_batk').classList.remove('active');
+}
+document.addEventListener('click', e => {
+  const overlay = document.getElementById('modal_batk');
+  if (e.target === overlay) tutupModal();
+});
+
+// ══════════════════════════════════════════════════════════════
+//  GENERATE BA TAMBAH KURANG
+// ══════════════════════════════════════════════════════════════
+async function generateBA() {
+  const d = {
+    proyek:    val('f_proyek')    || '[Nama Proyek]',
+    kontrak:   val('f_kontrak')   || '[Nomor Kontrak]',
+    sp:        val('f_sp')        || '[Surat Pesanan]',
+    nosp:      val('f_nosp')      || '[No. SP]',
+    lok:       val('f_lok')       || '[Lokasi]',
+    hari:      val('f_hari')      || '[Hari]',
+    tgl:       val('f_tgl')       || '[Tanggal]',
+    bln:       val('f_bln')       || '[Bulan]',
+    thn:       val('f_thn')       || '[Tahun]',
+    nilaiAwal: parseNum(val('f_nilai_awal')),
+    catatan:   val('f_catatan')   || '-',
+    ttd1:      val('f_ttd1')      || '[Nama Pejabat 1]',
+    ttd1_jab:  val('f_ttd1_jab')  || '[Jabatan]',
+    ttd2:      val('f_ttd2')      || '[Nama Pejabat 2]',
+    ttd2_jab:  val('f_ttd2_jab')  || '[Jabatan]',
+    tipeDok:   val('f_tipe_dok'),
+  };
+
+  // ── Gunakan harga dari rekonResult (sudah sinkron dari hitungRekonsiliasi) ──
+  const tambahItems = rekonResult.filter(r => r.tambah > 0);
+  const kurangItems = rekonResult.filter(r => r.kurang > 0);
+
+  const totalTambah  = rekonResult.reduce((s,r) => s + (r.nilai_tambah || 0), 0);
+  const totalKurang  = rekonResult.reduce((s,r) => s + (r.nilai_kurang || 0), 0);
+  const selisihNet   = totalTambah - totalKurang;
+  const nilaiAkhir   = d.nilaiAwal + selisihNet;
+
+  tutupModal();
+
+  // ── Opsi DOCX / PDF: simpan dulu, lalu download dari server ──────
+  if (d.tipeDok === 'docx' || d.tipeDok === 'pdf') {
+    if (!selectedLokasi) { showToast('error','Pilih lokasi dulu!'); return; }
+    try {
+      showToast('info', 'Menyimpan data rekon & BA ke server...');
+
+      // Pastikan harga_satuan di rekonResult sudah benar
+      let hargaItems = rabItems;
+      if (!hargaItems.length) {
+        const r    = await fetch(`/api/rab/${selectedLokasi.id}`);
+        hargaItems = await r.json();
+      }
+      const priceMap2 = buildPriceMap(hargaItems);
+
+      const itemsWithHarga = rekonResult.map(r => ({
+        designator:   r.designator,
+        drm:          r.drm,
+        rekon:        r.rekon,
+        tambah:       r.tambah,
+        kurang:       r.kurang,
+        satuan:       r.satuan,
+        harga_satuan: priceMap2[r.designator.toUpperCase().trim()] || r.harga_satuan || 0,
+      }));
+
+      // 1. Simpan rekon ke DB
+      const saveRes = await fetch(`/api/rekon/${selectedLokasi.id}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: itemsWithHarga }),
+      });
+      if (!saveRes.ok) throw new Error('Gagal simpan rekon ke server');
+
+      const namaLokasiAktif = selectedLokasi ? (selectedLokasi.pid || selectedLokasi.nama_lokasi) : '';
+
+      await fetch(`/api/laporan-rekon/${selectedLokasi.id}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          proyek: d.proyek, kontrak: d.kontrak,
+          surat_pesan: d.sp, pelaksana: d.ttd2,
+          nama_waspang: d.ttd1, tgl: d.tgl,
+          bulan: d.bln, hari_ct: d.hari,
+          lokasi: namaLokasiAktif // ← Tambahkan baris ini
+        }),
+      });
+
+      // 3. Download dari server
+      const mauPdf = d.tipeDok === 'pdf';
+      showToast('info', mauPdf ? 'Generating dokumen PDF (dikonversi lewat MS Word)...' : 'Generating dokumen Word...');
+      const resp = await fetch(`/api/generate/ba_tambahkurang/${selectedLokasi.id}` + (mauPdf ? '?format=pdf' : ''));
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.message || 'Gagal generate dari server');
+      }
+      const blob = await resp.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url;
+      a.download = 'BA_TambahKurang_' + (selectedLokasi.nama_lokasi||'lokasi').replace(/\s+/g,'_') + (mauPdf ? '.pdf' : '.docx');
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('success', mauPdf ? 'Dokumen BA PDF berhasil di-download!' : 'Dokumen BA Word berhasil di-download!');
+    } catch(err) {
+      showToast('error', err.message);
+    }
+    return;
+  }
+
+  // ── Opsi HTML / Preview ─────────────────────────────────────
+  const rowsTambah = tambahItems.map((r, i) => {
+    const hSat = r.harga_satuan || 0;
+    return `<tr class="plus-row">
+      <td style="text-align:center;">${i+1}</td>
+      <td>${r.designator}</td>
+      <td>${r.satuan||'-'}</td>
+      <td style="text-align:right;">${fmtVol(r.tambah)}</td>
+      <td style="text-align:right;">${fmtNum(hSat)}</td>
+      <td style="text-align:right;">${fmtNum(r.nilai_tambah||0)}</td>
+    </tr>`;
+  }).join('');
+
+  const rowsKurang = kurangItems.map((r, i) => {
+    const hSat = r.harga_satuan || 0;
+    return `<tr class="min-row">
+      <td style="text-align:center;">${i+1}</td>
+      <td>${r.designator}</td>
+      <td>${r.satuan||'-'}</td>
+      <td style="text-align:right;">${fmtVol(r.kurang)}</td>
+      <td style="text-align:right;">${fmtNum(hSat)}</td>
+      <td style="text-align:right;">${fmtNum(r.nilai_kurang||0)}</td>
+    </tr>`;
+  }).join('');
+
+  const htmlDoc = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>BA Tambah Kurang - ${d.lok}</title>
+  <style>
+    body { font-family: 'Times New Roman', serif; font-size: 12pt; margin: 40px; color: #000; }
+    h1 { font-size: 13pt; text-align: center; text-transform: uppercase; margin-bottom: 4px; }
+    h2 { font-size: 12pt; text-align: center; margin-bottom: 2px; }
+    p { text-align: justify; margin: 4px 0; line-height: 1.7; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11pt; }
+    th, td { border: 1px solid #000; padding: 5px 8px; }
+    th { background: #f0f0f0; font-weight: bold; text-align: center; }
+    .plus-row td { background: #f0fff4; }
+    .min-row  td { background: #fff5f5; }
+    .total-row td { background: #fefce8; font-weight: bold; }
+    .grand-row td { background: #fdecec; font-weight: bold; }
+    .sign-area { display: flex; justify-content: space-around; margin-top: 50px; }
+    .sign-col  { text-align: center; width: 200px; }
+    .sign-line { border-top: 1px solid #000; margin-top: 60px; padding-top: 4px; font-weight: bold; }
+    @media print { body { margin: 20px; } }
+  </style>
+</head>
+<body>
+  <h1>Berita Acara</h1>
+  <h1>Pekerjaan Tambah Kurang</h1>
+  <h2>${d.proyek}</h2><br>
+  <p>Pada hari ini, <b>${d.hari}</b> tanggal <b>${d.tgl}</b> bulan <b>${d.bln}</b> tahun <b>${d.thn}</b>, bertempat di <b>${d.lok}</b>, kami yang bertanda tangan di bawah ini sepakat untuk melaksanakan pekerjaan tambah kurang sesuai hasil rekonsiliasi lapangan.</p>
+  <p><b>Nama Proyek&nbsp;&nbsp;&nbsp;&nbsp;:</b> ${d.proyek}</p>
+  <p><b>No. Kontrak&nbsp;&nbsp;&nbsp;&nbsp;:</b> ${d.kontrak}</p>
+  <p><b>Surat Pesanan :</b> ${d.sp} &nbsp;&nbsp; No. SP: ${d.nosp}</p>
+  <p><b>Lokasi&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</b> ${d.lok}</p>
+  ${d.nilaiAwal > 0 ? `<p><b>Nilai Kontrak Awal :</b> Rp ${fmtNum(d.nilaiAwal)}</p>` : ''}
+  <p><b>Alasan Perubahan :</b> ${d.catatan}</p>
+
+  ${tambahItems.length ? `
+  <p><b>A. PEKERJAAN TAMBAH</b></p>
+  <table>
+    <thead><tr><th width="5%">No</th><th>Designator</th><th width="10%">Sat</th><th width="12%">Vol Tambah</th><th width="15%">Harga Sat (Rp)</th><th width="15%">Nilai (Rp)</th></tr></thead>
+    <tbody>
+      ${rowsTambah}
+      <tr class="total-row"><td colspan="5" style="text-align:right;">TOTAL PEKERJAAN TAMBAH</td><td style="text-align:right;">${fmtNum(totalTambah)}</td></tr>
+    </tbody>
+  </table>` : ''}
+
+  ${kurangItems.length ? `
+  <p><b>B. PEKERJAAN KURANG</b></p>
+  <table>
+    <thead><tr><th width="5%">No</th><th>Designator</th><th width="10%">Sat</th><th width="12%">Vol Kurang</th><th width="15%">Harga Sat (Rp)</th><th width="15%">Nilai (Rp)</th></tr></thead>
+    <tbody>
+      ${rowsKurang}
+      <tr class="total-row"><td colspan="5" style="text-align:right;">TOTAL PEKERJAAN KURANG</td><td style="text-align:right;">${fmtNum(totalKurang)}</td></tr>
+    </tbody>
+  </table>` : ''}
+
+  <table>
+    <tbody>
+      <tr><td>Total Pekerjaan Tambah</td><td style="text-align:right;">Rp ${fmtNum(totalTambah)}</td></tr>
+      <tr><td>Total Pekerjaan Kurang</td><td style="text-align:right;">Rp ${fmtNum(totalKurang)}</td></tr>
+      <tr class="grand-row"><td><b>SELISIH NETO (Tambah − Kurang)</b></td><td style="text-align:right;"><b>Rp ${fmtNum(selisihNet)}</b></td></tr>
+      ${d.nilaiAwal > 0 ? `<tr class="grand-row"><td><b>NILAI KONTRAK SETELAH PERUBAHAN</b></td><td style="text-align:right;"><b>Rp ${fmtNum(nilaiAkhir)}</b></td></tr>` : ''}
+    </tbody>
+  </table>
+
+  <p>Demikian Berita Acara ini dibuat dengan sebenarnya untuk digunakan sebagaimana mestinya.</p>
+  <div class="sign-area">
+    <div class="sign-col"><p>Pihak Pemberi Kerja,</p><div class="sign-line">${d.ttd1}</div><p>${d.ttd1_jab}</p></div>
+    <div class="sign-col"><p>Pihak Penerima Kerja,</p><div class="sign-line">${d.ttd2}</div><p>${d.ttd2_jab}</p></div>
+  </div>
+</body></html>`;
+
+  if (d.tipeDok === 'download') {
+    const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `BA_TambahKurang_${d.lok.replace(/\s+/g,'_')}_${d.tgl}${d.bln}${d.thn}.html`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('success', 'Dokumen BA berhasil di-download!');
+  } else {
+    const win = window.open('', '_blank', 'width=900,height=700');
+    win.document.write(htmlDoc);
+    win.document.close();
+    setTimeout(() => { try { win.focus(); win.print(); } catch(e){} }, 600);
+    showToast('success', 'Dokumen BA dibuka untuk print/preview!');
+  }
+
+  _simpanDataBA(d);
+}
+
+function _simpanDataBA(d) {
+  if (!selectedLokasi) return;
+  fetch('/api/laporan-rekon/' + selectedLokasi.id, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      proyek: d.proyek, kontrak: d.kontrak,
+      surat_pesan: d.sp, pelaksana: d.ttd2,
+      nama_waspang: d.ttd1, tgl: d.tgl,
+      bulan: d.bln, hari_ct: d.hari,
+      // ══ PASTIKAN MENGAMBIL DARI PID JIKA NAMA_LOKASI BERISI KODE ══
+      lokasi: selectedLokasi.pid || selectedLokasi.nama_lokasi
+    })
+  }).catch(() => {});
+}
+
+// ══════════════════════════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════════════════════════
+let toastTimer;
+function showToast(type, msg) {
+  const toast = document.getElementById('toast');
+  const inner = document.getElementById('toast_inner');
+  const icon  = document.getElementById('toast_icon');
+  const msgEl = document.getElementById('toast_msg');
+  const types = {
+    success: { cls:'toast-success', ic:'fa-circle-check' },
+    error:   { cls:'toast-error',   ic:'fa-triangle-exclamation' },
+    info:    { cls:'toast-info',     ic:'fa-circle-info' },
+  };
+  const t = types[type] || types.info;
+  inner.className = 'toast-inner ' + t.cls;
+  icon.className  = 'fa-solid ' + t.ic;
+  msgEl.textContent = msg;
+  toast.classList.add('active');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('active'), 3500);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  muatLokasi();
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') tutupModal();
+  });
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</body>
+</html>
