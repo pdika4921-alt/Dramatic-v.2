@@ -215,6 +215,12 @@ mark.hl{background:rgba(211,47,47,.15);color:#b91c1c;border-radius:2px;padding:0
   transition:all var(--transition-fast);
 }
 #epodp-drop:hover{border-color:var(--brand);background:#ffe9e9;}
+/* Sorotan saat foto di-drag di atas area pilih foto wizard OPM / ODP */
+#epodp-drop.over,#opm-drop-port.over{
+  border-color:var(--brand)!important;background:#ffe9e9!important;
+  box-shadow:0 0 0 3px rgba(211,47,47,.16);transform:scale(1.01);
+}
+#opm-drop-port{transition:all var(--transition-fast);}
 
 /* ── DYNAMIC INPUT ──────────────────────────────── */
 #box-dinamis, #box-manual{background:linear-gradient(135deg,rgba(211,47,47,.06),rgba(183,28,28,.04));border:1.5px solid rgba(211,47,47,.18);border-radius:13px;padding:13px 15px;max-height:0;overflow:hidden;opacity:0;transition:max-height .3s ease,opacity .25s ease,padding .3s ease;}

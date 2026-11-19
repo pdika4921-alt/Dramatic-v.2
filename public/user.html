@@ -389,7 +389,7 @@
                 <div class="lbl" style="margin-bottom:7px;"><i class="fa-solid fa-camera"></i> Foto eviden port ini</div>
                 <div style="display:none" id="opm-heic-warn"></div>
                 <input type="file" id="opm-file-port" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="opmAwasFile(this)">
-                <label id="opm-drop-port" for="opm-file-port" style="border:2px dashed #fca5a5;border-radius:12px;background:#fef2f2;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;font-size: 10px;font-weight: 500;color:#d32f2f;cursor:pointer;">📷 Klik untuk pilih foto port ini</label>
+                <label id="opm-drop-port" for="opm-file-port" style="border:2px dashed #fca5a5;border-radius:12px;background:#fef2f2;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;font-size: 10px;font-weight: 500;color:#d32f2f;cursor:pointer;">📷 Klik, atau seret &amp; jatuhkan foto port ini ke sini</label>
                 <div id="opm-file-info" style="display:none;margin-top:7px;font-size: 9px;font-weight: 500;color:#065f46;background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:8px 12px;"></div>
               </div>
             </div>
@@ -436,7 +436,7 @@
             </div>
             <div id="epodp-warn-lengkap" style="display:none;margin-bottom:10px;font-size: 9px;font-weight: 500;color:#92400e;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.25);border-radius:8px;padding:8px 12px;"></div>
             <input type="file" id="epodp-file" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="epodpPilihFile(this)">
-            <label id="epodp-drop" for="epodp-file">📷 Klik untuk pilih foto eviden SEBELUM</label>
+            <label id="epodp-drop" for="epodp-file">📷 Klik, atau seret &amp; jatuhkan foto eviden SEBELUM ke sini</label>
             <div id="epodp-file-info" style="display:none;margin-top:8px;font-size: 9px;font-weight: 500;color:#065f46;background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);border-radius:8px;padding:8px 12px;"></div>
           </div>
 
@@ -1216,7 +1216,10 @@
       }
       const warn = document.getElementById('opm-heic-warn');
       if (warn) warn.style.display = 'none';
-      input.dispatchEvent(new Event('change'));
+      // Tidak perlu dispatchEvent('change') lagi: attribute onchange dijalankan
+      // SEBELUM addEventListener('change') pada event yang sama, jadi pemroses
+      // file (di bawah) tetap jalan. Dispatch ulang justru memicu rekursi
+      // puluhan lapis yang ditelan browser sebagai RangeError.
     }
 
     async function opmSimpanPort() {
@@ -1361,7 +1364,7 @@
       document.getElementById('epodp-step-label').textContent = EPODP_LABEL[step];
       document.getElementById('epodp-step-sub').textContent  = `Step ${cur + 1} / 3`;
       document.getElementById('epodp-count').textContent     = `${cur}/3 step selesai`;
-      document.getElementById('epodp-drop').innerHTML        = esc`📷 Klik untuk pilih foto eviden <b>${EPODP_LABEL[step]}</b>`;
+      document.getElementById('epodp-drop').innerHTML        = esc`📷 Klik, atau seret &amp; jatuhkan foto eviden <b>${EPODP_LABEL[step]}</b> ke sini`;
       const katNow = document.getElementById('sel-kategori').value;
       const btnLabel = (katNow === KATEGORI_CUTOVER) ? 'Simpan Closure' : 'Simpan ODP';
       document.getElementById('epodp-lanjut').innerHTML      = cur >= 2
@@ -2139,6 +2142,52 @@
       onFiles(inp);
       return list.length;
     }
+    /* ═══════════════════════════════════════════════
+       DRAG & DROP + PASTE LANGSUNG KE WIZARD OPM / ODP
+       Area foto umum (#drop) disembunyikan saat wizard aktif,
+       jadi seretan/tempelan diarahkan ke input file wizard
+       (#opm-file-port / #epodp-file) lewat jalur yang sama
+       dengan memilih lewat galeri (validasi tetap berjalan).
+    ═══════════════════════════════════════════════ */
+    // Input file wizard yang sedang menunggu foto, atau null bila tidak ada.
+    function targetFotoAktif(){
+      const wOpm=document.getElementById('opm-wizard');
+      if(wOpm && wOpm.style.display!=='none'){
+        const box=document.getElementById('opm-ukur-box');
+        return (box && box.style.display!=='none') ? document.getElementById('opm-file-port') : null;
+      }
+      const wEp=document.getElementById('epodp-wizard');
+      if(wEp && wEp.style.display!=='none') return document.getElementById('epodp-file');
+      return null;
+    }
+    // Masukkan berkas ke input wizard lalu picu 'change' — persis seperti
+    // pemilihan lewat galeri. Wizard menerima 1 foto per langkah.
+    function isiInputFile(input, files){
+      if(!input || !files || !files.length) return false;
+      let dt;
+      try { dt=new DataTransfer(); } catch(e){ return false; }
+      dt.items.add(files[0]);
+      input.files=dt.files;
+      input.dispatchEvent(new Event('change'));
+      if(files.length>1) toast(`Wizard menerima 1 foto per langkah — file pertama dipakai (${files.length} file masuk).`,'wrn');
+      return true;
+    }
+    // Pasang seret-jatuhkan pada label pilih foto wizard.
+    function pasangDropWizard(labelId, inputId){
+      const lab=document.getElementById(labelId), inp=document.getElementById(inputId);
+      if(!lab || !inp) return;
+      lab.addEventListener('dragover', e=>{ e.preventDefault(); e.stopPropagation(); lab.classList.add('over'); });
+      lab.addEventListener('dragleave', ()=>{ lab.classList.remove('over'); });
+      lab.addEventListener('drop', e=>{
+        e.preventDefault(); e.stopPropagation();
+        lab.classList.remove('over');
+        const files=Array.from((e.dataTransfer && e.dataTransfer.files) || []);
+        if(!files.length){ toast('Tidak ada foto terbaca dari hasil drag. Jika dari Telegram/WA: klik kanan gambar → Copy, lalu tekan Ctrl+V.','wrn',6000); return; }
+        if(isiInputFile(inp, files)) toast('Foto masuk — periksa lalu klik tombol simpan.','ok');
+      });
+    }
+    pasangDropWizard('opm-drop-port','opm-file-port');
+    pasangDropWizard('epodp-drop','epodp-file');
     // Telegram/WA terkadang hanya menyeret URL gambar, bukan file-nya
     function urlDariDataTransfer(dt){
       try{
@@ -2186,7 +2235,10 @@
       const t=e.target, tag=(t&&t.tagName)||'';
       // Sedang mengetik di kolom teks → biarkan tempel teks berjalan normal
       const mengetik = t && (tag==='TEXTAREA' || (tag==='INPUT' && t.type!=='file') || t.isContentEditable);
-      if(mengetik || !fotoSectionSiap()) return;
+      // Saat wizard OPM/ODP aktif, area foto umum disembunyikan — arahkan
+      // tempelan ke input file wizard supaya Ctrl+V tetap berfungsi.
+      const inpWiz = fotoSectionSiap() ? null : targetFotoAktif();
+      if(mengetik || (!fotoSectionSiap() && !inpWiz)) return;
       const cd=e.clipboardData; if(!cd) return;
       const files=Array.from(cd.files||[]);
       if(!files.length && cd.items){
@@ -2194,6 +2246,7 @@
       }
       if(files.length){
         e.preventDefault();
+        if(inpWiz){ if(isiInputFile(inpWiz, files)) toast('Foto dari clipboard masuk ke wizard — periksa lalu klik tombol simpan.','ok'); return; }
         const n=tambahKeInputFiles(files);
         toast(`${n} file dari clipboard ditambahkan — periksa lalu klik "Kirim Eviden".`,'ok');
         return;
@@ -2204,7 +2257,10 @@
         e.preventDefault();
         toast('Mengambil gambar dari clipboard…','ok');
         const f=await fileDariUrl(url,'tempel.jpg');
-        if(f){ tambahKeInputFiles([f]); toast('1 file dari clipboard ditambahkan — klik "Kirim Eviden".','ok'); }
+        if(f){
+          if(inpWiz){ if(isiInputFile(inpWiz,[f])) toast('Foto dari clipboard masuk ke wizard — periksa lalu klik tombol simpan.','ok'); return; }
+          tambahKeInputFiles([f]); toast('1 file dari clipboard ditambahkan — klik "Kirim Eviden".','ok');
+        }
         else toast('Gambar tidak bisa diambil dari link (dilindungi situs). Paling aman: klik kanan gambar di Telegram/WA → Copy image, lalu Ctrl+V.','wrn',7000);
       }
     });
