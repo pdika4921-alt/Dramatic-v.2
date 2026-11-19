@@ -11,6 +11,12 @@ backups/
 server.lock
 *.tmp.*
 
+# Status/log pencadangan eviden ke Google Drive (lokal saja)
+.drive-sync/
+
+# Kredensial OAuth Drive API (jangan pernah di-push — isi manual di hosting)
+drive-api.json
+
 # Cache render yang dibuat ulang otomatis oleh server
 uploads/_pdfcache/
 uploads/_dwgcache/

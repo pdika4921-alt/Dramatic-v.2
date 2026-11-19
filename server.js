@@ -26,6 +26,8 @@ const godcSync = require('./godc-sync');
 const verif = require('./services/verifyEviden');
 const verifCfg = require('./services/verifyConfig');
 const geoCheck = require('./services/geoCheck');
+// Pencadangan eviden (folder uploads/) ke Google Drive — lihat services/driveSync.js
+const driveSync = require('./services/driveSync');
 
 const app = express();
 // Helper Parser Docxtemplater untuk membaca variabel di dalam nested loop
@@ -7350,6 +7352,9 @@ app.listen(PORT, () => {
   console.log(`\n==================================================================`);
   console.log(`  Sistem Aktif Berjalan di: http://localhost:${PORT}/login.html`);
   console.log(`==================================================================\n`);
+  // Cadangkan eviden ke Google Drive (bila remote rclone sudah diotorisasi).
+  // Tidak menghalangi startup: kegagalan di sini hanya dicatat di log.
+  driveSync.mulai().catch(e => console.warn('[DriveSync] gagal mulai:', e && e.message || e));
   // Sinkronisasi master project dari Google Sheets "Data Master"
   // (semua 11.649 baris; kolom G = PROGRAM → tematik, kolom AF = status lapangan).
   // Dinonaktifkan bila DISABLE_GODC_SYNC=1 (uji otomatis): cleanup-nya menghapus
@@ -7764,6 +7769,12 @@ app.get('/api/godc/report', async (req, res) => {
   }
 });
 
+// ── Status pencadangan eviden ke Google Drive ────────────────────────────────
+// Dipakai admin untuk melihat antrean/hasil sinkronisasi (services/driveSync.js).
+app.get('/api/drive/status', checkAuth(), (req, res) => {
+  res.json(driveSync.status());
+});
+
 // ── ERROR HANDLER GLOBAL (multer & lainnya) ──────────────────────────────────
 // Memastikan error upload (file terlalu besar, field salah, dll) dikembalikan
 // sebagai JSON yang jelas, bukan halaman HTML bawaan Express.
@@ -7771,6 +7782,18 @@ app.use((err, req, res, next) => {
   const pesan = String((err && err.message) || err || 'Kesalahan tidak diketahui');
   console.error('[Global Error]', pesan);
   if (res.headersSent) return next(err);
+
+  // File kelebihan ukuran (multer LIMIT_FILE_SIZE / "File too large").
+  // Kembalikan pesan yang memuat angka batasnya supaya user tahu harus
+  // memperkecil file — jangan tampilkan detail teknis "File too large".
+  const batasMb = (err && err.limit) ? Math.round(err.limit / (1024 * 1024)) : 15;
+  if (err && (err.code === 'LIMIT_FILE_SIZE' || err.name === 'MulterError' && /too large|LIMIT_FILE_SIZE/i.test(pesan))) {
+    return res.status(400).json({
+      message: `Berkas terlalu besar: melebihi batas ${batasMb} MB per file. Perkecil fotonya dulu (kompres/ubah resolusi) lalu upload ulang.`,
+      code: 'FILE_TOO_LARGE',
+      limit_mb: batasMb,
+    });
+  }
   if (err && (err.name === 'MulterError' || pesan.includes('File terlalu besar') || pesan.includes('LIMIT_FILE_SIZE'))) {
     return res.status(400).json({
       message: 'Berkas gagal dikirim: ukuran file melebihi batas atau format tidak sesuai.',

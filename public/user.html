@@ -1238,7 +1238,7 @@
           fd.append('kategori', kat);
           fd.append('sub_kategori', opmState.nama);
           fd.append('ports', JSON.stringify([cur]));
-          fd.append('files', file);
+          fd.append('files', await siapkanFileUnggah(file));   // kompres dulu bila > 15 MB
           const res = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
           if (!res.ok) {
             const e = await res.json().catch(()=>({message:'Gagal kirim.', detail:'Tidak ada respon dari server.'}));
@@ -1440,12 +1440,17 @@
           }
         }
 
+        // Kompres foto besar dulu — server membatasi 15 MB per file
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size: 9px;"></i> Menyiapkan foto…';
+        const berkasSiap = await siapkanDaftarFile(EPODP_STEPS.map(s => epodpState.files[s]));
+
         const fd = new FormData();
         fd.append('lokasi_id', selLokasiId);
         fd.append('kategori', katNow);
         fd.append('sub_kategori', epodpState.nama);
         fd.append('steps', JSON.stringify(EPODP_STEPS));
-        EPODP_STEPS.forEach(s => fd.append('files', epodpState.files[s]));
+        berkasSiap.forEach(f => fd.append('files', f));
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="font-size: 9px;"></i> Mengupload…';
 
         const res = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
         if (!res.ok) {
@@ -1934,6 +1939,77 @@
     }
 
     /* ═══════════════════════════════════════════════
+       OPTIMASI GAMBAR SEBELUM UNGGAH (cegah "File too large")
+       Server (multer) membatasi 15 MB per file. Foto HP modern
+       (48/108 MP) bisa lebih dari itu → error "File too large".
+       Gambar yang kebesaran dikompresi dulu di browser sebelum dikirim.
+    ═══════════════════════════════════════════════ */
+    const BATAS_SERVER_MB = 15;                    // batas server per file
+    const BATAS_FILE_MB    = 12;                   // target aman di client (di bawah 15 MB)
+    const BATAS_FILE       = BATAS_FILE_MB * 1024 * 1024;
+
+    function fmtUkuran(b) {
+      return b >= 1048576
+        ? (b / 1048576).toFixed(1).replace('.', ',') + ' MB'
+        : Math.max(1, Math.round(b / 1024)) + ' KB';
+    }
+    function muatGambarFile(file) {
+      return new Promise(function (res, rej) {
+        const u = URL.createObjectURL(file);
+        const im = new Image();
+        im.onload  = function () { URL.revokeObjectURL(u); res(im); };
+        im.onerror = function () { URL.revokeObjectURL(u); rej(new Error('Gambar tidak bisa dibuka.')); };
+        im.src = u;
+      });
+    }
+    // Kompres: batasi sisi terpanjang 2600 px, lalu turunkan kualitas JPEG
+    // bertahap sampai muat di batas yang diberikan.
+    async function kompresGambar(file, maks) {
+      maks = maks || BATAS_FILE;
+      let img;
+      try { img = await muatGambarFile(file); } catch (_) { return file; }
+      const maxSide = 2600;
+      const skala = Math.min(1, maxSide / img.width, maxSide / img.height);
+      const c = document.createElement('canvas');
+      c.width  = Math.max(1, Math.round(img.width  * skala));
+      c.height = Math.max(1, Math.round(img.height * skala));
+      const x = c.getContext('2d');
+      x.fillStyle = '#fff';                        // JPG tidak punya alpha
+      x.fillRect(0, 0, c.width, c.height);
+      x.drawImage(img, 0, 0, c.width, c.height);
+      const nama = (String(file.name || 'gambar').replace(/\.[a-z0-9]+$/i, '') || 'gambar');
+      let blob = null;
+      for (const q of [0.86, 0.8, 0.72, 0.64, 0.55]) {
+        blob = await new Promise(r => c.toBlob(r, 'image/jpeg', q));
+        if (blob && blob.size <= maks) break;
+      }
+      if (!blob) return file;
+      return new File([blob], nama + '.jpg', { type: 'image/jpeg' });
+    }
+    // Siapkan 1 file untuk diunggah. Gambar kebesaran dikompresi otomatis;
+    // file non-gambar (pdf/dwg/sor/kml) yang kebesaran dilempar dengan pesan jelas.
+    async function siapkanFileUnggah(file) {
+      if (!file) return file;
+      if (file.size <= BATAS_FILE) return file;
+      const gambar = /^image\//i.test(file.type || '') && !/svg/i.test(file.type || '');
+      if (!gambar) {
+        throw new Error(`File "${file.name}" berukuran ${fmtUkuran(file.size)} melebihi batas ${BATAS_SERVER_MB} MB per file — perkecil/ubah file dulu.`);
+      }
+      const awal = file.size;
+      const hasil = await kompresGambar(file, BATAS_FILE);
+      if (!hasil || hasil.size > BATAS_FILE) {
+        throw new Error(`Foto "${file.name}" (${fmtUkuran(awal)}) gagal dikompresi di bawah ${BATAS_SERVER_MB} MB — foto ulang dengan resolusi lebih rendah.`);
+      }
+      console.log('[kompres]', file.name, fmtUkuran(awal), '→', fmtUkuran(hasil.size));
+      return hasil;
+    }
+    async function siapkanDaftarFile(list) {
+      const out = [];
+      for (let i = 0; i < (list || []).length; i++) out.push(await siapkanFileUnggah(list[i]));
+      return out;
+    }
+
+    /* ═══════════════════════════════════════════════
        FILE HANDLING
     ═══════════════════════════════════════════════ */
     function onFiles(inp) {
@@ -1950,6 +2026,18 @@
     function cekValidasi() {
       const kat=document.getElementById('sel-kategori').value, n=document.getElementById('inp-files').files.length;
       const el=document.getElementById('validasi-foto'), btn=document.getElementById('btn-upload');
+
+      // Batas ukuran server: 15 MB per file. Gambar besar otomatis dikompresi
+      // saat kirim, tapi file non-gambar (pdf/dwg/sor/kml) harus sudah muat.
+      const kebesaran = Array.from(document.getElementById('inp-files').files)
+        .filter(f => f.size > BATAS_FILE && !/^image\//i.test(f.type || ''));
+      if (kebesaran.length) {
+        const f = kebesaran[0];
+        document.getElementById('validasi-txt').textContent =
+          `File "${f.name}" berukuran ${fmtUkuran(f.size)} — melebihi batas ${BATAS_SERVER_MB} MB per file. Perkecil/ubah file dulu sebelum dikirim.`;
+        el.classList.add('show'); btn.disabled=true;
+        return;
+      }
 
       // Kategori teks (BOQ/RFC): tidak butuh foto.
       if (KATEGORI_TEKS.includes(kat)) {
@@ -2259,7 +2347,8 @@
             document.getElementById('btn-txt').textContent='Mengupload…';
             const fd=new FormData();
             fd.append('lokasi_id',lokasi); fd.append('kategori',KATEGORI_BONMAT); fd.append('sub_kategori',namaMat);
-            for(let i=0;i<files.length;i++) fd.append('files',files[i]);
+            const fotoSiap = await siapkanDaftarFile(files);   // kompres bila > 15 MB
+            for(let i=0;i<fotoSiap.length;i++) fd.append('files',fotoSiap[i]);
             const res2=await fetch('/api/upload',{method:'POST',body:fd,credentials:'include'});
             if (!res2.ok) {
               const j2=await res2.json().catch(()=>({}));
@@ -2272,7 +2361,7 @@
           resetKategori(); resetDin(); resetFiles();
           if (selLokasiId) await loadKategori(selLokasiId);
           muatListTeks(KATEGORI_BONMAT);
-        } catch { toast('Kendala koneksi ke server.','err'); }
+        } catch (e) { toast((e && e.message) || 'Kendala koneksi ke server.','err'); }
         finally {
           btn.disabled=false;
           document.getElementById('btn-ico').className='fa-solid fa-rocket ico';
@@ -2296,7 +2385,8 @@
 
       const fd=new FormData();
       fd.append('lokasi_id',lokasi); fd.append('kategori',kategori); fd.append('sub_kategori',subVal);
-      for(let i=0;i<files.length;i++) fd.append('files',files[i]);
+      const fotoSiap = await siapkanDaftarFile(files);   // kompres bila > 15 MB
+      for(let i=0;i<fotoSiap.length;i++) fd.append('files',fotoSiap[i]);
 
       try {
         const res=await fetch('/api/upload',{method:'POST',body:fd,credentials:'include'});
@@ -2342,7 +2432,7 @@
           const err=await res.json().catch(()=>({message:'Gagal merespon dari server.'}));
           toast(err.message||'Upload gagal — coba lagi.','err');
         }
-      } catch { toast('Kendala koneksi ke server.','err'); }
+      } catch (e) { toast((e && e.message) || 'Kendala koneksi ke server.','err'); }
       finally {
         btn.disabled=false;
         document.getElementById('btn-ico').className='fa-solid fa-rocket ico';
