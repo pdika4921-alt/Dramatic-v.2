@@ -2833,11 +2833,13 @@
     <style>
     /* ── shell & panel ─────────────────────────────────────────── */
     #view_pengguna .pg-shell{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:20px;align-items:start}
+    #view_pengguna .pg-main{display:flex;flex-direction:column;gap:20px;min-width:0}
     @media (max-width:1023px){#view_pengguna .pg-shell{grid-template-columns:minmax(0,1fr)}}
     #view_pengguna .pg-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;
       box-shadow:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.03)}
-    #view_pengguna .pg-side{position:sticky;top:0;display:flex;flex-direction:column;gap:16px;min-width:0}
-    @media (max-width:1023px){#view_pengguna .pg-side{position:static}}
+    /* Panel kiri sengaja TIDAK sticky: saat halaman digulir, panel ini ikut
+       bergerak sehingga tidak menimpa/tampak di area tabel "Sesi login aktif". */
+    #view_pengguna .pg-side{position:static;display:flex;flex-direction:column;gap:16px;min-width:0}
 
     /* ── ringkasan ─────────────────────────────────────────────── */
     #view_pengguna .pg-brand{padding:18px 20px;display:flex;gap:12px;align-items:flex-start}
@@ -3038,12 +3040,21 @@
         </form>
       </aside>
 
+      <!-- Kolom kanan: dua kartu ini HARUS berada dalam satu wrapper.
+           Sebelumnya keduanya menjadi anak langsung .pg-shell (2 kolom),
+           sehingga "Daftar pengguna" terjun ke kolom kiri yang sempit. -->
+      <div class="pg-main">
+
       <!-- ══ SESI LOGIN AKTIF — siapa saja yang sedang masuk & perangkatnya ══ -->
       <section class="pg-card">
         <div class="pg-list-head">
           <h2>Sesi login aktif <span class="pg-count" id="sesi_badge_total">0</span></h2>
           <div class="pg-tools">
             <span id="sesi_ringkas" style="font-size:.82rem;color:#64748b;white-space:nowrap">Memuat…</span>
+            <button type="button" id="sesi_putus_semua" class="pg-iact" style="display:none;color:#be123c;border-color:#fecdd3;background:#fff1f2"
+                    onclick="putusSesi(null, true)" aria-label="Putus semua sesi lain" title="Putus semua sesi lain (master)">
+              <i class="fa-solid fa-plug-circle-xmark"></i>
+            </button>
             <button type="button" class="pg-iact" onclick="muatSesiAktif()"
                     aria-label="Muat ulang daftar sesi" title="Segarkan">
               <i class="fa-solid fa-rotate"></i>
@@ -3061,10 +3072,11 @@
                 <th scope="col" style="width:110px">Masuk</th>
                 <th scope="col" style="width:120px">Terakhir aktif</th>
                 <th scope="col" style="width:95px">Status</th>
+                <th scope="col" style="width:80px">Aksi</th>
               </tr>
             </thead>
             <tbody id="sesi_body">
-              <tr><td colspan="7">
+              <tr><td colspan="8">
                 <div class="pg-state">
                   <div class="pg-spin"></div>
                   <p>Memuat sesi login&hellip;</p>
@@ -3072,6 +3084,20 @@
               </td></tr>
             </tbody>
           </table>
+        </div>
+        <!-- Paginasi: maksimal 5 sesi per halaman agar panel tidak terlalu panjang -->
+        <div id="sesi_hal" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;
+                    padding:11px 20px;border-top:1px solid #f1f5f9;background:#fbfcfe;border-radius:0 0 14px 14px">
+          <span id="sesi_hal_info" style="font-size:9px;color:#94a3b8">—</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button type="button" id="sesi_prev" onclick="sesiGantiHal(-1)"
+                    style="height:27px;padding:0 10px;font-size:9px;font-weight:650;border:1px solid #e2e8f0;border-radius:7px;background:#fff;color:#475569;cursor:pointer"
+                    aria-label="Halaman sebelumnya"><i class="fa-solid fa-chevron-left" style="margin-right:4px"></i>Sebelumnya</button>
+            <span id="sesi_hal_no" style="font-size:9px;font-weight:650;color:#4338ca;min-width:52px;text-align:center">1 / 1</span>
+            <button type="button" id="sesi_next" onclick="sesiGantiHal(1)"
+                    style="height:27px;padding:0 10px;font-size:9px;font-weight:650;border:1px solid #e2e8f0;border-radius:7px;background:#fff;color:#475569;cursor:pointer"
+                    aria-label="Halaman berikutnya">Berikutnya<i class="fa-solid fa-chevron-right" style="margin-left:4px"></i></button>
+          </div>
         </div>
       </section>
 
@@ -3094,6 +3120,10 @@
                     aria-label="Muat ulang daftar pengguna" title="Muat ulang">
               <i class="fa-solid fa-rotate"></i>
             </button>
+            <button type="button" id="pg_lock_btn" class="pg-iact" style="display:none;color:#b45309;border-color:#fde68a;background:#fffbeb"
+                    onclick="pgKunciLagi()" aria-label="Kunci kembali menu Pengguna" title="Kunci kembali menu Pengguna">
+              <i class="fa-solid fa-lock"></i>
+            </button>
           </div>
         </div>
 
@@ -3105,11 +3135,13 @@
                 <th scope="col">Akun</th>
                 <th scope="col" style="width:150px">Peran &amp; cara masuk</th>
                 <th scope="col" style="width:170px">Tematik tugas</th>
+                <th scope="col" style="width:120px">Sesi login</th>
+                <th scope="col" style="width:120px">Terakhir aktif</th>
                 <th class="pg-act" scope="col">Aksi</th>
               </tr>
             </thead>
             <tbody id="pg_body">
-              <tr><td colspan="5">
+              <tr><td colspan="7">
                 <div class="pg-state">
                   <div class="pg-spin"></div>
                   <p>Memuat daftar pengguna&hellip;</p>
@@ -3119,9 +3151,38 @@
           </table>
         </div>
       </section>
+      </div><!-- /pg-main -->
     </div>
     </div><!-- /view_pengguna -->
 
+<!-- ══ KUNCI MENU PENGGUNA (admin biasa) ══ -->
+<div id="pg_unlock_modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.58);align-items:center;justify-content:center;padding:1rem">
+  <div role="dialog" aria-modal="true" aria-labelledby="pg_unlock_judul"
+       style="width:min(100%,380px);background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.28);overflow:hidden">
+    <div style="padding:20px 22px 15px;border-bottom:1px solid #e2e8f0">
+      <div style="display:flex;align-items:center;gap:11px">
+        <span style="width:38px;height:38px;flex:none;border-radius:11px;background:#eef2ff;color:#4f46e5;display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-lock"></i></span>
+        <div style="min-width:0">
+          <h3 id="pg_unlock_judul" style="margin:0;font-size:13px;font-weight:700;color:#0f172a">Menu Pengguna terkunci</h3>
+          <p style="margin:3px 0 0;font-size:10px;color:#64748b;line-height:1.5">Masukkan password akses untuk melihat daftar akun &amp; sesi login.</p>
+        </div>
+      </div>
+    </div>
+    <div style="padding:18px 22px 22px">
+      <label for="pg_unlock_pass" style="display:block;font-size:10px;font-weight:650;color:#475569;margin-bottom:6px">Password akses</label>
+      <input type="password" id="pg_unlock_pass" autocomplete="current-password" placeholder="••••••••"
+             style="width:100%;height:40px;padding:0 12px;font-size:12px;border:1px solid #cbd5e1;border-radius:9px;color:#0f172a"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();pgKirimKunci()}">
+      <p id="pg_unlock_err" style="display:none;margin:8px 0 0;font-size:10px;font-weight:600;color:#be123c"></p>
+      <div style="display:flex;gap:8px;margin-top:18px">
+        <button type="button" onclick="tutupKunciPengguna()"
+                style="flex:1;height:38px;border:1px solid #e2e8f0;border-radius:9px;background:#fff;color:#475569;font-size:11px;font-weight:600;cursor:pointer">Batal</button>
+        <button type="button" id="pg_unlock_ok" onclick="pgKirimKunci()"
+                style="flex:1;height:38px;border:0;border-radius:9px;background:#4f46e5;color:#fff;font-size:11px;font-weight:600;cursor:pointer"><i class="fa-solid fa-unlock" style="margin-right:5px"></i>Buka menu</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ════════════════════════════════════════════════════════════════
@@ -3138,17 +3199,102 @@ var PG_FILTER = 'all';
 var pgTimerCari = null;
 
 var PG_LOADING =
-  '<tr><td colspan="5"><div class="pg-state"><div class="pg-spin"></div>' +
+  '<tr><td colspan="7"><div class="pg-state"><div class="pg-spin"></div>' +
   '<p>Memuat daftar pengguna&hellip;</p></div></td></tr>';
 
 var PG_KOSONG =
-  '<tr><td colspan="5"><div class="pg-state">' +
+  '<tr><td colspan="7"><div class="pg-state">' +
   '<div class="pg-state-ic"><i class="fa-solid fa-users-slash"></i></div>' +
   '<p>Belum ada pengguna terdaftar</p>' +
   '<small>Daftarkan akun lapangan pertama Anda lewat kolom di samping.</small>' +
   '</div></td></tr>';
 
 function pgEsc(s) { return escapeHtml(s === null || s === undefined ? '' : s); }
+
+function pgToast(pesan, jenis) {
+  if (typeof showToast === 'function') showToast(pesan, jenis || 'info');
+  else window.alert(pesan);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   KUNCI MENU PENGGUNA — admin biasa (admin123) wajib isi akses123.
+   Master (master123) langsung masuk dan tidak pernah melihat popup ini.
+   ════════════════════════════════════════════════════════════════ */
+var pgAksesInfo = null;
+var pgMaster = false;
+
+function bukaKunciPengguna() {
+  const m = document.getElementById('pg_unlock_modal');
+  const e = document.getElementById('pg_unlock_err');
+  const i = document.getElementById('pg_unlock_pass');
+  if (!m) return;
+  m.style.display = 'flex';
+  if (e) { e.style.display = 'none'; e.textContent = ''; }
+  if (i) { i.value = ''; setTimeout(function () { try { i.focus(); } catch (x) {} }, 30); }
+}
+
+function tutupKunciPengguna() {
+  const m = document.getElementById('pg_unlock_modal');
+  if (m) m.style.display = 'none';
+}
+
+async function pgKirimKunci() {
+  const inp = document.getElementById('pg_unlock_pass');
+  const err = document.getElementById('pg_unlock_err');
+  const btn = document.getElementById('pg_unlock_ok');
+  const pass = String((inp && inp.value) || '').trim();
+  if (!pass) {
+    if (err) { err.textContent = 'Password akses wajib diisi.'; err.style.display = 'block'; }
+    return;
+  }
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch('/api/pengguna/unlock', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pass })
+    });
+    const j = await r.json().catch(function () { return {}; });
+    if (!r.ok || !j.ok) throw new Error(j.message || 'Password akses salah.');
+    tutupKunciPengguna();
+    pgAksesInfo = null;               // paksa baca ulang hak akses
+    switchView('pengguna');           // lanjut buka menu yang tertunda
+  } catch (e) {
+    if (err) { err.textContent = e.message || 'Gagal membuka kunci.'; err.style.display = 'block'; }
+  } finally { if (btn) btn.disabled = false; }
+}
+
+async function pgKunciLagi() {
+  try {
+    await fetch('/api/pengguna/lock', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+    });
+  } catch (e) { /* abaikan */ }
+  pgAksesInfo = null;
+  pgToast('Menu Pengguna dikunci kembali.', 'success');
+  switchView('dashboard');
+}
+
+/* ══ PUTUS SESI — hanya tersedia untuk admin master ══ */
+async function putusSesi(sid, semua) {
+  const pesan = semua
+    ? 'Putus SEMUA sesi login lain? Mereka harus login kembali.'
+    : 'Putus sesi ini? Pengguna yang bersangkutan harus login kembali.';
+  if (!window.confirm(pesan)) return;
+  try {
+    const r = await fetch('/api/sesi-aktif/putus', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(semua ? { semua: true } : { sid: sid })
+    });
+    const j = await r.json().catch(function () { return {}; });
+    if (!r.ok || !j.ok) throw new Error(j.message || 'Gagal memutus sesi.');
+    pgToast(j.message || 'Sesi berhasil diputus.', 'success');
+    muatSesiAktif();
+    muatOnlineBadge();
+    muatPengguna();
+  } catch (e) {
+    pgToast(e.message || 'Gagal memutus sesi.', 'error');
+  }
+}
 
 /* Pesan error validasi — sama persis dengan aturan cekFormatUsername() di server.js */
 var PG_RX = /^[A-Za-z0-9._-]{3,32}$/;
@@ -3194,6 +3340,10 @@ function pgUpdateCounter() {
 }
 
 function pgJawab(res) {
+  if (res.status === 423) {              // menu Pengguna terkunci
+    bukaKunciPengguna();
+    return null;
+  }
   if (res.status === 401 || res.status === 403) {
     showToast('Sesi berakhir atau bukan akun admin — silakan login ulang.', 'error');
     setTimeout(function () { window.location.href = '/login.html'; }, 1500);
@@ -3208,6 +3358,38 @@ function pgJawab(res) {
    selama tampilan Pengguna terbuka.
    ════════════════════════════════════════════════════════════════ */
 var sesiTimer = null;
+var sesiSemua = [];          // seluruh sesi hasil fetch
+var sesiHalaman = 1;         // halaman aktif (1-based)
+var SESI_PER_HAL = 5;        // maksimal 5 baris tampil sekaligus
+
+/* Perbarui info & tombol paginasi sesi */
+function sesiUpdateHal() {
+  const total = sesiSemua.length;
+  const jumlah = Math.max(1, Math.ceil(total / SESI_PER_HAL));
+  if (sesiHalaman > jumlah) sesiHalaman = jumlah;
+  if (sesiHalaman < 1) sesiHalaman = 1;
+  const info = document.getElementById('sesi_hal_info');
+  const no = document.getElementById('sesi_hal_no');
+  const prev = document.getElementById('sesi_prev');
+  const next = document.getElementById('sesi_next');
+  const wadah = document.getElementById('sesi_hal');
+  if (wadah) wadah.style.display = total ? 'flex' : 'none';
+  if (!total) return;
+  const dari = (sesiHalaman - 1) * SESI_PER_HAL + 1;
+  const sampai = Math.min(sesiHalaman * SESI_PER_HAL, total);
+  if (info) info.textContent = 'Menampilkan ' + dari + '–' + sampai + ' dari ' + total + ' sesi';
+  if (no) no.textContent = sesiHalaman + ' / ' + jumlah;
+  if (prev) prev.disabled = sesiHalaman === 1;
+  if (next) next.disabled = sesiHalaman === jumlah;
+  if (prev) prev.style.opacity = sesiHalaman === 1 ? '.45' : '1';
+  if (next) next.style.opacity = sesiHalaman === jumlah ? '.45' : '1';
+}
+
+function sesiGantiHal(arah) {
+  const jumlah = Math.max(1, Math.ceil(sesiSemua.length / SESI_PER_HAL));
+  sesiHalaman = Math.min(jumlah, Math.max(1, sesiHalaman + arah));
+  sesiRenderTabel();
+}
 
 async function muatSesiAktif() {
   const body = document.getElementById('sesi_body');
@@ -3223,32 +3405,80 @@ async function muatSesiAktif() {
       ringkas.innerHTML = '<strong style="color:#059669">' + json.online + ' online</strong>' +
         ' &middot; ' + json.pengguna_unik + ' pengguna &middot; ' + json.total + ' sesi/perangkat';
     }
-    if (!json.daftar.length) {
-      body.innerHTML = '<tr><td colspan="7"><div class="pg-state">' +
+    pgMaster = !!json.master;
+    const tombolSemua = document.getElementById('sesi_putus_semua');
+    if (tombolSemua) tombolSemua.style.display = pgMaster ? 'inline-flex' : 'none';
+
+    sesiSemua = json.terkunci ? [] : (json.daftar || []);
+    if (json.terkunci) sesiHalaman = 1;
+
+    if (json.terkunci) {
+      body.innerHTML = '<tr><td colspan="8"><div class="pg-state">' +
+        '<div class="pg-state-ic"><i class="fa-solid fa-lock"></i></div>' +
+        '<p>Detail sesi masih terkunci</p>' +
+        '<small>Masukkan password akses untuk melihat daftar akun &amp; sesi login.</small>' +
+        '<button type="button" class="pg-reset" onclick="bukaKunciPengguna()">Buka kunci</button>' +
+        '</div></td></tr>';
+      sesiUpdateHal();
+      return;
+    }
+    if (!sesiSemua.length) {
+      body.innerHTML = '<tr><td colspan="8"><div class="pg-state">' +
         '<div class="pg-state-ic"><i class="fa-solid fa-user-slash"></i></div>' +
         '<p>Belum ada sesi login aktif</p>' +
         '<small>Sesi baru muncul setelah ada yang login ke aplikasi.</small>' +
         '</div></td></tr>';
+      sesiUpdateHal();
       return;
     }
-    let html = '';
-    json.daftar.forEach(function (d, i) {
+    sesiRenderTabel();
+  } catch (e) {
+    body.innerHTML = '<tr><td colspan="8"><div class="pg-state">' +
+      '<div class="pg-state-ic"><i class="fa-solid fa-triangle-exclamation"></i></div>' +
+      '<p>' + pgEsc(e.message || 'Gagal memuat daftar sesi') + '</p>' +
+      '<button type="button" class="pg-reset" onclick="muatSesiAktif()">Coba lagi</button>' +
+      '</div></td></tr>';
+    if (ringkas) ringkas.textContent = 'Gagal memuat';
+    sesiUpdateHal();
+  }
+}
+
+/* Render 5 sesi untuk halaman aktif (nomor tetap global) */
+function sesiRenderTabel() {
+  const body = document.getElementById('sesi_body');
+  if (!body) return;
+  sesiUpdateHal();
+  const mulai = (sesiHalaman - 1) * SESI_PER_HAL;
+  const halaman = sesiSemua.slice(mulai, mulai + SESI_PER_HAL);
+  let html = '';
+  halaman.forEach(function (d, i) {
       const ico = (d.os === 'Android' || d.os === 'iOS') ? 'fa-mobile-screen-button' :
                   (d.os === 'Windows' || d.os === 'macOS' || d.os === 'Linux') ? 'fa-desktop' :
                   (d.os === 'Otomatis') ? 'fa-robot' : 'fa-question';
       const warnaPeran = d.role === 'admin' ? '#4f46e5' : '#0ea5e9';
+      const aksi = (pgMaster && d.online && d.sid)
+        ? '<button type="button" class="pg-iact pg-iact-del" title="Putus sesi ini" ' +
+          'aria-label="Putus sesi ' + pgEsc(d.username) + '" onclick="putusSesi(' +
+          JSON.stringify(String(d.sid)).replace(/"/g, '&quot;') + ')">' +
+          '<i class="fa-solid fa-plug-circle-xmark" aria-hidden="true"></i></button>'
+        : '<span class="pg-sub">—</span>';
       html += '<tr>' +
-        '<td class="pg-num">' + (i + 1) + '</td>' +
+        '<td class="pg-num">' + (mulai + i + 1) + '</td>' +
         '<td>' +
           '<span style="display:inline-flex;align-items:center;gap:.45rem;font-weight:600">' +
             '<i class="fa-solid fa-circle" style="font-size:.55rem;color:' + (d.online ? '#10b981' : '#cbd5e1') + '"></i>' +
             pgEsc(d.username) +
           '</span>' +
-          '<div style="font-size:.72rem;color:#94a3b8">' + (d.role === 'admin' ? 'Administrator' : 'Akun lapangan') + '</div>' +
+          '<div style="font-size:.72rem;color:#94a3b8">' +
+            (d.master ? 'Administrator MASTER' : (d.role === 'admin' ? 'Administrator' : 'Akun lapangan')) +
+            (d.sendiri ? ' &middot; sesi Anda' : '') +
+          '</div>' +
         '</td>' +
         '<td><i class="fa-solid ' + ico + '" style="color:' + warnaPeran + ';margin-right:.4rem"></i>' +
           pgEsc(d.os) + ' &middot; ' + pgEsc(d.peramban) +
           '<div style="font-size:.72rem;color:#94a3b8">sesi ' + pgEsc(d.id) + '</div>' +
+          (d.ua ? '<div style="font-size:.68rem;color:#cbd5e1;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' +
+            pgEsc(d.ua) + '">' + pgEsc(d.ua) + '</div>' : '') +
         '</td>' +
         '<td style="font-family:ui-monospace,monospace;font-size:.8rem">' + pgEsc(d.ip) + '</td>' +
         '<td>' + pgEsc(d.umur_masuk) + '</td>' +
@@ -3257,17 +3487,10 @@ async function muatSesiAktif() {
           ? '<span style="display:inline-block;padding:.15rem .55rem;border-radius:999px;background:#d1fae5;color:#047857;font-size:.72rem;font-weight:700">ONLINE</span>'
           : '<span style="display:inline-block;padding:.15rem .55rem;border-radius:999px;background:#f1f5f9;color:#64748b;font-size:.72rem;font-weight:700">Diam</span>') +
         '</td>' +
+        '<td>' + aksi + '</td>' +
         '</tr>';
     });
     body.innerHTML = html;
-  } catch (e) {
-    body.innerHTML = '<tr><td colspan="7"><div class="pg-state">' +
-      '<div class="pg-state-ic"><i class="fa-solid fa-triangle-exclamation"></i></div>' +
-      '<p>' + pgEsc(e.message || 'Gagal memuat daftar sesi') + '</p>' +
-      '<button type="button" class="pg-reset" onclick="muatSesiAktif()">Coba lagi</button>' +
-      '</div></td></tr>';
-    if (ringkas) ringkas.textContent = 'Gagal memuat';
-  }
 }
 
 function sesiStartTimer() { sesiStopTimer(); sesiTimer = setInterval(muatSesiAktif, 30000); }
@@ -3318,7 +3541,7 @@ async function muatPengguna() {
     pgRenderTabel();
   } catch (e) {
     if (body) {
-      body.innerHTML = '<tr><td colspan="5"><div class="pg-state">' +
+      body.innerHTML = '<tr><td colspan="7"><div class="pg-state">' +
         '<div class="pg-state-ic" style="background:#fff1f2;border-color:#fecdd3;color:#be123c"><i class="fa-solid fa-triangle-exclamation"></i></div>' +
         '<p>Gagal memuat daftar pengguna</p><small>' + pgEsc(e && e.message) + '</small>' +
         '<button type="button" class="pg-reset" onclick="muatPengguna()">Coba lagi</button>' +
@@ -3393,7 +3616,7 @@ function pgRenderTabel() {
   if (!tampil.length) {
     const ket = PG_CARI.trim() ? 'username "' + pgEsc(PG_CARI.trim()) + '"'
       : (PG_FILTER === 'admin' ? 'peran admin' : 'peran lapangan');
-    body.innerHTML = '<tr><td colspan="5"><div class="pg-state">' +
+    body.innerHTML = '<tr><td colspan="7"><div class="pg-state">' +
       '<div class="pg-state-ic"><i class="fa-solid fa-magnifying-glass"></i></div>' +
       '<p>Tidak ada akun yang cocok</p>' +
       '<small>Tidak ditemukan ' + ket + '. Coba kata lain atau atur ulang saringan.</small>' +
@@ -3424,6 +3647,21 @@ function pgRenderTabel() {
             '<i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>' +
         '</div>';
 
+    /* Informasi sesi login akun ini (dari agregasi tabel sessions di server) */
+    const jmlSesi = Number(u.sesi || 0);
+    const jmlOnline = Number(u.online || 0);
+    const kolomSesi = jmlSesi
+      ? '<div class="pg-txt"><span class="pg-role" data-role="user">' + jmlSesi + ' sesi</span>' +
+        (jmlOnline
+          ? '<span class="pg-sub" style="color:#047857;font-weight:700">' + jmlOnline + ' online</span>'
+          : '<span class="pg-sub">tidak ada yang online</span>') + '</div>'
+      : '<span class="pg-none"><i class="fa-solid fa-circle-minus" aria-hidden="true"></i> tidak ada sesi</span>';
+    const kolomTerakhir = u.terakhir
+      ? '<div class="pg-txt"><span class="pg-name" style="font-size:.8rem">' +
+          pgEsc(u.terakhir_label || '—') + '</span>' +
+        (u.master ? '<span class="pg-sub" style="color:#7c3aed">login master</span>' : '') + '</div>'
+      : '<span class="pg-sub">—</span>';
+
     /* LOGIN TEMATIK — daftar tematik yang boleh dibuka akun ini */
     const daftarT = Array.isArray(u.tematik) ? u.tematik : [];
     const kolomTematik = isAdmin
@@ -3444,6 +3682,8 @@ function pgRenderTabel() {
         '</div></td>' +
         '<td data-cell="peran">' + peran + '</td>' +
         '<td data-cell="tematik">' + kolomTematik + '</td>' +
+        '<td data-cell="sesi">' + kolomSesi + '</td>' +
+        '<td data-cell="terakhir">' + kolomTerakhir + '</td>' +
         '<td class="pg-act" data-cell="aksi">' + aksi + '</td>' +
       '</tr>';
   }).join('');
@@ -10643,8 +10883,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ─── KONSEP A: NAVIGASI SIDEBAR (penempatan baru, logic sistem SAMA) ───
     const VIEW_INFO = { dashboard: 'Dashboard', tambah_lokasi: 'Tambah Lokasi', master: 'Master Lokasi', audit: 'Audit Berkas', report_godc: 'Report GODC', pengguna: 'Pengguna' };
-    function switchView(viewKey) {
+    async function switchView(viewKey) {
       if (!(viewKey in VIEW_INFO)) return;
+
+      // Kunci menu Pengguna: admin biasa wajib isi akses123 sekali per sesi.
+      // Master (login master123) langsung lewat.
+      if (viewKey === 'pengguna') {
+        let akses = pgAksesInfo;
+        if (!akses) {
+          try {
+            const r = await fetch('/api/sesi');
+            if (r.ok) akses = await r.json();
+          } catch (e) { /* gagal baca sesi → anggap terkunci */ }
+          pgAksesInfo = akses || null;
+        }
+        pgMaster = !!(akses && akses.master);
+        const tombolKunci = document.getElementById('pg_lock_btn');
+        if (tombolKunci) tombolKunci.style.display = pgMaster ? 'none' : 'inline-flex';
+        if (!(akses && (akses.master || akses.pengguna_unlock))) {
+          bukaKunciPengguna();
+          return;
+        }
+      }
+
       if (viewKey === 'dashboard') { muatAktivitas(); muatGodc(); muatRekapStatus(false); }
       if (viewKey === 'master') { muatDaftarLokasi(); renderGodcStatCards(); masterLokasiStartTimer(); }
       else { masterLokasiStopTimer(); }

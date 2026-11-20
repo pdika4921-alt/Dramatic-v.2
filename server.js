@@ -189,6 +189,8 @@ async function renderPdfHalaman(pdfPath) {
       // (slash miring, diakhiri "/") — bukan http:// maupun file://
       standardFontDataUrl: path.join(__dirname, 'node_modules', 'pdfjs-dist', 'standard_fonts').replace(/\\/g, '/') + '/',
       isEvalSupported: false,
+      // Pengaman: PDF berbahaya tidak boleh menjalankan JavaScript (CVE pdfjs < 6.2.108)
+      enableScripting: false,
     }).promise;
     const hasil = [];
     const maks = Math.min(doc.numPages, 30); // batas wajar, jaga waktu generate
@@ -341,6 +343,7 @@ async function renderPdfDwg(pdfPath) {
       data: new Uint8Array(fs.readFileSync(pdfPath)),
       standardFontDataUrl: path.join(__dirname, 'node_modules', 'pdfjs-dist', 'standard_fonts').replace(/\\/g, '/') + '/',
       isEvalSupported: false,
+      enableScripting: false, // lihat renderPdfHalaman — tolak JavaScript di PDF
     }).promise;
     const hasil = [];
     const maks = Math.min(doc.numPages, 10);
@@ -2008,7 +2011,9 @@ app.get('/api/sesi', checkAuth(), (req, res) => {
     ok: true,
     username: u.username,
     role: u.role,
-    tematik: u.role === 'admin' ? [] : (Array.isArray(u.tematik) ? u.tematik : [])
+    tematik: u.role === 'admin' ? [] : (Array.isArray(u.tematik) ? u.tematik : []),
+    master: !!u.master,
+    pengguna_unlock: !!(u.master || u.penggunaUnlock)
   });
 });
 
@@ -5306,6 +5311,24 @@ app.get('/api/rab/:lokasi_id/designators', checkAuth(), async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // [API] Auth
 // ─────────────────────────────────────────────────────────────────────────────
+// Dua "kunci" tambahan (bisa diganti lewat environment variable):
+//   AKSES_PENGGUNA / akses123 → password kedua untuk membuka menu Pengguna
+//                               pada admin biasa (login dengan admin123).
+//   MASTER_PASSWORD / master123 → password kedua pada akun 'admin' yang sama;
+//                               login dengan ini menandakan peran "master".
+const AKSES_PENGGUNA = String(process.env.AKSES_PENGGUNA || 'akses123');
+const PASS_MASTER = String(process.env.MASTER_PASSWORD || 'master123');
+
+// Penjaga menu Pengguna: master PWEN dibebaskan; admin biasa wajib membuka
+// kunci dulu lewat POST /api/pengguna/unlock (flag tersimpan di session).
+function checkPengguna(req, res, next) {
+  const u = req.session && req.session.user;
+  if (!u) return res.status(401).json({ ok: false, message: 'Sesi Anda telah berakhir. Silakan login kembali.' });
+  if (u.role !== 'admin') return res.status(403).json({ ok: false, message: 'Hak akses ditolak: bukan administrator.' });
+  if (u.master || u.penggunaUnlock) return next();
+  return res.status(423).json({ ok: false, terkunci: true, message: 'Menu Pengguna terkunci. Masukkan password akses.' });
+}
+
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -5313,13 +5336,18 @@ app.post('/api/login', async (req, res) => {
     if (!user) return res.status(400).json({ message: 'Username tidak terdaftar. Hubungi administrator.' });
 
     // Akun lapangan (role 'user') cukup menulis username — tanpa password.
-    // Akun administrator tetap memerlukan password.
+    // Akun administrator tetap memerlukan password. master123 adalah password
+    // kedua di akun admin yang SAMA → login sebagai master (bisa putus sesi).
+    let master = false;
     if (user.role === 'admin') {
       if (!password) {
         return res.status(401).json({ message: 'Akun administrator memerlukan password.', need_password: true });
       }
       const match = await bcrypt.compare(password, user.password);
-      if (!match) return res.status(400).json({ message: 'Password salah. Coba lagi.' });
+      if (!match) {
+        if (password === PASS_MASTER) master = true;
+        else return res.status(400).json({ message: 'Password salah. Coba lagi.' });
+      }
     } else if (password) {
       // password opsional untuk role user; kalau diisi harus benar
       const match = await bcrypt.compare(password, user.password);
@@ -5331,15 +5359,36 @@ app.post('/api/login', async (req, res) => {
     const tematik = user.role === 'admin' ? [] : bacaTematikUser(user);
     req.session.user = {
       id: user.id, username: user.username, role: user.role, tematik: tematik,
+      master: master,                      // true hanya bila login dengan master123
+      penggunaUnlock: master || false,     // master langsung boleh buka Pengguna
       // Info perangkat untuk panel "Sesi login aktif" (admin)
       dev: { ua: String(req.headers['user-agent'] || ''), ip: ipKlien(req), masuk: Date.now() },
       akhir: Date.now()
     };
-    res.json({ success: true, role: user.role, tematik: tematik });
+    res.json({
+      success: true, role: user.role, tematik: tematik,
+      master: master, pengguna_unlock: !!req.session.user.penggunaUnlock
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: 'Terjadi gangguan sistem pada layanan login.' });
   }
+});
+
+// Buka / kunci kembali menu Pengguna untuk admin biasa.
+app.post('/api/pengguna/unlock', checkAuth('admin'), (req, res) => {
+  if (req.session.user.master) return res.json({ ok: true, sudah_master: true });
+  const pass = String((req.body && req.body.password) || '').trim();
+  if (pass !== AKSES_PENGGUNA) {
+    return res.status(403).json({ ok: false, message: 'Password akses salah.' });
+  }
+  req.session.user.penggunaUnlock = true;
+  res.json({ ok: true, sudah_master: false });
+});
+
+app.post('/api/pengguna/lock', checkAuth('admin'), (req, res) => {
+  req.session.user.penggunaUnlock = false;
+  res.json({ ok: true });
 });
 
 app.get('/api/logout', (req, res) => {
@@ -5418,6 +5467,7 @@ app.get('/api/sesi-aktif', checkAuth('admin'), async (req, res) => {
   try {
     const rows = await db.all('SELECT id, data, updated_at FROM sessions');
     const now = Date.now();
+    const unlock = !!(req.session.user.master || req.session.user.penggunaUnlock);
     const daftar = [];
     for (const r of rows) {
       let sesi;
@@ -5437,24 +5487,30 @@ app.get('/api/sesi-aktif', checkAuth('admin'), async (req, res) => {
       const { os, peramban } = deteksiPerangkat(dev.ua);
       daftar.push({
         id: String(r.id).slice(0, 8),
+        // sid lengkap + User-Agent hanya diberikan setelah menu Pengguna dibuka
+        ...(unlock ? { sid: String(r.id), ua: String(dev.ua || '') } : {}),
         username: sesi.user.username,
         role: sesi.user.role,
+        master: !!sesi.user.master,
         os, peramban,
         ip: dev.ip || '—',
         masuk, akhir,
         umur_masuk: relatifWaktu(masuk),
         terakhir: relatifWaktu(akhir),
-        online: (now - akhir) < 5 * 60000     // aktif < 5 menit = online
+        online: (now - akhir) < 5 * 60000,     // aktif < 5 menit = online
+        sendiri: String(r.id) === String(req.sessionID)
       });
     }
     daftar.sort((a, b) => (b.online - a.online) || (b.akhir - a.akhir));
     const unikUser = new Set(daftar.map(d => d.username));
     res.json({
       ok: true,
+      terkunci: !unlock,          // jumlah untuk badge topbar tetap bisa dibaca
+      master: !!req.session.user.master,
       total: daftar.length,
       online: daftar.filter(d => d.online).length,
       pengguna_unik: unikUser.size,
-      daftar
+      daftar: unlock ? daftar : []   // admin yang belum unlock hanya dapat angka
     });
   } catch (e) {
     console.error('[sesi-aktif]', e);
@@ -5462,13 +5518,73 @@ app.get('/api/sesi-aktif', checkAuth('admin'), async (req, res) => {
   }
 });
 
-app.get('/api/users', checkAuth('admin'), async (req, res) => {
+// PUTUS SESI — khusus admin master. Sesi sendiri sengaja dikecualikan agar
+// master tidak mengunci dirinya sendiri. Bisa satu per satu atau semua sesi lain.
+app.post('/api/sesi-aktif/putus', checkAuth('admin'), async (req, res) => {
+  if (!req.session.user.master) {
+    return res.status(403).json({ ok: false, message: 'Hanya admin master yang bisa memutus sesi.' });
+  }
+  try {
+    const semua = !!(req.body && req.body.semua);
+    const minta = String((req.body && req.body.sid) || '');
+    const rows = await db.all('SELECT id, data FROM sessions');
+    const target = [];
+    for (const r of rows) {
+      if (String(r.id) === String(req.sessionID)) continue;   // jangan putus sesi sendiri
+      if (!semua && String(r.id) !== minta) continue;
+      let s;
+      try { s = JSON.parse(r.data || '{}'); } catch (e) { continue; }
+      if (!s || !s.user) continue;
+      target.push(String(r.id));
+    }
+    if (!target.length) {
+      return res.status(404).json({ ok: false, message: 'Sesi tidak ditemukan (mungkin sudah berakhir).' });
+    }
+    await Promise.all(target.map(sid => new Promise((resolve, reject) => {
+      req.sessionStore.destroy(sid, err => err ? reject(err) : resolve());
+    })));
+    res.json({ ok: true, diputus: target.length, message: target.length + ' sesi berhasil diputus.' });
+  } catch (e) {
+    console.error('[sesi-aktif/putus]', e);
+    res.status(500).json({ ok: false, message: 'Gagal memutus sesi.' });
+  }
+});
+
+app.get('/api/users', checkAuth('admin'), checkPengguna, async (req, res) => {
   try {
     const users = await db.all('SELECT id, username, role, tematik FROM users ORDER BY role DESC, username COLLATE NOCASE');
+
+    // Lengkapi informasi tiap akun dengan kondisi sesi login aktifnya.
+    // Password/tidak pernah dikirim ke klien.
+    const sesiRows = await db.all('SELECT data FROM sessions');
+    const now = Date.now();
+    const agregat = new Map();
+    for (const r of sesiRows) {
+      let s;
+      try { s = JSON.parse(r.data || '{}'); } catch (e) { continue; }
+      const su = s && s.user;
+      if (!su) continue;
+      if (s.cookie && s.cookie.expires && new Date(s.cookie.expires).getTime() < now) continue;
+      const kunci = String(su.username || '').toLowerCase();
+      const a = agregat.get(kunci) || { sesi: 0, online: 0, terakhir: 0, master: false };
+      a.sesi++;
+      if ((now - (su.akhir || 0)) < 5 * 60000) a.online++;
+      a.terakhir = Math.max(a.terakhir, su.akhir || 0);
+      if (su.master) a.master = true;
+      agregat.set(kunci, a);
+    }
+
     res.json({
       success: true,
       users: users.map(function (u) {
-        return { id: u.id, username: u.username, role: u.role, tematik: bacaTematikUser(u) };
+        const a = agregat.get(String(u.username || '').toLowerCase()) ||
+          { sesi: 0, online: 0, terakhir: 0, master: false };
+        return {
+          id: u.id, username: u.username, role: u.role, tematik: bacaTematikUser(u),
+          sesi: a.sesi, online: a.online,
+          terakhir: a.terakhir, terakhir_label: relatifWaktu(a.terakhir),
+          master: a.master
+        };
       })
     });
   } catch (e) {
@@ -5478,7 +5594,7 @@ app.get('/api/users', checkAuth('admin'), async (req, res) => {
 });
 
 // Daftar tematik yang bisa dipilih admin saat mengaitkan akun ke tematik
-app.get('/api/tematik', checkAuth('admin'), async (req, res) => {
+app.get('/api/tematik', checkAuth('admin'), checkPengguna, async (req, res) => {
   try {
     res.json({ success: true, tematik: await daftarTematikSistem() });
   } catch (e) {
@@ -5522,7 +5638,7 @@ async function normalisasiPilihanTematik(masukan) {
 }
 
 // Daftarkan akun lapangan baru — tanpa password, cukup username + tematik tugas
-app.post('/api/users', checkAuth('admin'), async (req, res) => {
+app.post('/api/users', checkAuth('admin'), checkPengguna, async (req, res) => {
   try {
     const username = String(req.body && req.body.username || '').trim();
     const salah = cekFormatUsername(username);
@@ -5555,7 +5671,7 @@ app.post('/api/users', checkAuth('admin'), async (req, res) => {
 });
 
 // Ubah username &/atau tematik tugas akun lapangan
-app.put('/api/users/:id', checkAuth('admin'), async (req, res) => {
+app.put('/api/users/:id', checkAuth('admin'), checkPengguna, async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'ID pengguna tidak valid.' });
@@ -5605,7 +5721,7 @@ app.put('/api/users/:id', checkAuth('admin'), async (req, res) => {
 });
 
 // Hapus akun lapangan
-app.delete('/api/users/:id', checkAuth('admin'), async (req, res) => {
+app.delete('/api/users/:id', checkAuth('admin'), checkPengguna, async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ success: false, message: 'ID pengguna tidak valid.' });
