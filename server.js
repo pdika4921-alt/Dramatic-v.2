@@ -5451,6 +5451,12 @@ function deteksiPerangkat(ua) {
   return { os, peramban };
 }
 
+// Ambang "masih online": aktivitas terakhir < 5 menit. Sesi yang lebih lama
+// ditandai Diam dan boleh dihapus oleh master lewat panel Pengguna.
+const SESI_ONLINE_MS = 5 * 60 * 1000;
+// Masa berlaku cookie sesi (sama dengan cookie.maxAge di app.use(session)).
+const SESI_USIA_MAKS_MS = 24 * 60 * 60 * 1000;
+
 // "5 menit lalu" / "2 jam lalu" — ringkas untuk tampilan
 function relatifWaktu(ms) {
   if (!ms) return '—';
@@ -5497,7 +5503,7 @@ app.get('/api/sesi-aktif', checkAuth('admin'), async (req, res) => {
         masuk, akhir,
         umur_masuk: relatifWaktu(masuk),
         terakhir: relatifWaktu(akhir),
-        online: (now - akhir) < 5 * 60000,     // aktif < 5 menit = online
+        online: (now - akhir) < SESI_ONLINE_MS, // aktif < 5 menit = online
         sendiri: String(r.id) === String(req.sessionID)
       });
     }
@@ -5509,6 +5515,7 @@ app.get('/api/sesi-aktif', checkAuth('admin'), async (req, res) => {
       master: !!req.session.user.master,
       total: daftar.length,
       online: daftar.filter(d => d.online).length,
+      diam: daftar.filter(d => !d.online).length,
       pengguna_unik: unikUser.size,
       daftar: unlock ? daftar : []   // admin yang belum unlock hanya dapat angka
     });
@@ -5549,6 +5556,86 @@ app.post('/api/sesi-aktif/putus', checkAuth('admin'), async (req, res) => {
     res.status(500).json({ ok: false, message: 'Gagal memutus sesi.' });
   }
 });
+
+// Ambil waktu aktivitas terakhir sesi (dari data login atau updated_at tabel).
+function akhirSesi(r, dataSesi) {
+  let upd = 0;
+  if (r.updated_at) {
+    const t = Date.parse(String(r.updated_at).replace(' ', 'T'));
+    if (!isNaN(t)) upd = t;
+  }
+  return Math.max((dataSesi.user && dataSesi.user.akhir) || 0, upd);
+}
+
+function sesiKedaluwarsa(dataSesi, now) {
+  if (!dataSesi.cookie || !dataSesi.cookie.expires) return false;
+  const exp = new Date(dataSesi.cookie.expires).getTime();
+  return !!exp && exp < now;
+}
+
+// HAPUS SESI DIAM — khusus admin master. Berbeda dengan "putus": sesi yang
+// masih aktif tidak boleh dihapus lewat sini (pakai tombol Putus), dan sesi
+// sendiri dikecualikan agar master tidak mengeluarkan dirinya sendiri.
+app.post('/api/sesi-aktif/hapus', checkAuth('admin'), async (req, res) => {
+  if (!req.session.user.master) {
+    return res.status(403).json({ ok: false, message: 'Hanya admin master yang bisa menghapus sesi.' });
+  }
+  try {
+    const semua = !!(req.body && (req.body.semua || req.body.diam));
+    const minta = String((req.body && req.body.sid) || '');
+    const now = Date.now();
+    const rows = await db.all('SELECT id, data, updated_at FROM sessions');
+    const target = [];
+    for (const r of rows) {
+      if (String(r.id) === String(req.sessionID)) continue;   // jangan hapus sesi sendiri
+      let s;
+      try { s = JSON.parse(r.data || '{}'); } catch (e) { s = null; }
+      if (!s || !s.user) continue;
+      const aktif = (now - akhirSesi(r, s)) < SESI_ONLINE_MS && !sesiKedaluwarsa(s, now);
+      if (semua) {
+        if (aktif) continue;                                  // hanya bersihkan yang Diam
+      } else {
+        if (String(r.id) !== minta) continue;
+        if (aktif) {
+          return res.status(409).json({ ok: false, message: 'Sesi ini masih aktif. Gunakan tombol Putus.' });
+        }
+      }
+      target.push(String(r.id));
+    }
+    if (!target.length) {
+      return res.status(404).json({ ok: false, message: 'Tidak ada sesi Diam yang bisa dihapus.' });
+    }
+    await Promise.all(target.map(sid => new Promise((resolve, reject) => {
+      req.sessionStore.destroy(sid, err => err ? reject(err) : resolve());
+    })));
+    res.json({
+      ok: true, dihapus: target.length,
+      message: target.length + ' sesi Diam berhasil dihapus dari daftar.'
+    });
+  } catch (e) {
+    console.error('[sesi-aktif/hapus]', e);
+    res.status(500).json({ ok: false, message: 'Gagal menghapus sesi.' });
+  }
+});
+
+// Pembersih otomatis: buang baris sesi yang cookie-nya sudah kedaluwarsa atau
+// tidak ada aktivitasnya selama > 24 jam. Dipanggil saat start dan tiap jam
+// supaya tabel sessions tidak menumpuk walaupun tidak ada yang menekan tombol.
+async function bersihkanSesiLama() {
+  const now = Date.now();
+  const rows = await db.all('SELECT id, data, updated_at FROM sessions');
+  const buang = [];
+  for (const r of rows) {
+    let s;
+    try { s = JSON.parse(r.data || '{}'); } catch (e) { buang.push(String(r.id)); continue; }
+    const kadaluwarsa = sesiKedaluwarsa(s, now);
+    const akhir = akhirSesi(r, s || {});
+    const terlaluLama = akhir && (now - akhir) > SESI_USIA_MAKS_MS;
+    if (kadaluwarsa || terlaluLama || !s || !s.user) buang.push(String(r.id));
+  }
+  for (const sid of buang) await db.run('DELETE FROM sessions WHERE id = ?', [sid]);
+  return buang.length;
+}
 
 app.get('/api/users', checkAuth('admin'), checkPengguna, async (req, res) => {
   try {
@@ -7587,6 +7674,13 @@ app.listen(PORT, () => {
   console.log(`\n==================================================================`);
   console.log(`  Sistem Aktif Berjalan di: http://localhost:${PORT}/login.html`);
   console.log(`==================================================================\n`);
+  // Bersihkan sesi lama/kedaluwarsa agar tabel sessions tidak menumpuk.
+  bersihkanSesiLama()
+    .then(n => { if (n) console.log(`[sesi] ${n} sesi lama dibersihkan saat startup.`); })
+    .catch(e => console.warn('[sesi] gagal membersihkan sesi lama:', e && e.message || e));
+  setInterval(() => {
+    bersihkanSesiLama().catch(e => console.warn('[sesi] gagal membersihkan sesi lama:', e && e.message || e));
+  }, 60 * 60 * 1000);
   // Cadangkan eviden ke Google Drive (bila remote rclone sudah diotorisasi).
   // Tidak menghalangi startup: kegagalan di sini hanya dicatat di log.
   driveSync.mulai().catch(e => console.warn('[DriveSync] gagal mulai:', e && e.message || e));

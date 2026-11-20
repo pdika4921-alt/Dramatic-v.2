@@ -3051,6 +3051,10 @@
           <h2>Sesi login aktif <span class="pg-count" id="sesi_badge_total">0</span></h2>
           <div class="pg-tools">
             <span id="sesi_ringkas" style="font-size:.82rem;color:#64748b;white-space:nowrap">Memuat…</span>
+            <button type="button" id="sesi_hapus_semua" class="pg-iact" style="display:none;color:#b45309;border-color:#fde68a;background:#fffbeb"
+                    onclick="hapusSesiDiam()" aria-label="Hapus semua sesi diam" title="Hapus semua sesi yang sudah tidak aktif (master)">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
             <button type="button" id="sesi_putus_semua" class="pg-iact" style="display:none;color:#be123c;border-color:#fecdd3;background:#fff1f2"
                     onclick="putusSesi(null, true)" aria-label="Putus semua sesi lain" title="Putus semua sesi lain (master)">
               <i class="fa-solid fa-plug-circle-xmark"></i>
@@ -3296,6 +3300,29 @@ async function putusSesi(sid, semua) {
   }
 }
 
+/* ══ HAPUS SESI DIAM — master saja. Sesi masih aktif tidak bisa dihapus ══ */
+async function hapusSesiDiam(sid) {
+  const semua = !sid;
+  const pesan = semua
+    ? 'Hapus semua sesi yang sudah tidak aktif (Diam)? Daftar sesi akan dibersihkan.'
+    : 'Hapus sesi yang sudah tidak aktif ini dari daftar?';
+  if (!window.confirm(pesan)) return;
+  try {
+    const r = await fetch('/api/sesi-aktif/hapus', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(semua ? { semua: true } : { sid: sid })
+    });
+    const j = await r.json().catch(function () { return {}; });
+    if (!r.ok || !j.ok) throw new Error(j.message || 'Gagal menghapus sesi.');
+    pgToast(j.message || 'Sesi Diam berhasil dihapus.', 'success');
+    muatSesiAktif();
+    muatOnlineBadge();
+    muatPengguna();
+  } catch (e) {
+    pgToast(e.message || 'Gagal menghapus sesi.', 'error');
+  }
+}
+
 /* Pesan error validasi — sama persis dengan aturan cekFormatUsername() di server.js */
 var PG_RX = /^[A-Za-z0-9._-]{3,32}$/;
 function pgCekUsername(v) {
@@ -3408,6 +3435,8 @@ async function muatSesiAktif() {
     pgMaster = !!json.master;
     const tombolSemua = document.getElementById('sesi_putus_semua');
     if (tombolSemua) tombolSemua.style.display = pgMaster ? 'inline-flex' : 'none';
+    const tombolHapus = document.getElementById('sesi_hapus_semua');
+    if (tombolHapus) tombolHapus.style.display = (pgMaster && json.diam) ? 'inline-flex' : 'none';
 
     sesiSemua = json.terkunci ? [] : (json.daftar || []);
     if (json.terkunci) sesiHalaman = 1;
@@ -3456,12 +3485,18 @@ function sesiRenderTabel() {
                   (d.os === 'Windows' || d.os === 'macOS' || d.os === 'Linux') ? 'fa-desktop' :
                   (d.os === 'Otomatis') ? 'fa-robot' : 'fa-question';
       const warnaPeran = d.role === 'admin' ? '#4f46e5' : '#0ea5e9';
-      const aksi = (pgMaster && d.online && d.sid)
-        ? '<button type="button" class="pg-iact pg-iact-del" title="Putus sesi ini" ' +
-          'aria-label="Putus sesi ' + pgEsc(d.username) + '" onclick="putusSesi(' +
-          JSON.stringify(String(d.sid)).replace(/"/g, '&quot;') + ')">' +
-          '<i class="fa-solid fa-plug-circle-xmark" aria-hidden="true"></i></button>'
-        : '<span class="pg-sub">—</span>';
+      const sidAman = JSON.stringify(String(d.sid || '')).replace(/"/g, '&quot;');
+      const aksi = !pgMaster || !d.sid ? '<span class="pg-sub">—</span>' :
+        d.online
+          ? '<button type="button" class="pg-iact pg-iact-del" title="Putus sesi ini" ' +
+            'aria-label="Putus sesi ' + pgEsc(d.username) + '" onclick="putusSesi(' + sidAman + ')">' +
+            '<i class="fa-solid fa-plug-circle-xmark" aria-hidden="true"></i></button>'
+          : d.sendiri
+            ? '<span class="pg-sub">—</span>'
+            : '<button type="button" class="pg-iact" style="color:#b45309;border-color:#fde68a;background:#fffbeb" ' +
+              'title="Hapus sesi Diam ini" aria-label="Hapus sesi Diam ' + pgEsc(d.username) + '" ' +
+              'onclick="hapusSesiDiam(' + sidAman + ')">' +
+              '<i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>';
       html += '<tr>' +
         '<td class="pg-num">' + (mulai + i + 1) + '</td>' +
         '<td>' +
