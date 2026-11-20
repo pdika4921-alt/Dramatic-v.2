@@ -1182,11 +1182,26 @@ async function tandaiDokumen(lokasi_id, jenis, status, opts) {
 init();
 
 // Middleware Proteksi Hak Akses
-// IP klien: lewat reverse proxy (Hostinger) ambil X-Forwarded-For dulu
+// IP klien — aman dari spoofing X-Forwarded-For (CWE-290 / advisory proxy-addr):
+//   * Socket PEER publik  → klien menyambung langsung → pakai socket (tidak ada
+//     yang bisa memalsukannya).
+//   * Socket PEER privat/loopback (127.x, 10.x, 192.168.x, 172.16-31.x) → ada
+//     proxy (nginx Hostinger / local) di depan → pakai baris TERAKHIR XFF,
+//     yaitu alamat yang dijamin proxy; baris depan bisa dikarang klien.
+// Express sendiri tidak mempercayai XFF (trust proxy = false) sehingga req.ip
+// selalu alamat socket.
 function ipKlien(req) {
-  const xf = req.headers['x-forwarded-for'];
-  if (xf) return String(xf).split(',')[0].trim();
-  return String(req.ip || (req.socket && req.socket.remoteAddress) || '').replace(/^::ffff:/, '');
+  const peer = String(req.ip || (req.socket && req.socket.remoteAddress) || '').replace(/^::ffff:/, '');
+  const privat = peer === '::1' || peer === 'localhost' || peer === '127.0.0.1' ||
+    /^10\./.test(peer) || /^192\.168\./.test(peer) || /^172\.(1[6-9]|2\d|3[01])\./.test(peer);
+  if (privat) {
+    const xf = req.headers['x-forwarded-for'];
+    if (xf) {
+      const rantai = String(xf).split(',').map(s => s.trim()).filter(Boolean);
+      if (rantai.length) return rantai[rantai.length - 1].replace(/^::ffff:/, '');
+    }
+  }
+  return peer || '—';
 }
 
 function checkAuth(role) {
