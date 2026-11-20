@@ -1182,10 +1182,24 @@ async function tandaiDokumen(lokasi_id, jenis, status, opts) {
 init();
 
 // Middleware Proteksi Hak Akses
+// IP klien: lewat reverse proxy (Hostinger) ambil X-Forwarded-For dulu
+function ipKlien(req) {
+  const xf = req.headers['x-forwarded-for'];
+  if (xf) return String(xf).split(',')[0].trim();
+  return String(req.ip || (req.socket && req.socket.remoteAddress) || '').replace(/^::ffff:/, '');
+}
+
 function checkAuth(role) {
   return (req, res, next) => {
     if (!req.session || !req.session.user) {
       return res.status(401).json({ message: 'Sesi Anda telah berakhir. Silakan login kembali.' });
+    }
+    // Catat aktivitas terakhir (throttle 30 dtk) — penanda "online" di panel
+    // /api/sesi-aktif. Menulis req.session.user menandai sesi berubah, sehingga
+    // express-session menyimpannya + updated_at ikut diperbarui.
+    const now = Date.now();
+    if (!req.session.user.akhir || now - req.session.user.akhir > 30000) {
+      req.session.user.akhir = now;
     }
     if (role && req.session.user.role !== role) {
       return res.status(403).json({ message: 'Hak akses ditolak: Peran Anda tidak diizinkan.' });
@@ -5300,7 +5314,12 @@ app.post('/api/login', async (req, res) => {
     // Daftar tematik yang boleh dibuka akun ini ikut tersimpan di sesi
     // (LOGIN TEMATIK) sehingga penjaga akses tidak perlu membaca DB tiap request.
     const tematik = user.role === 'admin' ? [] : bacaTematikUser(user);
-    req.session.user = { id: user.id, username: user.username, role: user.role, tematik: tematik };
+    req.session.user = {
+      id: user.id, username: user.username, role: user.role, tematik: tematik,
+      // Info perangkat untuk panel "Sesi login aktif" (admin)
+      dev: { ua: String(req.headers['user-agent'] || ''), ip: ipKlien(req), masuk: Date.now() },
+      akhir: Date.now()
+    };
     res.json({ success: true, role: user.role, tematik: tematik });
   } catch (e) {
     console.error(e);
@@ -5342,6 +5361,91 @@ async function buangSesiUser(cocok) {
     }
   } catch (err) { /* gagal membersihkan sesi tidak menghalangi aksi */ }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// [API] SESI LOGIN AKTIF — khusus admin
+// Menampilkan berapa sesi (login) yang sedang aktif, plus detail perangkat
+// tiap sesi: OS, peramban, IP, waktu masuk & terakhir aktif.
+// Sumber: tabel sessions (persisten, tidak hilang saat server restart).
+// ─────────────────────────────────────────────────────────────────────────────
+function deteksiPerangkat(ua) {
+  const s = String(ua || '');
+  let os = 'Tidak diketahui';
+  if (/windows/i.test(s)) os = 'Windows';
+  else if (/android/i.test(s)) os = 'Android';
+  else if (/iphone|ipad|ipod|\bios\b/i.test(s)) os = 'iOS';
+  else if (/mac os|macintosh/i.test(s)) os = 'macOS';
+  else if (/linux/i.test(s)) os = 'Linux';
+  if (/bot|crawler|spider|curl|wget|python-requests/i.test(s)) return { os: 'Otomatis', peramban: 'Bot/script' };
+
+  let peramban = 'Lainnya';
+  if (/edg\//i.test(s)) peramban = 'Edge';
+  else if (/opr\/|opera/i.test(s)) peramban = 'Opera';
+  else if (/firefox\//i.test(s)) peramban = 'Firefox';
+  else if (/chrome\/|crios/i.test(s)) peramban = 'Chrome';
+  else if (/safari\//i.test(s)) peramban = 'Safari';
+  return { os, peramban };
+}
+
+// "5 menit lalu" / "2 jam lalu" — ringkas untuk tampilan
+function relatifWaktu(ms) {
+  if (!ms) return '—';
+  const d = Math.max(0, Date.now() - ms);
+  const m = Math.floor(d / 60000);
+  if (m < 1) return 'baru saja';
+  if (m < 60) return m + ' mnt lalu';
+  const j = Math.floor(m / 60);
+  if (j < 24) return j + ' jam lalu';
+  return Math.floor(j / 24) + ' hari lalu';
+}
+
+app.get('/api/sesi-aktif', checkAuth('admin'), async (req, res) => {
+  try {
+    const rows = await db.all('SELECT id, data, updated_at FROM sessions');
+    const now = Date.now();
+    const daftar = [];
+    for (const r of rows) {
+      let sesi;
+      try { sesi = JSON.parse(r.data || '{}'); } catch (e) { continue; }
+      if (!sesi || !sesi.user) continue;                       // sesi tanpa login — lewati
+      if (sesi.cookie && sesi.cookie.expires && new Date(sesi.cookie.expires).getTime() < now) continue; // kedaluwarsa
+
+      // updated_at tersimpan sebagai waktu lokal ('YYYY-MM-DD HH:MM:SS')
+      let updLocal = 0;
+      if (r.updated_at) {
+        const t = Date.parse(String(r.updated_at).replace(' ', 'T'));
+        if (!isNaN(t)) updLocal = t;
+      }
+      const dev = sesi.user.dev || {};
+      const masuk = dev.masuk || updLocal || 0;
+      const akhir = Math.max(sesi.user.akhir || 0, updLocal);
+      const { os, peramban } = deteksiPerangkat(dev.ua);
+      daftar.push({
+        id: String(r.id).slice(0, 8),
+        username: sesi.user.username,
+        role: sesi.user.role,
+        os, peramban,
+        ip: dev.ip || '—',
+        masuk, akhir,
+        umur_masuk: relatifWaktu(masuk),
+        terakhir: relatifWaktu(akhir),
+        online: (now - akhir) < 5 * 60000     // aktif < 5 menit = online
+      });
+    }
+    daftar.sort((a, b) => (b.online - a.online) || (b.akhir - a.akhir));
+    const unikUser = new Set(daftar.map(d => d.username));
+    res.json({
+      ok: true,
+      total: daftar.length,
+      online: daftar.filter(d => d.online).length,
+      pengguna_unik: unikUser.size,
+      daftar
+    });
+  } catch (e) {
+    console.error('[sesi-aktif]', e);
+    res.status(500).json({ ok: false, message: 'Gagal membaca daftar sesi.' });
+  }
+});
 
 app.get('/api/users', checkAuth('admin'), async (req, res) => {
   try {

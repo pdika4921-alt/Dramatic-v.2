@@ -3026,6 +3026,43 @@
         </form>
       </aside>
 
+      <!-- ══ SESI LOGIN AKTIF — siapa saja yang sedang masuk & perangkatnya ══ -->
+      <section class="pg-card">
+        <div class="pg-list-head">
+          <h2>Sesi login aktif <span class="pg-count" id="sesi_badge_total">0</span></h2>
+          <div class="pg-tools">
+            <span id="sesi_ringkas" style="font-size:.82rem;color:#64748b;white-space:nowrap">Memuat…</span>
+            <button type="button" class="pg-iact" onclick="muatSesiAktif()"
+                    aria-label="Muat ulang daftar sesi" title="Segarkan">
+              <i class="fa-solid fa-rotate"></i>
+            </button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="pg-table">
+            <thead>
+              <tr>
+                <th class="pg-num" scope="col">No</th>
+                <th scope="col">Akun</th>
+                <th scope="col">Perangkat</th>
+                <th scope="col" style="width:135px">Alamat IP</th>
+                <th scope="col" style="width:110px">Masuk</th>
+                <th scope="col" style="width:120px">Terakhir aktif</th>
+                <th scope="col" style="width:95px">Status</th>
+              </tr>
+            </thead>
+            <tbody id="sesi_body">
+              <tr><td colspan="7">
+                <div class="pg-state">
+                  <div class="pg-spin"></div>
+                  <p>Memuat sesi login&hellip;</p>
+                </div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- ══ DAFTAR AKUN ══ -->
       <section class="pg-card">
         <div class="pg-list-head">
@@ -3152,6 +3189,77 @@ function pgJawab(res) {
   }
   return res.json().catch(function () { return null; });
 }
+
+/* ════════════════════════════════════════════════════════════════
+   SESI LOGIN AKTIF — panel admin: berapa login & perangkatnya
+   Data dari GET /api/sesi-aktif (tabel sessions), refresh tiap 30 dtk
+   selama tampilan Pengguna terbuka.
+   ════════════════════════════════════════════════════════════════ */
+var sesiTimer = null;
+
+async function muatSesiAktif() {
+  const body = document.getElementById('sesi_body');
+  const badge = document.getElementById('sesi_badge_total');
+  const ringkas = document.getElementById('sesi_ringkas');
+  if (!body) return;
+  try {
+    const res = await fetch('/api/sesi-aktif');
+    const json = await pgJawab(res);
+    if (!json || !json.ok) throw new Error((json && json.message) || ('server merespons ' + res.status));
+    if (badge) badge.textContent = json.total;
+    if (ringkas) {
+      ringkas.innerHTML = '<strong style="color:#059669">' + json.online + ' online</strong>' +
+        ' &middot; ' + json.pengguna_unik + ' pengguna &middot; ' + json.total + ' sesi/perangkat';
+    }
+    if (!json.daftar.length) {
+      body.innerHTML = '<tr><td colspan="7"><div class="pg-state">' +
+        '<div class="pg-state-ic"><i class="fa-solid fa-user-slash"></i></div>' +
+        '<p>Belum ada sesi login aktif</p>' +
+        '<small>Sesi baru muncul setelah ada yang login ke aplikasi.</small>' +
+        '</div></td></tr>';
+      return;
+    }
+    let html = '';
+    json.daftar.forEach(function (d, i) {
+      const ico = (d.os === 'Android' || d.os === 'iOS') ? 'fa-mobile-screen-button' :
+                  (d.os === 'Windows' || d.os === 'macOS' || d.os === 'Linux') ? 'fa-desktop' :
+                  (d.os === 'Otomatis') ? 'fa-robot' : 'fa-question';
+      const warnaPeran = d.role === 'admin' ? '#4f46e5' : '#0ea5e9';
+      html += '<tr>' +
+        '<td class="pg-num">' + (i + 1) + '</td>' +
+        '<td>' +
+          '<span style="display:inline-flex;align-items:center;gap:.45rem;font-weight:600">' +
+            '<i class="fa-solid fa-circle" style="font-size:.55rem;color:' + (d.online ? '#10b981' : '#cbd5e1') + '"></i>' +
+            pgEsc(d.username) +
+          '</span>' +
+          '<div style="font-size:.72rem;color:#94a3b8">' + (d.role === 'admin' ? 'Administrator' : 'Akun lapangan') + '</div>' +
+        '</td>' +
+        '<td><i class="fa-solid ' + ico + '" style="color:' + warnaPeran + ';margin-right:.4rem"></i>' +
+          pgEsc(d.os) + ' &middot; ' + pgEsc(d.peramban) +
+          '<div style="font-size:.72rem;color:#94a3b8">sesi ' + pgEsc(d.id) + '</div>' +
+        '</td>' +
+        '<td style="font-family:ui-monospace,monospace;font-size:.8rem">' + pgEsc(d.ip) + '</td>' +
+        '<td>' + pgEsc(d.umur_masuk) + '</td>' +
+        '<td>' + pgEsc(d.terakhir) + '</td>' +
+        '<td>' + (d.online
+          ? '<span style="display:inline-block;padding:.15rem .55rem;border-radius:999px;background:#d1fae5;color:#047857;font-size:.72rem;font-weight:700">ONLINE</span>'
+          : '<span style="display:inline-block;padding:.15rem .55rem;border-radius:999px;background:#f1f5f9;color:#64748b;font-size:.72rem;font-weight:700">Diam</span>') +
+        '</td>' +
+        '</tr>';
+    });
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = '<tr><td colspan="7"><div class="pg-state">' +
+      '<div class="pg-state-ic"><i class="fa-solid fa-triangle-exclamation"></i></div>' +
+      '<p>' + pgEsc(e.message || 'Gagal memuat daftar sesi') + '</p>' +
+      '<button type="button" class="pg-reset" onclick="muatSesiAktif()">Coba lagi</button>' +
+      '</div></td></tr>';
+    if (ringkas) ringkas.textContent = 'Gagal memuat';
+  }
+}
+
+function sesiStartTimer() { sesiStopTimer(); sesiTimer = setInterval(muatSesiAktif, 30000); }
+function sesiStopTimer() { if (sesiTimer) { clearInterval(sesiTimer); sesiTimer = null; } }
 
 async function muatPengguna() {
   const body = document.getElementById('pg_body');
@@ -10504,7 +10612,8 @@ document.addEventListener('DOMContentLoaded', function () {
       } else {
         reportStopTimer();
       }
-      if (viewKey === 'pengguna') { muatTematik(); muatPengguna(); }
+      if (viewKey === 'pengguna') { muatTematik(); muatPengguna(); muatSesiAktif(); sesiStartTimer(); }
+      else { sesiStopTimer(); }
       Object.keys(VIEW_INFO).forEach(function (x) {
         const el = document.getElementById('view_' + x);
         if (el) el.classList.toggle('hidden', x !== viewKey);
