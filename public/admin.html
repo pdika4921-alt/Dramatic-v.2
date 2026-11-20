@@ -1560,21 +1560,10 @@
         </nav>
 
         <div class="app-nav-foot">
-          <!-- Indikator jumlah user yang sedang ONLINE (klik → daftar Pengguna) -->
           <style>
             @keyframes onlinePulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
             .online-dot { animation: onlinePulse 2s ease-in-out infinite; }
           </style>
-          <button type="button" class="nav-btn" id="online_badge_side" onclick="switchView('pengguna')"
-                  title="Klik untuk melihat daftar sesi login aktif"
-                  style="display:none;justify-content:center;cursor:pointer;margin-bottom:.35rem;">
-            <span style="display:inline-flex;align-items:center;gap:.45rem;">
-              <i class="fa-solid fa-circle online-dot" style="font-size:.5rem;color:#10b981"></i>
-              <b id="online_side_n" style="font-size:.95rem">–</b>
-              <span style="font-size:.74rem;opacity:.9">online</span>
-              <span id="online_side_sub" style="font-size:.65rem;opacity:.6">memuat…</span>
-            </span>
-          </button>
           <button type="button" class="nav-btn nav-link danger" onclick="handleLogout()" title="Keluar dari sistem">
             <i class="fa-solid fa-right-from-bracket"></i><span>Keluar Sistem</span>
           </button>
@@ -3290,9 +3279,7 @@ var onlineTimer = null;
 
 function onlineSembunyi() {
   const a = document.getElementById('online_badge_top');
-  const b = document.getElementById('online_badge_side');
   if (a) a.style.display = 'none';
-  if (b) b.style.display = 'none';
 }
 
 async function muatOnlineBadge() {
@@ -3303,15 +3290,11 @@ async function muatOnlineBadge() {
     if (!j || !j.ok) { onlineSembunyi(); return; }
 
     const nTop = document.getElementById('online_top_n');
-    const nSide = document.getElementById('online_side_n');
-    const sub = document.getElementById('online_side_sub');
     if (nTop) nTop.textContent = j.online;
-    if (nSide) nSide.textContent = j.online;
-    if (sub) sub.textContent = '/ ' + j.total + ' sesi';
 
     const tip = j.online + ' orang sedang online dari ' + j.total + ' sesi login (' + j.pengguna_unik + ' pengguna)';
-    const t = document.getElementById('online_badge_top'); if (t) { t.style.display = 'flex'; t.title = tip; }
-    const s = document.getElementById('online_badge_side'); if (s) { s.style.display = ''; s.title = tip + ' — klik untuk detail'; }
+    const t = document.getElementById('online_badge_top');
+    if (t) { t.style.display = 'flex'; t.title = tip + ' — klik untuk detail'; }
   } catch (e) { /* jaringan bermasalah → biarkan seperti adanya */ }
 }
 
