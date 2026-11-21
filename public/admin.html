@@ -2286,6 +2286,10 @@
            Tidak lagi mendorong konten dashboard ke bawah: panel menimpa layar,
            header tetap di atas, dan hanya badan tabel yang di-scroll. */
         body.rekap-overlay-open .app-main { overflow:hidden; }
+        /* #view_dashboard membentuk stacking context (z-index:101). Tanpa ini,
+           overlay di dalamnya tetap kalah dari sidebar (z-index:200) sehingga
+           sisi kiri panel tertutup sidebar saat pindah halaman. */
+        #view_dashboard.rekap-overlay-aktif { z-index: 950; }
         #rekap_detail, #rekap_dok_dash {
           position:fixed; inset:0; z-index:900; margin:0 !important;
           border:0; border-radius:0; background:var(--bg);
@@ -6738,6 +6742,8 @@ document.addEventListener('DOMContentLoaded', function () {
       const k = document.getElementById('rekap_dok_dash');
       const ada = (d && !d.classList.contains('godc-hide')) || (k && !k.classList.contains('godc-hide'));
       document.body.classList.toggle('rekap-overlay-open', !!ada);
+      const vd = document.getElementById('view_dashboard');
+      if (vd) vd.classList.toggle('rekap-overlay-aktif', !!ada);
     }
 
     // Escape: tutup dashboard dokumen dulu, baru Detail LOP.
@@ -11164,6 +11170,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const VIEW_INFO = { dashboard: 'Dashboard', tambah_lokasi: 'Tambah Lokasi', master: 'Master Lokasi', audit: 'Audit Berkas', report_godc: 'Report GODC', pengguna: 'Pengguna' };
     async function switchView(viewKey) {
       if (!(viewKey in VIEW_INFO)) return;
+
+      // Tutup dulu overlay daftar (Detail LOP / Dashboard dokumen) saat berpindah
+      // halaman. Kalau dibiarkan, panel fixed-nya menimpa view baru dan
+      // informasi lokasi jadi terpotong/tertimpa sidebar.
+      if (typeof rekapTutupOverlay === 'function') rekapTutupOverlay();
 
       // Kunci menu Pengguna: admin biasa wajib isi akses123 sekali per sesi.
       // Master (login master123) langsung lewat.
