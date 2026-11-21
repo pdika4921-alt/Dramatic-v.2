@@ -38,6 +38,13 @@
     <div>
       <div class="rh-title">Sistem RAB & Rekonsiliasi</div>
       <div class="rh-sub">Kalkulasi RAB · DRM vs REKON · Nilai Sinkron · BA Tambah Kurang</div>
+      <div class="rab-stepper" id="rab_stepper">
+        <span id="rab_step_1" class="rab-step aktif"><span class="rab-step-no">1</span> Pilih Lokasi</span>
+        <span class="rab-step-pisah">›</span>
+        <span id="rab_step_2" class="rab-step"><span class="rab-step-no">2</span> Paste / Input</span>
+        <span class="rab-step-pisah">›</span>
+        <span id="rab_step_3" class="rab-step"><span class="rab-step-no">3</span> Simpan</span>
+      </div>
     </div>
 
     <div style="flex:1;min-width:0;max-width:360px;">
@@ -111,40 +118,56 @@
     <i class="fa-solid fa-boxes-stacked bg-icon"></i>
     <p>TOTAL MATERIAL</p>
     <h3 id="sum_mat">Rp 0</h3>
+    <div class="sum-sub" id="sum_mat_sub">Belum ada item</div>
   </div>
   <div class="summary-card card-amber">
     <i class="fa-solid fa-helmet-safety bg-icon"></i>
     <p>TOTAL JASA</p>
     <h3 id="sum_jasa">Rp 0</h3>
+    <div class="sum-sub" id="sum_jasa_sub">Belum ada item</div>
   </div>
   <div class="summary-card card-green">
     <i class="fa-solid fa-sack-dollar bg-icon"></i>
     <p>GRAND TOTAL</p>
     <h3 id="sum_grand">Rp 0</h3>
+    <div class="sum-sub" id="sum_grand_sub">Belum ada item</div>
   </div>
 </div>
 
 <!-- ═══ PASTE AREA ═══ -->
 <div id="paste_area" class="paste-area hidden">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
-    <div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+    <div style="min-width:0;">
       <div class="paste-title">
         <i class="fa-solid fa-clipboard-list" style="margin-right:6px;"></i>Area Paste Data Excel
       </div>
       <div class="format-info">
-        <strong>Format kolom:</strong><br>
-        <code>designator</code> → <code>uraian pekerjaan</code> → <code>satuan</code> → <code>material</code> → <code>jasa</code> → <code>volume (TOTAL)</code><br>
-        <span class="format-ok">✓ Contoh: <code>M-DC-OF-SM-48D &nbsp; Pengadaan dan pemasangan kabel duct fiber optik single mode 48 core g 652 d &nbsp; meter &nbsp; 12.100 &nbsp; &nbsp; 870</code></span>
-        <span class="format-warn">✓ Baris header grup (mis. <code>OSP FO FTTH</code>) otomatis menjadi kategori. Pisah kolom dengan Tab.</span>
+        <span class="rab-kolom-chip">designator</span> ›
+        <span class="rab-kolom-chip">uraian</span> ›
+        <span class="rab-kolom-chip">satuan</span> ›
+        <span class="rab-kolom-chip">material</span> ›
+        <span class="rab-kolom-chip">jasa</span> ›
+        <span class="rab-kolom-chip">volume</span>
+        <span class="format-ok">Contoh: <code>M-DC-OF-SM-48D · Kabel FO · meter · 12.100 · · 870</code></span>
+        <span class="format-warn">Baris tanpa designator (mis. <code>OSP FO FTTH</code>) otomatis jadi kategori. Format 5 kolom juga dikenali.</span>
       </div>
     </div>
     <button onclick="togglePasteArea()" style="color:var(--text-sub);background:none;border:none;cursor:pointer;font-size: 15px;" aria-label="Tutup area paste">
       <i class="fa-solid fa-xmark"></i>
     </button>
   </div>
-  <textarea id="excel_input" class="input-area" rows="8"
+  <textarea id="excel_input" class="input-area" rows="6" oninput="previewExcel(this.value)"
     placeholder="Paste dari Excel (Tab-separated):&#10;designator&#9;uraian pekerjaan&#9;satuan&#9;material&#9;jasa&#9;volume(TOTAL)&#10;OSP FO FTTH&#10;M-DC-OF-SM-48D&#9;Pengadaan dan pemasangan kabel duct fiber optik single mode 48 core g 652 d&#9;meter&#9;12.100&#9;&#9;870&#10;J-DC-OF-SM-48D&#9;Pengadaan dan pemasangan kabel duct fiber optik single mode 48 core g 652 d&#9;meter&#9;&#9;3.156&#9;870"></textarea>
-  <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+  <div id="excel_validasi" class="rab-validasi"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="btn btn-ghost" style="font-size:9px;padding:6px 12px;" onclick="isiContohExcel()">
+        <i class="fa-solid fa-wand-magic-sparkles" style="font-size:9px;"></i> Isi Contoh
+      </button>
+      <button class="btn btn-neutral" style="font-size:9px;padding:6px 12px;" onclick="bersihkanExcel()">
+        <i class="fa-solid fa-eraser" style="font-size:9px;"></i> Bersihkan
+      </button>
+    </div>
     <button class="btn btn-purple" onclick="prosesExcel()">
       <i class="fa-solid fa-wand-magic-sparkles"></i> Proses & Kalkulasi Data
     </button>
@@ -171,8 +194,17 @@
 <div class="rab-wrap" id="rab_section">
   <div id="rab_empty" class="empty-state">
     <i class="fa-solid fa-file-invoice-dollar"></i>
-    <h3>Tabel RAB Masih Kosong</h3>
-    <p style="font-size: 10px;">Pilih lokasi, lalu gunakan <strong>Paste Excel</strong> untuk memasukkan data.</p>
+    <h3>Belum ada item RAB</h3>
+    <p style="font-size: 9px;margin-bottom:10px;">Pilih lokasi, lalu paste data Excel untuk mulai kalkulasi.</p>
+    <button class="btn btn-ghost" style="font-size:9px;padding:6px 14px;" onclick="togglePasteArea()">
+      <i class="fa-solid fa-clipboard-list" style="font-size:9px;"></i> Buka Paste Excel
+    </button>
+  </div>
+  <div id="rab_table_toolbar" class="rab-toolbar" style="display:none;">
+    <span><i class="fa-solid fa-list-ol" style="margin-right:4px;"></i><b id="rab_row_count">0</b> item</span>
+    <span style="color:var(--text-faint);">│</span>
+    <span>Grand Total <b id="rab_toolbar_total">Rp 0</b></span>
+    <span style="margin-left:auto;color:var(--text-faint);font-size:7px;">Header &amp; nomor melekat saat scroll</span>
   </div>
   <div id="rab_table_wrap" class="overflow-x-auto" style="display:none;">
     <table class="rab-table">
@@ -418,6 +450,69 @@
   </div>
 </div>
 
+<!-- ═══ MODAL KOREKSI BARIS RAB ═══ -->
+<div id="modal_edit_baris" class="modal-overlay">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-header">
+      <div style="font-size: 12px;font-weight: 700;color:var(--brand);">
+        <i class="fa-solid fa-pen-to-square" style="margin-right:8px;"></i>Koreksi Item RAB
+      </div>
+      <button onclick="tutupEditBaris()" style="background:none;border:none;color:var(--text-sub);cursor:pointer;font-size: 16px;" aria-label="Tutup koreksi">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div style="background:var(--brand-tint);border:1px solid var(--brand-tint-b);border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:8px;color:var(--brand-fg);">
+      <i class="fa-solid fa-circle-info" style="margin-right:5px;"></i>
+      Nilai <b>Jumlah Harga</b> dihitung otomatis = <b>Harga Satuan × Volume</b>. Perubahan langsung memperbarui grand total keseluruhan.
+    </div>
+    <input type="hidden" id="eb_index">
+    <div class="modal-grid">
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <div class="field">
+          <label>Designator</label>
+          <input type="text" id="eb_designator" placeholder="M-DC-OF-SM-48D" style="font-family:var(--font-mono);text-transform:uppercase;">
+        </div>
+        <div class="field">
+          <label>Uraian Pekerjaan</label>
+          <input type="text" id="eb_uraian" placeholder="Uraian pekerjaan...">
+        </div>
+        <div class="field">
+          <label>Kategori / Grup</label>
+          <input type="text" id="eb_kategori" placeholder="OSP FO FTTH">
+        </div>
+        <div class="field">
+          <label>Satuan</label>
+          <input type="text" id="eb_satuan" placeholder="meter / core / pcs">
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <div class="field">
+          <label>Harga Material (Rp)</label>
+          <input type="text" id="eb_material" inputmode="decimal" placeholder="0" oninput="formatRpField(this);hitungPreviewEdit()">
+        </div>
+        <div class="field">
+          <label>Harga Jasa (Rp)</label>
+          <input type="text" id="eb_jasa" inputmode="decimal" placeholder="0" oninput="formatRpField(this);hitungPreviewEdit()">
+        </div>
+        <div class="field">
+          <label>Volume (TOTAL)</label>
+          <input type="text" id="eb_volume" inputmode="decimal" placeholder="0" oninput="formatRpField(this);hitungPreviewEdit()">
+        </div>
+        <div class="field" style="justify-content:flex-end;">
+          <label>Estimasi Jumlah Harga</label>
+          <div id="eb_preview" style="font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--c-rek);padding:8px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:9px;">Rp 0</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-neutral" onclick="tutupEditBaris()">Batal</button>
+      <button class="btn btn-purple" onclick="simpanEditBaris()">
+        <i class="fa-solid fa-floppy-disk"></i> Simpan Koreksi
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ TOAST ═══ -->
 <div id="toast" class="toast">
   <div id="toast_inner" class="toast-inner toast-info">
@@ -476,6 +571,7 @@ let rekonResult = [];   // [{ designator, drm, rekon, tambah, kurang, satuan, ha
 let selectedLokasi = null;
 let allLokasi   = [];
 let lokasiDdOpen = false;
+let lastParseReport = null;
 
 // ══════════════════════════════════════════════════════════════
 //  HELPERS FORMAT
@@ -551,50 +647,135 @@ function buildPriceMap(items) {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  PARSE EXCEL PASTE (RAB) — 6 kolom
-//  designator | uraian pekerjaan | satuan | material | jasa | volume(TOTAL)
-//  Baris tanpa designator (mis. "OSP FO FTTH") = header grup → jadi kategori
+//  PARSE EXCEL PASTE (RAB)
+//  Format utama : designator | uraian | satuan | material | jasa | volume
+//  Format pendek: designator | jasa | material | volume | satuan
+//  Header kolom dikenali otomatis bila ada. Baris tanpa designator yang
+//  tidak mengandung angka dianggap kategori/grup.
 // ══════════════════════════════════════════════════════════════
+function normDes(d) {
+  return String(d || '').trim().toUpperCase().replace(/\s+/g, '');
+}
+function isDesKode(d) {
+  return /^[A-Z0-9][A-Z0-9._\/\-]*-[A-Z0-9._\/\-]+$/.test(d);
+}
+function petaKolom(cols) {
+  const lower = cols.map(c => String(c || '').trim().toLowerCase());
+  const cari = (names) => lower.findIndex(v => names.some(n => v === n || v.indexOf(n) >= 0));
+  const iDes = cari(['designator', 'design', 'kode']);
+  const iVol = cari(['volume', 'vol', 'qty', 'total']);
+  if (iDes >= 0 && iVol >= 0) {
+    return {
+      designator: iDes,
+      uraian: cari(['uraian', 'deskripsi', 'keterangan', 'pekerjaan']),
+      satuan: cari(['satuan', 'unit']),
+      material: cari(['material', 'mat']),
+      jasa: cari(['jasa']),
+      volume: iVol
+    };
+  }
+  // Format RAB 5 kolom (tanpa uraian): des | jasa | material | volume | satuan
+  if (cols.length === 5 && /^[a-z.\/]{2,8}$/i.test(String(cols[4] || '').trim())) {
+    return { designator: 0, uraian: -1, jasa: 1, material: 2, volume: 3, satuan: 4 };
+  }
+  return { designator: 0, uraian: 1, satuan: 2, material: 3, jasa: 4, volume: 5 };
+}
 function parseExcelPaste(text) {
   const result = [];
+  const laporan = { baris: 0, grup: 0, valid: 0, duplikat: 0, konflik: [], dilewati: [], negatif: 0, tanpaHarga: 0 };
   let group = null;
-  const lines = text.split('\n');
-  lines.forEach(line => {
-    line = line.trim();
-    if (!line) return;
-    const cols = line.split('\t');
-    const des = (cols[0] || '').trim();
+  let petakan = null;
+
+  String(text || '').split(/\r?\n/).forEach((line, nomor) => {
+    if (!line.trim()) return;
+    laporan.baris++;
+    let cols = line.split('\t').map(c => c.trim());
+    if (cols.length === 1) cols = line.split(/\s{2,}/).map(c => c.trim()).filter(Boolean);
+    const p = petakan || petaKolom(cols);
+
+    const desRaw = cols[p.designator >= 0 ? p.designator : 0] || '';
+    const des = normDes(desRaw);
     if (!des) return;
-    const desLower = des.toLowerCase();
-    if (desLower === 'designator' || desLower === 'no' || des === '#') return;
 
-    const isDesignator = /^[A-Z0-9]+-[A-Z0-9-]+$/i.test(des);
-    const material = parseNum(cols[3] || '0');
-    const jasa     = parseNum(cols[4] || '0');
-    const volume   = parseNum(cols[5] || '0');
+    // Baris header (designator / no / uraian) dipakai untuk memetakan kolom.
+    if (/^(designator|no|nomor|item|uraian|#)$/i.test(des)) {
+      petakan = petaKolom(cols);
+      return;
+    }
 
-    // Baris header grup: teks biasa tanpa kolom harga/volume (mis. "OSP FO FTTH")
-    if (!isDesignator) {
-      if (!(cols[1] || '').trim() && !(cols[2] || '').trim() && material === 0 && jasa === 0 && volume === 0) {
-        group = des;
+    const ambil = (k) => (p[k] >= 0 ? (cols[p[k]] || '') : '');
+    const material = parseNum(ambil('material'));
+    const jasa     = parseNum(ambil('jasa'));
+    const volume   = parseNum(ambil('volume'));
+    const uraian   = ambil('uraian');
+    const satuan   = ambil('satuan');
+
+    if (!isDesKode(des)) {
+      if (!uraian && !satuan && material === 0 && jasa === 0 && volume === 0) {
+        group = desRaw.trim().toUpperCase();
+        laporan.grup++;
+      } else {
+        laporan.dilewati.push({ baris: nomor + 1, teks: desRaw.slice(0, 60) });
       }
       return;
     }
 
-    const uraian = (cols[1] || '').trim();
-    const satuan = (cols[2] || '').trim();
+    if (material < 0 || jasa < 0 || volume < 0) laporan.negatif++;
+    if (material === 0 && jasa === 0) laporan.tanpaHarga++;
 
-    const exist = result.find(r => r.designator.toUpperCase() === des.toUpperCase());
+    const exist = result.find(r => r.designator === des);
     if (exist) {
+      laporan.duplikat++;
+      if ((exist.material && material && exist.material !== material)
+        || (exist.jasa && jasa && exist.jasa !== jasa)) {
+        laporan.konflik.push(des);
+      }
       exist.volume += volume;
       if (!exist.uraian && uraian) exist.uraian = uraian;
       if (!exist.satuan && satuan) exist.satuan = satuan;
       if (!exist.kategori && group) exist.kategori = group;
     } else {
-      result.push({ designator: des, uraian, kategori: group, satuan, material, jasa, volume });
+      result.push({ designator: des, uraian, kategori: group || '', satuan, material, jasa, volume });
+      laporan.valid++;
     }
   });
+
+  lastParseReport = laporan;
   return result;
+}
+
+// Validasi langsung saat admin mengetik/menempel di area paste.
+function previewExcel(text) {
+  const box = document.getElementById('excel_validasi');
+  if (!box) return;
+  if (!text || !text.trim()) { box.innerHTML = ''; return; }
+  const items = parseExcelPaste(text);
+  const r = lastParseReport || {};
+  const estimasi = items.reduce((s, it) => s + (it.material + it.jasa) * it.volume, 0);
+  let html = '<span class="v-chip v-ok"><i class="fa-solid fa-circle-check"></i> ' + items.length + ' item valid</span>';
+  if (r.grup) html += '<span class="v-chip">' + r.grup + ' kategori</span>';
+  html += '<span class="v-chip">Estimasi <b>' + fmtRp(estimasi) + '</b></span>';
+  if (r.duplikat) html += '<span class="v-chip v-warn">' + r.duplikat + ' duplikat digabung</span>';
+  if (r.konflik && r.konflik.length) html += '<span class="v-chip v-warn">' + r.konflik.length + ' harga berbeda</span>';
+  if (r.tanpaHarga) html += '<span class="v-chip v-warn">' + r.tanpaHarga + ' tanpa harga</span>';
+  if (r.negatif) html += '<span class="v-chip v-err">' + r.negatif + ' nilai negatif</span>';
+  if (r.dilewati && r.dilewati.length) html += '<span class="v-chip v-err">' + r.dilewati.length + ' baris tidak dikenali</span>';
+  box.innerHTML = html;
+}
+
+function isiContohExcel() {
+  const contoh = 'OSP FO FTTH\n'
+    + 'M-DC-OF-SM-48D\tPengadaan kabel duct fiber optik single mode 48 core\tmeter\t12.100\t\t870\n'
+    + 'J-CO-OF\tPekerjaan cut over kabel optik\tcore\t\t32.150\t727\n'
+    + 'ACCESS\n'
+    + 'M-ODP\tOptical Distribution Point 16 port\tpcs\t1.450.000\t\t12\n';
+  const el = document.getElementById('excel_input');
+  if (el) { el.value = contoh; previewExcel(contoh); el.focus(); }
+}
+function bersihkanExcel() {
+  const el = document.getElementById('excel_input');
+  if (el) el.value = '';
+  previewExcel('');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -708,7 +889,21 @@ function selectLokasi(loc) {
   if (box)  box.style.display  = 'block';
   if (nama) nama.textContent   = namaTampil + ' [' + (loc.tematik||'-') + ']';
 
+  updateRabStepper();
   muatRABTersimpan(loc.id);
+}
+
+// Penanda langkah: lokasi → input → simpan.
+function updateRabStepper() {
+  const s1 = document.getElementById('rab_step_1');
+  const s2 = document.getElementById('rab_step_2');
+  const s3 = document.getElementById('rab_step_3');
+  if (!s1 || !s2 || !s3) return;
+  const adaLok = !!selectedLokasi;
+  const adaItem = rabItems.length > 0;
+  s1.className = 'rab-step ' + (adaLok ? 'selesai' : 'aktif');
+  s2.className = 'rab-step ' + (!adaLok ? '' : (adaItem ? 'selesai' : 'aktif'));
+  s3.className = 'rab-step ' + (adaItem ? 'aktif' : '');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -750,20 +945,30 @@ function renderRAB() {
   const wrap  = document.getElementById('rab_table_wrap');
   const tbody = document.getElementById('rab_tbody');
   const tfoot = document.getElementById('rab_tfoot');
+  const toolbar = document.getElementById('rab_table_toolbar');
+  const subMat = document.getElementById('sum_mat_sub');
+  const subJasa = document.getElementById('sum_jasa_sub');
+  const subGrand = document.getElementById('sum_grand_sub');
 
   let totalMat = 0, totalJasa = 0;
 
   if (!rabItems.length) {
     empty.style.display = 'block';
     wrap.style.display  = 'none';
+    if (toolbar) toolbar.style.display = 'none';
     document.getElementById('sum_mat').textContent   = 'Rp 0';
     document.getElementById('sum_jasa').textContent  = 'Rp 0';
     document.getElementById('sum_grand').textContent = 'Rp 0';
+    if (subMat) subMat.textContent = 'Belum ada item';
+    if (subJasa) subJasa.textContent = 'Belum ada item';
+    if (subGrand) subGrand.textContent = 'Belum ada item';
+    updateRabStepper();
     return;
   }
 
   empty.style.display = 'none';
   wrap.style.display  = 'block';
+  if (toolbar) toolbar.style.display = 'flex';
   tbody.innerHTML = '';
 
   rabItems.forEach((item, i) => {
@@ -793,8 +998,11 @@ function renderRAB() {
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size: 10px;color:#374151;border-right:2px solid #e2e8f0;">${fmtNum(mat)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size: 10px;color:${jJas>0?'#059669':'#94a3b8'};font-weight: 500;border-right:1px solid #e2e8f0;background:#f0fdf420;">${fmtNum(jJas)}</td>
       <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size: 10px;color:${jMat>0?'#059669':'#94a3b8'};font-weight: 500;border-right:2px solid #e2e8f0;background:#f0fdf420;">${fmtNum(jMat)}</td>
-      <td style="text-align:center;">
-        <button onclick="hapusBaris(${i})" style="width:30px;height:30px;border-radius:8px;background:#fff1f2;border:1px solid #fecdd3;color:#f43f5e;cursor:pointer;font-size: 10px;transition:all 0.15s;" onmouseenter="this.style.background='#f43f5e';this.style.color='#fff';" onmouseleave="this.style.background='#fff1f2';this.style.color='#f43f5e';" aria-label="Hapus baris ${i+1}">
+      <td style="text-align:center;white-space:nowrap;">
+        <button type="button" class="rab-edit-btn" onclick="bukaEditBaris(${i})" title="Koreksi baris ${i+1}" aria-label="Koreksi baris ${i+1}">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <button type="button" class="rab-hapus-btn" onclick="hapusBaris(${i})" title="Hapus baris ${i+1}" aria-label="Hapus baris ${i+1}">
           <i class="fa-solid fa-trash-can"></i>
         </button>
       </td>`;
@@ -819,9 +1027,19 @@ function renderRAB() {
       <td></td>
     </tr>`;
 
+  const jmlMat = rabItems.filter(it => parseNum(it.material) > 0).length;
+  const jmlJas = rabItems.filter(it => parseNum(it.jasa) > 0).length;
   document.getElementById('sum_mat').textContent   = fmtRp(totalMat);
   document.getElementById('sum_jasa').textContent  = fmtRp(totalJasa);
   document.getElementById('sum_grand').textContent = fmtRp(totalMat + totalJasa);
+  if (subMat) subMat.textContent = jmlMat + ' item material';
+  if (subJasa) subJasa.textContent = jmlJas + ' item jasa';
+  if (subGrand) subGrand.textContent = rabItems.length + ' item · ' + fmtRp(totalMat + totalJasa);
+  const rowCount = document.getElementById('rab_row_count');
+  const grandInfo = document.getElementById('rab_toolbar_total');
+  if (rowCount) rowCount.textContent = rabItems.length;
+  if (grandInfo) grandInfo.textContent = fmtRp(totalMat + totalJasa);
+  updateRabStepper();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -845,13 +1063,13 @@ function updateAcuan() {
 
   if (!berkasMap.size) { panel.classList.remove('active'); return; }
 
-  let html = `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">`;
+  let html = `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">`;
   const desUsed = new Set(rabItems.map(r => r.designator));
   desUsed.forEach(des => {
     const info = lookupDes(des);
-    if (info) html += `<span class="tag ${info.tipe==='material'?'tag-m':'tag-j'}" style="font-size: 8px;padding:3px 10px;">${des}</span>`;
+    if (info) html += `<span class="tag ${info.tipe==='material'?'tag-m':'tag-j'}" style="font-size: 7px;padding:2px 8px;">${des}</span>`;
   });
-  html += `</div><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;">`;
+  html += `</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:0 10px;border:1px solid var(--border);border-radius:10px;overflow:hidden;">`;
 
   const berkasList = [...berkasMap.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
   berkasList.forEach(([berkas, list], i) => {
@@ -881,16 +1099,41 @@ function prosesExcel() {
   const text = document.getElementById('excel_input').value;
   if (!text.trim()) { showToast('error', 'Harap paste data terlebih dahulu!'); return; }
   const newData = parseExcelPaste(text);
+  const laporan = lastParseReport || {};
   if (!newData.length) {
-    showToast('error', 'Gagal parsing. Pastikan format: designator [Tab] uraian [Tab] satuan [Tab] material [Tab] jasa [Tab] volume(TOTAL)');
+    showToast('error', 'Gagal parsing. Gunakan format: designator · uraian · satuan · material · jasa · volume (dipisah Tab).');
     return;
   }
-  rabItems = [...rabItems, ...newData];
+
+  // Gabungkan dengan item yang sudah ada supaya designator ganda tidak
+  // menghasilkan baris kembar dan total tetap akurat.
+  let ditambah = 0, digabung = 0;
+  newData.forEach(function (baru) {
+    const lama = rabItems.find(function (it) { return it.designator === baru.designator; });
+    if (lama) {
+      lama.volume += baru.volume;
+      lama.material = baru.material || lama.material;
+      lama.jasa = baru.jasa || lama.jasa;
+      if (!lama.uraian && baru.uraian) lama.uraian = baru.uraian;
+      if (!lama.satuan && baru.satuan) lama.satuan = baru.satuan;
+      if (!lama.kategori && baru.kategori) lama.kategori = baru.kategori;
+      digabung++;
+    } else {
+      rabItems.push(baru);
+      ditambah++;
+    }
+  });
+
   renderRAB();
   updateAcuan();
   document.getElementById('excel_input').value = '';
+  previewExcel('');
   document.getElementById('paste_area').classList.add('hidden');
-  showToast('success', `${newData.length} baris berhasil ditambahkan!`);
+
+  let pesan = ditambah + ' item ditambahkan';
+  if (digabung) pesan += ', ' + digabung + ' designator digabung';
+  if (laporan.dilewati && laporan.dilewati.length) pesan += ' · ' + laporan.dilewati.length + ' baris dilewati';
+  showToast('success', pesan + '.');
 }
 
 function hapusBaris(i) {
@@ -901,7 +1144,57 @@ function hapusBaris(i) {
 }
 
 function togglePasteArea() {
-  document.getElementById('paste_area').classList.toggle('hidden');
+  const area = document.getElementById('paste_area');
+  area.classList.toggle('hidden');
+  if (!area.classList.contains('hidden')) previewExcel(document.getElementById('excel_input').value);
+}
+
+// ── Koreksi baris ─────────────────────────────────────────────
+function bukaEditBaris(i) {
+  const it = rabItems[i];
+  if (!it) return;
+  document.getElementById('eb_index').value = i;
+  document.getElementById('eb_designator').value = it.designator || '';
+  document.getElementById('eb_uraian').value = it.uraian || '';
+  document.getElementById('eb_kategori').value = it.kategori || '';
+  document.getElementById('eb_satuan').value = it.satuan || '';
+  document.getElementById('eb_material').value = fmtNum(parseNum(it.material));
+  document.getElementById('eb_jasa').value = fmtNum(parseNum(it.jasa));
+  document.getElementById('eb_volume').value = fmtNum(parseNum(it.volume));
+  hitungPreviewEdit();
+  document.getElementById('modal_edit_baris').classList.add('active');
+}
+function tutupEditBaris() {
+  document.getElementById('modal_edit_baris').classList.remove('active');
+}
+function hitungPreviewEdit() {
+  const m = parseNum(document.getElementById('eb_material').value);
+  const j = parseNum(document.getElementById('eb_jasa').value);
+  const v = parseNum(document.getElementById('eb_volume').value);
+  const el = document.getElementById('eb_preview');
+  if (el) el.textContent = fmtRp((m + j) * v);
+}
+function simpanEditBaris() {
+  const i = Number(document.getElementById('eb_index').value);
+  const des = normDes(document.getElementById('eb_designator').value);
+  if (!Number.isInteger(i) || !rabItems[i]) { tutupEditBaris(); return; }
+  if (!des) { showToast('error', 'Designator wajib diisi.'); return; }
+  const material = parseNum(document.getElementById('eb_material').value);
+  const jasa = parseNum(document.getElementById('eb_jasa').value);
+  const volume = parseNum(document.getElementById('eb_volume').value);
+  if (material < 0 || jasa < 0 || volume < 0) { showToast('error', 'Nilai tidak boleh negatif.'); return; }
+  if (material === 0 && jasa === 0) { showToast('error', 'Isi harga material atau jasa.'); return; }
+  rabItems[i] = {
+    designator: des,
+    uraian: document.getElementById('eb_uraian').value.trim(),
+    kategori: document.getElementById('eb_kategori').value.trim(),
+    satuan: document.getElementById('eb_satuan').value.trim(),
+    material: material, jasa: jasa, volume: volume
+  };
+  renderRAB();
+  updateAcuan();
+  tutupEditBaris();
+  showToast('success', 'Item RAB berhasil dikoreksi.');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1245,6 +1538,8 @@ function tutupModal() {
 document.addEventListener('click', e => {
   const overlay = document.getElementById('modal_batk');
   if (e.target === overlay) tutupModal();
+  const overlayEdit = document.getElementById('modal_edit_baris');
+  if (e.target === overlayEdit) tutupEditBaris();
 });
 
 // ══════════════════════════════════════════════════════════════
@@ -1508,7 +1803,10 @@ function showToast(type, msg) {
 document.addEventListener('DOMContentLoaded', () => {
   muatLokasi();
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') tutupModal();
+    if (e.key === 'Escape') {
+      tutupModal();
+      if (typeof tutupEditBaris === 'function') tutupEditBaris();
+    }
   });
 });
 </script>
