@@ -459,6 +459,46 @@ textarea.input-area::placeholder { color: var(--text-faint); }
 .rekon-label.rek  { color: var(--c-rek); }
 .rekon-hint { font-size: 8px; color: var(--text-sub); margin-top: 2px; }
 .rekon-count { font-size: 8px; color: var(--text-sub); }
+
+/* Contoh format input DRM/REKON — selalu terlihat, bukan sekadar placeholder */
+.rekon-format {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--brand);
+  border-radius: 9px;
+  background: var(--bg-strip);
+  padding: 7px 9px;
+  margin-bottom: 8px;
+}
+.rf-head { font-size: 7px; font-weight: 700; color: var(--brand-fg); margin-bottom: 5px; letter-spacing: .02em; }
+.rf-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr .8fr .8fr; gap: 4px; align-items: center; }
+.rf-cols span {
+  font-size: 6.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .03em; color: var(--text-faint);
+  border-bottom: 1px solid var(--border-2); padding-bottom: 3px;
+}
+.rf-row { margin-top: 3px; }
+.rf-row code {
+  font-family: var(--font-mono); font-size: 7px;
+  color: var(--text-main); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 4px; padding: 2px 3px;
+}
+.rf-row code.rf-kosong { color: var(--text-faint); font-style: italic; text-align: center; }
+.rf-note { font-size: 6.5px; color: var(--text-sub); margin-top: 5px; line-height: 1.5; }
+.rf-note b { color: var(--brand-fg); }
+.rf-footer {
+  display: flex; align-items: flex-start; gap: 4px;
+  padding: 8px 14px; border-top: 1px solid var(--border);
+  background: var(--bg-strip); font-size: 7.5px;
+  color: var(--text-sub); line-height: 1.6;
+}
+.rf-footer b { color: var(--text-main); }
+.rf-footer code {
+  font-family: var(--font-mono); font-size: 7px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 4px; color: var(--brand-fg);
+}
 .btn-rekon-ghost {
   background: rgba(16, 185, 129, 0.12);
   color: var(--c-rek);

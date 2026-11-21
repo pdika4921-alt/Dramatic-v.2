@@ -244,16 +244,30 @@
         </div>
         <div>
           <div class="rekon-label drm">Input RAB / DRM</div>
-          <div class="rekon-hint">Format: designator [Tab] jasa [Tab] material [Tab] volume [Tab] satuan</div>
+          <div class="rekon-hint">5 kolom, dipisah <b>Tab</b> dari Excel · contoh di bawah bisa langsung dipakai</div>
         </div>
       </div>
-      <textarea id="drm_input" class="input-area" rows="8"
-        placeholder="Paste dari Excel:&#10;M-DC-OF-SM-144D&#9;42.500&#9;&#9;272&#9;Mtr&#10;J-CO-OF&#9;&#9;32.150&#9;727&#9;Core&#10;M-PROT-SLV&#9;750&#9;&#9;480&#9;Pcs"></textarea>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+      <div class="rekon-format">
+        <div class="rf-head"><i class="fa-solid fa-circle-info" style="margin-right:5px;"></i>FORMAT INPUT — <b>designator ⇥ jasa ⇥ material ⇥ volume ⇥ satuan</b></div>
+        <div class="rf-cols rf-grid"><span>designator</span><span>jasa</span><span>material</span><span>volume</span><span>satuan</span></div>
+        <div class="rf-row rf-grid"><code>M-DC-OF-SM-144D</code><code>42.500</code><code class="rf-kosong">—</code><code>272</code><code>Mtr</code></div>
+        <div class="rf-row rf-grid"><code>J-CO-OF</code><code class="rf-kosong">—</code><code>32.150</code><code>727</code><code>Core</code></div>
+        <div class="rf-row rf-grid"><code>M-PROT-SLV</code><code>750</code><code class="rf-kosong">—</code><code>480</code><code>Pcs</code></div>
+        <div class="rf-note">Tanda <b>—</b> = kolom dikosongkan tapi <b>tetap dipisah Tab</b>. Jangan diganti spasi.</div>
+      </div>
+      <textarea id="drm_input" class="input-area" rows="6" oninput="previewRekon(this.value,'drm')"
+        placeholder="Paste 5 kolom dari Excel di sini…&#10;Atau klik tombol &quot;Isi Contoh&quot; untuk mencoba sekarang."></textarea>
+      <div id="drm_validasi" class="rab-validasi"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;flex-wrap:wrap;">
         <span id="drm_count" class="rekon-count">0 item</span>
-        <button class="btn btn-ghost" onclick="prosesDRM()" style="font-size: 9px;padding:6px 14px;">
-          <i class="fa-solid fa-wand-magic-sparkles"></i> Proses DRM
-        </button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost" onclick="isiContohRekon('drm')" style="font-size: 9px;padding:6px 12px;">
+            <i class="fa-solid fa-file-circle-plus"></i> Isi Contoh
+          </button>
+          <button class="btn btn-ghost" onclick="prosesDRM()" style="font-size: 9px;padding:6px 14px;">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Proses DRM
+          </button>
+        </div>
       </div>
     </div>
     <!-- REKON -->
@@ -264,16 +278,29 @@
         </div>
         <div>
           <div class="rekon-label rek">Input Aktual / REKON</div>
-          <div class="rekon-hint">Format: designator [Tab] jasa [Tab] material [Tab] volume [Tab] satuan</div>
+          <div class="rekon-hint">5 kolom, dipisah <b>Tab</b> dari Excel · contoh di bawah bisa langsung dipakai</div>
         </div>
       </div>
-      <textarea id="rekon_input" class="input-area" rows="8"
-        placeholder="Paste dari Excel:&#10;M-DC-OF-SM-144D&#9;42.500&#9;&#9;290&#9;Mtr&#10;J-CO-OF&#9;&#9;32.150&#9;700&#9;Core"></textarea>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+      <div class="rekon-format">
+        <div class="rf-head"><i class="fa-solid fa-circle-info" style="margin-right:5px;"></i>FORMAT INPUT — <b>designator ⇥ jasa ⇥ material ⇥ volume ⇥ satuan</b></div>
+        <div class="rf-cols rf-grid"><span>designator</span><span>jasa</span><span>material</span><span>volume</span><span>satuan</span></div>
+        <div class="rf-row rf-grid"><code>M-DC-OF-SM-144D</code><code>42.500</code><code class="rf-kosong">—</code><code>290</code><code>Mtr</code></div>
+        <div class="rf-row rf-grid"><code>J-CO-OF</code><code class="rf-kosong">—</code><code>32.150</code><code>700</code><code>Core</code></div>
+        <div class="rf-note">Volume REKON boleh berbeda dari DRM → dihitung sebagai Tambah / Kurang.</div>
+      </div>
+      <textarea id="rekon_input" class="input-area" rows="6" oninput="previewRekon(this.value,'rekon')"
+        placeholder="Paste 5 kolom dari Excel di sini…&#10;Atau klik tombol &quot;Isi Contoh&quot; untuk mencoba sekarang."></textarea>
+      <div id="rekon_validasi" class="rab-validasi"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;flex-wrap:wrap;">
         <span id="rekon_count" class="rekon-count">0 item</span>
-        <button class="btn btn-rekon-ghost" onclick="prosesRekonInput()" style="font-size: 9px;padding:6px 14px;">
-          <i class="fa-solid fa-wand-magic-sparkles"></i> Proses REKON
-        </button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost" onclick="isiContohRekon('rekon')" style="font-size: 9px;padding:6px 12px;">
+            <i class="fa-solid fa-file-circle-plus"></i> Isi Contoh
+          </button>
+          <button class="btn btn-rekon-ghost" onclick="prosesRekonInput()" style="font-size: 9px;padding:6px 14px;">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Proses REKON
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -345,6 +372,11 @@
         </thead>
         <tbody id="rekon_tbody"></tbody>
       </table>
+    </div>
+    <div class="rf-footer">
+      <i class="fa-solid fa-circle-info" style="margin-right:6px;color:var(--brand);"></i>
+      <span><b>Format input DRM / REKON:</b> designator <b>⇥</b> jasa <b>⇥</b> material <b>⇥</b> volume <b>⇥</b> satuan.
+      Contoh: <code>J-CO-OF ⇥ ⇥ 32.150 ⇥ 727 ⇥ Core</code> — dua Tab berturut-turut berarti kolom jasa kosong.</span>
     </div>
   </div>
 
@@ -572,6 +604,7 @@ let selectedLokasi = null;
 let allLokasi   = [];
 let lokasiDdOpen = false;
 let lastParseReport = null;
+let lastRekonReport = null;
 
 // ══════════════════════════════════════════════════════════════
 //  HELPERS FORMAT
@@ -781,28 +814,128 @@ function bersihkanExcel() {
 // ══════════════════════════════════════════════════════════════
 //  PARSE REKON PASTE — sama format, baca jasa+material+volume
 // ══════════════════════════════════════════════════════════════
+// Contoh siap pakai — tombol "Isi Contoh" memasukkan tab asli, bukan spasi.
+const CONTOH_DRM = 'M-DC-OF-SM-144D\t42.500\t\t272\tMtr\n'
+  + 'J-CO-OF\t\t32.150\t727\tCore\n'
+  + 'M-PROT-SLV\t750\t\t480\tPcs';
+const CONTOH_REKON = 'M-DC-OF-SM-144D\t42.500\t\t290\tMtr\n'
+  + 'J-CO-OF\t\t32.150\t700\tCore\n'
+  + 'M-PROT-SLV\t750\t\t495\tPcs';
+
+// ══════════════════════════════════════════════════════════════
+//  PARSE DRM / REKON
+//  designator ⇥ jasa ⇥ material ⇥ volume ⇥ satuan
+//  Kolom kosong tetap harus ada (dua tab berturut-turut).
+//  Memakai petaKolom yang sama dengan RAB agar format 5/6 kolom
+//  dan baris header kolom dikenali konsisten.
+// ══════════════════════════════════════════════════════════════
 function parseRekonPaste(text) {
   const result = [];
-  text.split('\n').forEach(line => {
-    line = line.trim();
-    if (!line) return;
-    const cols  = line.split('\t');
-    const des   = (cols[0] || '').trim();
-    if (!des || des.toLowerCase() === 'designator') return;
+  const laporan = {
+    baris: 0, valid: 0, duplikat: 0, dilewati: [], tanpaTab: 0,
+    totalJasa: 0, totalMaterial: 0, totalVolume: 0
+  };
+  let petakan = null;
 
-    const jasa     = parseNum(cols[1] || '0');
-    const material = parseNum(cols[2] || '0');
-    const volume   = parseNum(cols[3] || '0');
-    const satuan   = (cols[4] || '').trim();
+  String(text || '').split(/\r?\n/).forEach((line, nomor) => {
+    if (!line.trim()) return;
+    laporan.baris++;
 
-    const exist = result.find(r => r.designator.toUpperCase() === des.toUpperCase());
+    let cols = line.split('\t').map(c => c.trim());
+    if (cols.length === 1) {
+      // Spasi bukan pemisah yang valid — jangan menebak kolomnya.
+      laporan.tanpaTab++;
+      laporan.dilewati.push({ baris: nomor + 1, teks: line.trim().slice(0, 60) });
+      return;
+    }
+    if (!petakan) petakan = petaKolom(cols);
+
+    const desRaw = cols[petakan.designator >= 0 ? petakan.designator : 0] || '';
+    const des = normDes(desRaw);
+    if (/^(designator|no|nomor|item|uraian|#)$/i.test(des)) {
+      petakan = petaKolom(cols);
+      return;
+    }
+    if (!des) return;
+
+    if (!isDesKode(des)) {
+      laporan.dilewati.push({ baris: nomor + 1, teks: desRaw.slice(0, 60) });
+      return;
+    }
+
+    const ambil = (k) => (petakan[k] >= 0 ? (cols[petakan[k]] || '') : '');
+    const jasa     = parseNum(ambil('jasa'));
+    const material = parseNum(ambil('material'));
+    const volume   = parseNum(ambil('volume'));
+    const satuan   = ambil('satuan');
+
+    if (jasa < 0 || material < 0 || volume < 0) {
+      laporan.dilewati.push({ baris: nomor + 1, teks: des + ' (nilai negatif)' });
+      return;
+    }
+
+    const exist = result.find(r => r.designator === des);
     if (exist) {
-      exist.volume   += volume;
+      laporan.duplikat++;
+      exist.volume += volume;
+      if (!exist.jasa && jasa) exist.jasa = jasa;
+      if (!exist.material && material) exist.material = material;
+      if (!exist.satuan && satuan) exist.satuan = satuan;
     } else {
       result.push({ designator: des, jasa, material, volume, satuan });
+      laporan.valid++;
     }
+    laporan.totalJasa += jasa;
+    laporan.totalMaterial += material;
+    laporan.totalVolume += volume;
   });
+
+  lastRekonReport = laporan;
   return result;
+}
+
+// Validasi langsung saat user mengetik/menempel di panel DRM/REKON.
+function previewRekon(text, tipe) {
+  const box = document.getElementById(tipe + '_validasi');
+  const countEl = document.getElementById(tipe + '_count');
+  if (!box) return;
+
+  if (!text || !text.trim()) {
+    box.innerHTML = '';
+    if (countEl) countEl.textContent = '0 item';
+    return;
+  }
+
+  const items = parseRekonPaste(text);
+  const r = lastRekonReport || {};
+  if (countEl) countEl.textContent = items.length + ' item';
+
+  let html = '';
+  if (items.length) {
+    html += '<span class="v-chip v-ok"><i class="fa-solid fa-circle-check"></i> ' + items.length + ' item valid</span>';
+    html += '<span class="v-chip">Jasa <b>' + fmtRp(r.totalJasa) + '</b></span>';
+    html += '<span class="v-chip">Material <b>' + fmtRp(r.totalMaterial) + '</b></span>';
+    html += '<span class="v-chip">Volume <b>' + fmtNum(r.totalVolume) + '</b></span>';
+  }
+  if (r.duplikat) html += '<span class="v-chip v-warn">' + r.duplikat + ' duplikat digabung</span>';
+  if (r.tanpaTab) {
+    html += '<span class="v-chip v-err">' + r.tanpaTab + ' baris tanpa Tab — pakai Tab dari Excel</span>';
+  } else if (r.dilewati && r.dilewati.length) {
+    html += '<span class="v-chip v-err">' + r.dilewati.length + ' baris tidak dikenali</span>';
+  }
+  box.innerHTML = html;
+}
+
+function isiContohRekon(tipe) {
+  const id = (tipe === 'drm') ? 'drm_input' : 'rekon_input';
+  const el = document.getElementById(id);
+  if (!el) return;
+  const contoh = (tipe === 'drm') ? CONTOH_DRM : CONTOH_REKON;
+  el.value = contoh;
+  previewRekon(contoh, tipe);
+  el.focus();
+  const nama = (tipe === 'drm') ? 'DRM' : 'REKON';
+  showToast('info', 'Contoh ' + nama + ' dimuat. Klik "Proses ' + nama + '".');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1259,17 +1392,43 @@ function setMode(mode) {
 //  REKON — PROSES INPUT
 // ══════════════════════════════════════════════════════════════
 function prosesDRM() {
-  drmData = parseRekonPaste(document.getElementById('drm_input').value);
-  document.getElementById('drm_count').textContent = drmData.length + ' item';
-  if (!drmData.length) showToast('error','Tidak ada data DRM valid!');
-  else showToast('success', drmData.length + ' item DRM diparsing.');
+  const el = document.getElementById('drm_input');
+  if (!el.value.trim()) {
+    drmData = [];
+    previewRekon('', 'drm');
+    showToast('error', 'Textarea masih kosong — contoh di atas hanya petunjuk. Klik "Isi Contoh" atau paste data dari Excel.');
+    return;
+  }
+  drmData = parseRekonPaste(el.value);
+  previewRekon(el.value, 'drm');
+  const r = lastRekonReport || {};
+  if (!drmData.length) {
+    showToast('error', 'Tidak ada data DRM valid. Format: designator ⇥ jasa ⇥ material ⇥ volume ⇥ satuan (dipisah Tab).');
+    return;
+  }
+  let pesan = drmData.length + ' item DRM diparsing.';
+  if (r.tanpaTab) pesan += ' ' + r.tanpaTab + ' baris tanpa Tab dilewati.';
+  showToast('success', pesan);
 }
 
 function prosesRekonInput() {
-  rekonData = parseRekonPaste(document.getElementById('rekon_input').value);
-  document.getElementById('rekon_count').textContent = rekonData.length + ' item';
-  if (!rekonData.length) showToast('error','Tidak ada data REKON valid!');
-  else showToast('success', rekonData.length + ' item REKON diparsing.');
+  const el = document.getElementById('rekon_input');
+  if (!el.value.trim()) {
+    rekonData = [];
+    previewRekon('', 'rekon');
+    showToast('error', 'Textarea masih kosong — contoh di atas hanya petunjuk. Klik "Isi Contoh" atau paste data dari Excel.');
+    return;
+  }
+  rekonData = parseRekonPaste(el.value);
+  previewRekon(el.value, 'rekon');
+  const r = lastRekonReport || {};
+  if (!rekonData.length) {
+    showToast('error', 'Tidak ada data REKON valid. Format: designator ⇥ jasa ⇥ material ⇥ volume ⇥ satuan (dipisah Tab).');
+    return;
+  }
+  let pesan = rekonData.length + ' item REKON diparsing.';
+  if (r.tanpaTab) pesan += ' ' + r.tanpaTab + ' baris tanpa Tab dilewati.';
+  showToast('success', pesan);
 }
 
 // ══════════════════════════════════════════════════════════════
