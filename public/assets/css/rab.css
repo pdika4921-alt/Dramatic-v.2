@@ -490,43 +490,45 @@ textarea.input-area::placeholder { color: var(--text-faint); }
 
 /* Tabel editable hasil upload DRM/REKON (selalu sinkron ke textarea) */
 .rekon-tabel-wrap {
-  margin-top: 8px;
+  margin-top: 5px;
   border: 1.5px solid var(--border-2);
-  border-radius: 9px;
+  border-radius: 7px;
   background: var(--bg-panel);
   overflow: hidden;
 }
 .rt-head {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 8px; padding: 6px 9px;
+  gap: 8px; padding: 3px 7px;
   background: var(--bg-strip);
   border-bottom: 1px solid var(--border);
-  font-size: 7.5px; font-weight: 700; letter-spacing: .02em;
+  font-size: 7px; font-weight: 700; letter-spacing: .02em;
   color: var(--brand-fg);
 }
-.rt-scroll { max-height: 260px; overflow: auto; }
+/* Tombol di header tabel jangan mewarisi min-height .btn global (44px) */
+.rt-head .btn { min-height: 0; height: auto; line-height: 1.2; }
+.rt-scroll { max-height: 200px; overflow: auto; }
 table.rt-table {
   width: 100%; border-collapse: collapse;
-  font-family: var(--font-mono); font-size: 8px;
+  font-family: var(--font-mono); font-size: 7.5px; line-height: 1.15;
 }
 table.rt-table th {
   position: sticky; top: 0; z-index: 1;
   text-align: left; white-space: nowrap;
-  padding: 5px 6px;
+  padding: 2px 4px;
   background: var(--bg-strip); color: var(--text-sub);
-  font-size: 7px; font-weight: 700; text-transform: uppercase;
+  font-size: 6.5px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .03em; border-bottom: 1px solid var(--border-2);
 }
 table.rt-table td {
-  padding: 2px 4px;
+  padding: 0 3px;
   border-bottom: 1px solid var(--border);
 }
 table.rt-table tbody tr:hover { background: var(--bg-strip); }
 table.rt-table input {
   width: 100%; box-sizing: border-box;
   background: transparent; border: 1px solid transparent;
-  border-radius: 4px; padding: 3px 4px;
-  font-family: var(--font-mono); font-size: 8px;
+  border-radius: 3px; padding: 1px 3px;
+  font-family: var(--font-mono); font-size: 7.5px; line-height: 1.15;
   color: var(--text-main); outline: none;
 }
 table.rt-table input:hover { border-color: var(--border); }
@@ -534,8 +536,9 @@ table.rt-table input:focus { border-color: var(--brand); background: var(--bg-in
 table.rt-table input.rt-des { font-weight: 700; color: var(--brand-fg); }
 .rt-hapus {
   background: transparent; border: 0; cursor: pointer;
-  color: var(--text-faint); font-size: 8px;
-  padding: 3px 5px; border-radius: 4px;
+  color: var(--text-faint); font-size: 7px;
+  padding: 1px 3px; border-radius: 3px;
+  min-height: 0; height: auto; line-height: 1.2;
 }
 .rt-hapus:hover { color: var(--c-min); background: var(--bg-input); }
 .rf-footer {
