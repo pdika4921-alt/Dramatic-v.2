@@ -95,6 +95,9 @@
       <button class="btn btn-purple" onclick="bukaModalBATK()">
         <i class="fa-solid fa-file-contract" style="font-size: 9px;"></i> Generate BA Tambah Kurang
       </button>
+      <button class="btn btn-green" onclick="generateBoqExcel()">
+        <i class="fa-solid fa-file-excel" style="font-size: 9px;"></i> Generate Excel BOQ
+      </button>
       <button class="btn btn-green" onclick="simpanRekon()">
         <i class="fa-solid fa-floppy-disk" style="font-size: 9px;"></i> Simpan Rekon
       </button>
@@ -1936,6 +1939,63 @@ async function simpanRekon() {
     if (data.ok) showToast('success', 'Rekon berhasil disimpan!');
     else showToast('error', data.error || 'Gagal simpan');
   } catch(e) { showToast('error', 'Gangguan koneksi.'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  GENERATE EXCEL BOQ TAMBAH KURANG — HANYA BOQ
+//  Template BOQ TAMKUR.xlsx diisi K=DRM, L=REKON lalu di-download.
+//  Fungsi generateBA() sengaja tidak diubah.
+// ══════════════════════════════════════════════════════════════
+async function generateBoqExcel() {
+  if (!selectedLokasi) { showToast('error','Pilih lokasi dulu!'); return; }
+  if (!rekonResult.length) { showToast('error','Hitung rekonsiliasi dulu!'); return; }
+
+  try {
+    showToast('info', 'Menyimpan rekon & menyusun BOQ...');
+
+    // Simpan dulu supaya server membaca angka yang sedang terlihat di layar.
+    let hargaItems = rabItems;
+    if (!hargaItems.length) {
+      const r = await fetch(`/api/rab/${selectedLokasi.id}`);
+      if (r.ok) hargaItems = await r.json();
+    }
+    await muatHargaBoqTamkur();
+    const priceMap = Object.assign({}, buildPriceMap(hargaItems), boqHargaMap);
+
+    const itemsToSave = rekonResult.map(r => ({
+      designator:   r.designator,
+      drm:          r.drm,
+      rekon:        r.rekon,
+      tambah:       r.tambah,
+      kurang:       r.kurang,
+      satuan:       r.satuan,
+      harga_satuan: priceMap[r.designator.toUpperCase().trim()] || r.harga_satuan || 0,
+    }));
+
+    const saveRes = await fetch(`/api/rekon/${selectedLokasi.id}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: itemsToSave }),
+    });
+    if (!saveRes.ok) throw new Error('Gagal simpan rekon ke server');
+
+    const resp = await fetch(`/api/generate/boq_tambahkurang/${selectedLokasi.id}`);
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.message || 'Gagal generate Excel BOQ');
+    }
+
+    const blob = await resp.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = 'BOQ_TAMBAH_KURANG_' +
+      String(selectedLokasi.nama_lokasi || 'lokasi').replace(/\s+/g, '_') + '.xlsx';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('success', 'Excel BOQ Tambah Kurang berhasil di-download!');
+  } catch (err) {
+    showToast('error', err.message);
+  }
 }
 
 // ══════════════════════════════════════════════════════════════

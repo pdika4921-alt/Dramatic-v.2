@@ -190,6 +190,159 @@ function tulisBoqTamkur(rows, opsi) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  BUILDER BARU: BOQ Tambah Kurang → Buffer .xlsx (tanpa menimpa template)
+//  Fungsi lama tulisBoqTamkur() sengaja tidak diubah: generator BA masih
+//  memakai itu. Fitur download Excel memakai fungsi-fungsi di bawah ini.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Isi nilai cache (<v>) pada sel rumus, rumusnya tetap dipertahankan. */
+function isiCacheRumus(sheetXml, ref, nilai) {
+  const re = new RegExp('<c\\b[^>]*\\br="' + ref + '"[^>]*>([\\s\\S]*?)<\\/c>');
+  return sheetXml.replace(re, utuh => {
+    if (!/<f\b/.test(utuh)) return utuh;
+    if (/<v>[\s\S]*?<\/v>/.test(utuh)) {
+      return utuh.replace(/<v>[\s\S]*?<\/v>/, '<v>' + enamBelas(nilai) + '</v>');
+    }
+    return utuh.replace(/<\/c>$/, '<v>' + enamBelas(nilai) + '</v></c>');
+  });
+}
+
+// Versi aman khusus builder download. Helper lama hapusCell() punya
+// kasus tepi: sel mandiri <c r="K6"/> tersalah tangkap sampai </c>
+// berikutnya sehingga sel M ikut hilang. Fungsi lama sengaja dibiarkan.
+function hapusCellAman(inner, kolom, baris) {
+  const ref = kolom + baris;
+  const reSelf = new RegExp('<c\\b[^>]*\\br="' + ref + '"[^>]*\\/>', 'g');
+  const reFull = new RegExp('<c\\b[^>]*\\br="' + ref + '"[^>]*>[\\s\\S]*?<\\/c>', 'g');
+  return inner.replace(reSelf, '').replace(reFull, '');
+}
+
+function ambilGaya(inner, kolom, baris) {
+  const ref = kolom + baris;
+  const re = new RegExp('<c\\b[^>]*\\br="' + ref + '"([^>]*)>');
+  const m = re.exec(inner);
+  if (!m) return '';
+  const s = /\bs="(\d+)"/.exec(m[1]);
+  return s ? ' s="' + s[1] + '"' : '';
+}
+
+function tulisPasanganAman(sheetXml, baris, drm, rekon) {
+  const reRow = /<row\b([^>]*)>([\s\S]*?)<\/row>/g;
+  let ketemu = false;
+  const out = sheetXml.replace(reRow, (utuh, atrib, inner) => {
+    const r = /\br="(\d+)"/.exec(atrib || '');
+    if (!r || Number(r[1]) !== baris) return utuh;
+    ketemu = true;
+    const gayaK = ambilGaya(inner, 'K', baris);
+    const gayaL = ambilGaya(inner, 'L', baris);
+    let baru = hapusCellAman(hapusCellAman(inner, 'K', baris), 'L', baris);
+    const sel = '<c r="K' + baris + '"' + gayaK + '><v>' + Number(drm || 0) + '</v></c>'
+      + '<c r="L' + baris + '"' + gayaL + '><v>' + Number(rekon || 0) + '</v></c>';
+    const mSesudah = /(<c\b[^>]*\br="M\d+")/.exec(baru);
+    baru = mSesudah ? baru.replace(mSesudah[0], sel + mSesudah[0]) : baru + sel;
+    return '<row' + atrib + '>' + baru + '</row>';
+  });
+  return { xml: out, ketemu };
+}
+
+/** Segarkan kolom turunan I/J/M/N sesuai K/L yang baru ditulis. */
+function segarkanTurunan(sheetXml, baris, drm, rekon) {
+  const d = Number(drm) || 0;
+  const r = Number(rekon) || 0;
+  sheetXml = isiCacheRumus(sheetXml, 'I' + baris, r); // VOLUME REKON
+  sheetXml = isiCacheRumus(sheetXml, 'J' + baris, d); // VOLUME DRM
+  sheetXml = isiCacheRumus(sheetXml, 'M' + baris, Math.max(r - d, 0)); // TAMBAH
+  sheetXml = isiCacheRumus(sheetXml, 'N' + baris, Math.max(d - r, 0)); // KURANG
+  return sheetXml;
+}
+
+/** Nama sheet + paksa Excel menghitung ulang (dipakai builder download). */
+function siapSheetBoq(zip, sheetPath, sheetXml) {
+  if (zip.file('xl/workbook.xml')) {
+    let wb = zip.file('xl/workbook.xml').asText();
+    wb = wb.split('BOQ AMD4 PAKET 5').join(NAMA_SHEET);
+    if (/<calcPr\b/.test(wb)) {
+      wb = wb.replace(/<calcPr\b([^>]*)\/?>/, (utuh, a) => {
+        if (/fullCalcOnLoad=/.test(a)) return utuh;
+        return '<calcPr' + a.replace(/\/\s*$/, '') + ' fullCalcOnLoad="1"/>';
+      });
+    } else {
+      wb = wb.replace('</workbook>', '<calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>');
+    }
+    zip.file('xl/workbook.xml', wb);
+  }
+  zip.file(sheetPath, sheetXml);
+  zip.remove('xl/calcChain.xml');
+}
+
+/**
+ * bangunBoqTamkur(rows)
+ * Sama seperti tulisBoqTamkur, tetapi template tidak ditimpa: hasil
+ * dikembalikan sebagai Buffer .xlsx siap di-download.
+ * rows: [{ designator, drm, rekon }, ...]
+ * Return: { ok, ditulis, dilewati, alasan, buffer }
+ */
+function bangunBoqTamkur(rows) {
+  const hasil = { ok: false, ditulis: 0, dilewati: [], alasan: '', buffer: null };
+
+  if (!fs.existsSync(PATH_XLSX)) {
+    hasil.alasan = 'templates/BOQ TAMKUR.xlsx tidak ditemukan';
+    return hasil;
+  }
+  if (!Array.isArray(rows) || !rows.length) {
+    hasil.alasan = 'tidak ada baris rekon untuk ditulis';
+    return hasil;
+  }
+
+  try {
+    const zip = new PizZip(fs.readFileSync(PATH_XLSX)); // read-only
+    const shared = bacaShared(zip);
+    const sheetPath = zip.file('xl/worksheets/sheet1.xml')
+      ? 'xl/worksheets/sheet1.xml'
+      : (Object.keys(zip.files).find(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)) || '');
+    if (!sheetPath) {
+      hasil.alasan = 'worksheet tidak ditemukan di file Excel';
+      return hasil;
+    }
+
+    let sheetXml = zip.file(sheetPath).asText();
+    const indeks = indeksSheet(sheetXml, shared);
+    const terpakai = {};
+
+    rows.forEach(item => {
+      const baris = cariBaris(indeks, item && item.designator);
+      if (!baris) {
+        hasil.dilewati.push(String((item && item.designator) || '-'));
+        return;
+      }
+      const drm  = Number(item.drm)  || 0;
+      const rekon = Number(item.rekon) || 0;
+      const t = tulisPasanganAman(sheetXml, baris, enamBelas(drm), enamBelas(rekon));
+      if (!t.ketemu) {
+        hasil.dilewati.push(String(item.designator) + ' (baris ' + baris + ' tidak ditemukan)');
+        return;
+      }
+      sheetXml = t.xml;
+      terpakai[baris] = { baris, drm, rekon };
+      hasil.ditulis++;
+    });
+
+    Object.keys(terpakai).forEach(k => {
+      const x = terpakai[k];
+      sheetXml = segarkanTurunan(sheetXml, x.baris, x.drm, x.rekon);
+    });
+
+    siapSheetBoq(zip, sheetPath, sheetXml);
+    hasil.buffer = zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+    hasil.ok = true;
+    return hasil;
+  } catch (e) {
+    hasil.alasan = e.message;
+    return hasil;
+  }
+}
+
 /**
  * bacaHargaBoqTamkur()
  * Harga satuan diambil dari templates/BOQ TAMKUR.xlsx:
@@ -236,6 +389,6 @@ function bacaHargaBoqTamkur() {
 }
 
 module.exports = {
-  tulisBoqTamkur, bacaHargaBoqTamkur,
+  tulisBoqTamkur, bacaHargaBoqTamkur, bangunBoqTamkur,
   PATH_XLSX, NAMA_SHEET, bacaShared, lepasTeks, indeksSheet, cariBaris
 };

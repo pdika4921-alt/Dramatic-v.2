@@ -6105,6 +6105,49 @@ console.log('[BA-TK] Summary →',
   }
 });
 // ─────────────────────────────────────────────────────────────────────────────
+// [API] GENERATE EXCEL BOQ TAMBAH KURANG — HANYA BOQ
+// Sumber : templates/BOQ TAMKUR.xlsx (template tidak ditimpa)
+// Isi    : K = DRM, L = REKON dari rab_rekon; I/J/M/N dihitung ulang.
+// ─────────────────────────────────────────────────────────────────────────────
+const { bangunBoqTamkur } = require('./services/boqTamkur');
+
+app.get('/api/generate/boq_tambahkurang/:lokasi_id', checkAuth('admin'), async (req, res) => {
+  try {
+    const { lokasi_id } = req.params;
+    const lokasiData = await db.get('SELECT nama_lokasi FROM lokasi WHERE id = ?', [lokasi_id]);
+    if (!lokasiData) return res.status(404).json({ message: 'Data lokasi tidak ditemukan.' });
+
+    const rekonItems = await db.all(
+      'SELECT designator, drm, rekon FROM rab_rekon WHERE lokasi_id = ?', [lokasi_id]
+    );
+    if (!rekonItems.length) {
+      return res.status(400).json({ message: 'Belum ada data rekon tersimpan. Hitung & Simpan Rekon dulu.' });
+    }
+
+    const hasil = bangunBoqTamkur(rekonItems.map(it => ({
+      designator: it.designator,
+      drm:  parseFloat(it.drm)   || 0,
+      rekon: parseFloat(it.rekon) || 0,
+    })));
+
+    if (!hasil.ok || !hasil.buffer) {
+      return res.status(500).json({ message: 'Gagal menyusun BOQ: ' + (hasil.alasan || 'tidak diketahui') });
+    }
+
+    const nlc = String(lokasiData.nama_lokasi || 'lokasi').replace(/[^a-zA-Z0-9_-]/g, '_');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="BOQ_TAMBAH_KURANG_' + nlc + '.xlsx"');
+    res.send(hasil.buffer);
+
+    console.log('[BOQ TAMKUR] download Excel: lokasi=' + lokasi_id +
+      ', ditulis=' + hasil.ditulis + ', dilewati=' + hasil.dilewati.length +
+      (hasil.dilewati.length ? ' (' + hasil.dilewati.slice(0, 3).join(', ') + ')' : ''));
+  } catch (err) {
+    console.error('Error generate BOQ Tambah Kurang:', err);
+    res.status(500).json({ message: 'Gagal generate Excel BOQ Tambah Kurang.', detail: err.message });
+  }
+});
+// ─────────────────────────────────────────────────────────────────────────────
 // [API] Generate Dokumen — mapping jenis → template
 // ─────────────────────────────────────────────────────────────────────────────
 const TEMPLATE_MAP = {
