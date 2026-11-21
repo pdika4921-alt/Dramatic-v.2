@@ -10,6 +10,12 @@
    Kolom harga (G/H) TIDAK dibaca — harga tetap memakai BOQ TAMKUR.
    Contoh struktur: BOQ REKON EBONI  METLAND.xlsx (sheet "Paket5",
    header baris 11, data mulai baris 12, REKON di kolom K).
+
+   Format DRM alternatif (mis. RELOKASI BATU TULIS -DRM.xlsx):
+   sheet "RAB FFD FDM", header baris 6 — DESIGNATOR di kolom B (satu
+   kolom untuk M-/J-), SATUAN di D, VOL di G. Parser mencari berdasarkan
+   teks header, bukan posisi kolom tetap, jadi template lain dengan
+   penempatan berbeda tetap terbaca.
    ===================================================================== */
 'use strict';
 
@@ -63,11 +69,14 @@ function temukanHeader(baris, mode) {
   let barisDes = 0, barisNilai = 0;
 
   // REKON → kolom ber-header "REKON" (mis. K11 pada BOQ REKON EBONI).
-  // DRM   → kolom ber-header "TOTAL VOLUME" (mis. I8 pada BOQ RELOKASI).
+  // DRM   → kolom ber-header "TOTAL VOLUME" (mis. I8 pada BOQ RELOKASI)
+  //          atau "VOL" (mis. G6 pada RELOKASI BATU TULIS -DRM.xlsx).
   // Header designator dan header nilai boleh berada di baris berbeda.
-  const cariNilai = (s) => mode === 'drm'
-    ? (s === 'TOTAL VOLUME' || s.indexOf('TOTAL VOLUME') >= 0)
-    : (s === 'REKON' || s.indexOf('VOLUME REKON') >= 0);
+  const cariNilai = (s) => {
+    if (mode !== 'drm') return s === 'REKON' || s.indexOf('VOLUME REKON') >= 0;
+    return s === 'TOTAL VOLUME' || s.indexOf('TOTAL VOLUME') >= 0 ||
+           s === 'TOTAL VOL' || s === 'VOL' || s === 'VOL.' || s === 'VOLUME';
+  };
 
   for (const b of baris) {
     for (const [kol, v] of Object.entries(b.cells)) {
@@ -83,6 +92,38 @@ function temukanHeader(baris, mode) {
     return {
       nomor: Math.max(barisDes, barisNilai),
       material, jasa, rekon: nilai,
+      satuan: satuan || 'F'
+    };
+  }
+
+  // Format alternatif: satu kolom "DESIGNATOR" (mis. B) berisi M-/J-,
+  // total volume di kolom "VOL"/"TOTAL VOLUME" (mis. G). Contoh:
+  // RELOKASI BATU TULIS -DRM.xlsx. Fallback ini HANYA dipakai bila header
+  // DESIGNATOR MATERIAL + DESIGNATOR JASA tidak ditemukan, jadi format
+  // lama (Metland) tetap menjadi prioritas.
+  let desTunggal = null;
+  for (const b of baris) {
+    for (const [kol, v] of Object.entries(b.cells)) {
+      if (teks(v).toUpperCase() === 'DESIGNATOR') {
+        desTunggal = kol; barisDes = b.nomor; break;
+      }
+    }
+    if (desTunggal) break;
+  }
+  if (!desTunggal) {
+    for (const b of baris) {
+      for (const [kol, v] of Object.entries(b.cells)) {
+        if (teks(v).toUpperCase().indexOf('DESIGNATOR') >= 0) {
+          desTunggal = kol; barisDes = b.nomor; break;
+        }
+      }
+      if (desTunggal) break;
+    }
+  }
+  if (desTunggal && nilai) {
+    return {
+      nomor: Math.max(barisDes, barisNilai),
+      material: desTunggal, jasa: desTunggal, rekon: nilai,
       satuan: satuan || 'F'
     };
   }
