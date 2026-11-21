@@ -15,6 +15,8 @@ const PizZip = require('pizzip');
 const Docxtemplater = require('docxtemplater');
 const ImageModule = require('docxtemplater-image-module-free');
 const rekapOpmService = require('./services/rekapOpm');
+// Sinkronisasi nilai BA Tambah Kurang ke BOQ TAMKUR.xlsx (tidak mengubah hitungan)
+const { tulisBoqTamkur } = require('./services/boqTamkur');
 // Modul laporan MITRATEL berdiri sendiri; tidak mengubah alur dokumen lama.
 const mitratelService = require('./services/mitratel');
 const sizeOfMod = require('image-size');
@@ -5941,6 +5943,20 @@ rekonItems.forEach((item, i) => {
     ket,
   });
 });
+
+    // ── Tulis DRM/REKON ke BOQ TAMKUR.xlsx ──────────────────────────────
+    // Memakai angka mentah dari database. Kegagalan sinkronisasi TIDAK
+    // mengubah perhitungan dan tidak menggagalkan unduhan BA.
+    try {
+      const sinkron = tulisBoqTamkur(rekonItems.map(it => ({
+        designator: it.designator,
+        drm:  parseFloat(it.vol_drm)   || 0,
+        rekon: parseFloat(it.vol_rekon) || 0
+      })));
+      console.log('[BOQ TAMKUR] sinkronisasi:', JSON.stringify(sinkron));
+    } catch (e) {
+      console.warn('[BOQ TAMKUR] gagal sinkronisasi (diabaikan):', e.message);
+    }
 
     const formatRupiah = (n) => typeof n === 'number' ? n.toLocaleString('id-ID') : '0';
 // Nilai Deviasi = Rekon - DRM (negatif jika ada pekerjaan kurang)
