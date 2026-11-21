@@ -613,6 +613,22 @@ let allLokasi   = [];
 let lokasiDdOpen = false;
 let lastParseReport = null;
 let lastRekonReport = null;
+let boqHargaMap = {};   // harga satuan dari templates/BOQ TAMKUR.xlsx
+
+// Muat sekali harga BOQ TAMKUR: M- → kolom G (material), J- → kolom H (jasa).
+async function muatHargaBoqTamkur() {
+  if (Object.keys(boqHargaMap).length) return boqHargaMap;
+  try {
+    const r = await fetch('/api/boq-tamkur/harga', { credentials: 'same-origin' });
+    const j = await r.json();
+    if (j && j.success && j.harga) boqHargaMap = j.harga;
+  } catch (e) { console.warn('Gagal memuat harga BOQ TAMKUR:', e); }
+  return boqHargaMap;
+}
+function hargaBoq(des) {
+  if (!des) return 0;
+  return Number(boqHargaMap[String(des).toUpperCase().trim()] || 0);
+}
 
 // ══════════════════════════════════════════════════════════════
 //  HELPERS FORMAT
@@ -973,13 +989,16 @@ async function uploadRekonExcel(input) {
     }
 
     // Format textarea REKON: designator ⇥ jasa ⇥ material ⇥ volume ⇥ satuan.
-    // Baris header disertakan supaya petaKolom memetakan kolom dari nama,
-    // tidak menebak dari isi satuan (bisa kosong/aneh di file Excel).
-    // Kolom jasa/material sengaja dikosongkan — harga tetap dari RAB/BA TAMKUR.
+    // Baris header disertakan supaya petaKolom memetakan kolom dari nama.
+    // Harga jasa/material diambil dari BOQ TAMKUR (M- → G, J- → H).
+    await muatHargaBoqTamkur();
     const baris = ['Designator\tJasa\tMaterial\tVolume\tSatuan']
-      .concat((j.items || []).map(it =>
-        [it.designator, '', '', it.rekon, it.satuan || ''].join('\t')
-      )).join('\n');
+      .concat((j.items || []).map(it => {
+        const h = hargaBoq(it.designator);
+        const mat = /^M-/.test(it.designator) ? h : 0;
+        const jas = /^J-/.test(it.designator) ? h : 0;
+        return [it.designator, jas, mat, it.rekon, it.satuan || ''].join('\t');
+      })).join('\n');
     document.getElementById('rekon_input').value = baris;
     previewRekon(baris, 'rekon');
 
@@ -1024,11 +1043,15 @@ async function uploadDrmExcel(input) {
     }
 
     // Sama dengan REKON: designator ⇥ jasa ⇥ material ⇥ volume ⇥ satuan.
-    // Header disertakan agar petaKolom memetakan dari nama kolom.
+    // Harga jasa/material diambil dari BOQ TAMKUR (M- → G, J- → H).
+    await muatHargaBoqTamkur();
     const baris = ['Designator\tJasa\tMaterial\tVolume\tSatuan']
-      .concat((j.items || []).map(it =>
-        [it.designator, '', '', it.rekon, it.satuan || ''].join('\t')
-      )).join('\n');
+      .concat((j.items || []).map(it => {
+        const h = hargaBoq(it.designator);
+        const mat = /^M-/.test(it.designator) ? h : 0;
+        const jas = /^J-/.test(it.designator) ? h : 0;
+        return [it.designator, jas, mat, it.rekon, it.satuan || ''].join('\t');
+      })).join('\n');
     document.getElementById('drm_input').value = baris;
     previewRekon(baris, 'drm');
 
@@ -1578,9 +1601,11 @@ async function hitungRekonsiliasi() {
     }
   }
 
-  // ── 2. Build price map: designator → jasa+material (harga satuan) ──
-  const priceMap = buildPriceMap(hargaItems);
-  console.log('[REKON] priceMap:', priceMap);
+  // ── 2. Harga satuan: BOQ TAMKUR jadi sumber utama, RAB sebagai cadangan ──
+  // M- mengambil harga material (G), J- mengambil harga jasa (H).
+  await muatHargaBoqTamkur();
+  const priceMap = Object.assign({}, buildPriceMap(hargaItems), boqHargaMap);
+  console.log('[REKON] priceMap:', Object.keys(priceMap).length, 'designator');
 
   // ── 3. Gabungkan semua designator ──────────────────────────
   const allDes = new Set([
@@ -1630,9 +1655,9 @@ async function hitungRekonsiliasi() {
   renderRekonTable();
   const tanpaHarga = rekonResult.filter(x => x.harga_satuan === 0);
   if (tanpaHarga.length) {
-    showToast('info', tanpaHarga.length + ' designator belum punya harga satuan: ' +
+    showToast('info', tanpaHarga.length + ' designator tidak ditemukan harganya di BOQ TAMKUR/RAB: ' +
       tanpaHarga.slice(0,3).map(x=>x.designator).join(', ') + (tanpaHarga.length > 3 ? ', dst.' : '') +
-      ' — paste harga RAB (kolom jasa/material) agar nominal muncul.');
+      ' — nominal belum dihitung untuk baris ini.');
   } else {
     showToast('success', rekonResult.length + ' designator direkonsiliasi.');
   }
@@ -1746,7 +1771,8 @@ async function simpanRekon() {
       hargaItems = await r.json();
     } catch(e) { hargaItems = []; }
   }
-  const priceMap = buildPriceMap(hargaItems);
+  await muatHargaBoqTamkur();
+  const priceMap = Object.assign({}, buildPriceMap(hargaItems), boqHargaMap);
 
   const itemsToSave = rekonResult.map(r => ({
     designator:   r.designator,
@@ -1855,7 +1881,8 @@ async function generateBA() {
         const r    = await fetch(`/api/rab/${selectedLokasi.id}`);
         hargaItems = await r.json();
       }
-      const priceMap2 = buildPriceMap(hargaItems);
+      await muatHargaBoqTamkur();
+      const priceMap2 = Object.assign({}, buildPriceMap(hargaItems), boqHargaMap);
 
       const itemsWithHarga = rekonResult.map(r => ({
         designator:   r.designator,

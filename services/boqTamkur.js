@@ -52,7 +52,9 @@ function bacaShared(zip) {
 
 function indeksSheet(sheetXml, shared) {
   const indeks = { C: {}, D: {}, B: {} };
-  const reC = /<c\b([^>]*)>([\s\S]*?)<\/c>/g;
+  // Sel kosong bertipe <c r="H8" s="52"/> harus dibaca terpisah,
+  // kalau tidak nilainya bergeser ke kolom sebelumnya.
+  const reC = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
   let m;
   while ((m = reC.exec(sheetXml))) {
     const atrib = m[1] || '';
@@ -62,7 +64,7 @@ function indeksSheet(sheetXml, shared) {
     const kol = /^[A-Z]+/.exec(ref)[0];
     if (!indeks[kol]) continue;
     const baris = Number(/\d+/.exec(ref)[0]);
-    const nilai = norm(lepasTeks(m[1] + ' ' + m[2], shared));
+    const nilai = norm(lepasTeks(atrib + ' ' + (m[2] || ''), shared));
     if (nilai) indeks[kol][nilai] = baris;
   }
   return indeks;
@@ -188,4 +190,52 @@ function tulisBoqTamkur(rows, opsi) {
   }
 }
 
-module.exports = { tulisBoqTamkur, PATH_XLSX, NAMA_SHEET, bacaShared, lepasTeks, indeksSheet, cariBaris };
+/**
+ * bacaHargaBoqTamkur()
+ * Harga satuan diambil dari templates/BOQ TAMKUR.xlsx:
+ *   • designator M- di kolom C → harga material kolom G
+ *   • designator J- di kolom D → harga jasa    kolom H
+ * Return: { "M-...": 7098, "J-...": 2169, ... }
+ */
+function bacaHargaBoqTamkur() {
+  const peta = {};
+  if (!fs.existsSync(PATH_XLSX)) return peta;
+  try {
+    const zip = new PizZip(fs.readFileSync(PATH_XLSX));
+    const shared = bacaShared(zip);
+    const sheetPath = zip.file('xl/worksheets/sheet1.xml')
+      ? 'xl/worksheets/sheet1.xml'
+      : (Object.keys(zip.files).find(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)) || '');
+    if (!sheetPath) return peta;
+    const xml = zip.file(sheetPath).asText();
+
+    const reRow = /<row\b([^>]*)>([\s\S]*?)<\/row>/g;
+    let baris;
+    while ((baris = reRow.exec(xml))) {
+      const cells = {};
+      const reC = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
+      let c;
+      while ((c = reC.exec(baris[2]))) {
+        const ref = /\br="([A-Z]+\d+)"/.exec(c[1] || '');
+        if (!ref) continue;
+        cells[/^[A-Z]+/.exec(ref[1])[0]] = lepasTeks((c[1] || '') + ' ' + (c[2] || ''), shared);
+      }
+      const pasang = (kolDes, kolHar) => {
+        const d = norm(cells[kolDes]);
+        if (!/^[MJ]-/.test(d)) return;
+        const n = Number(String(cells[kolHar] || '').replace(/[^\d.-]/g, ''));
+        peta[d] = isNaN(n) ? 0 : n;
+      };
+      pasang('C', 'G');
+      pasang('D', 'H');
+    }
+  } catch (e) {
+    console.warn('[BOQ TAMKUR] gagal membaca harga:', e.message);
+  }
+  return peta;
+}
+
+module.exports = {
+  tulisBoqTamkur, bacaHargaBoqTamkur,
+  PATH_XLSX, NAMA_SHEET, bacaShared, lepasTeks, indeksSheet, cariBaris
+};

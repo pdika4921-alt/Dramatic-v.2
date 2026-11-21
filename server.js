@@ -16,7 +16,7 @@ const Docxtemplater = require('docxtemplater');
 const ImageModule = require('docxtemplater-image-module-free');
 const rekapOpmService = require('./services/rekapOpm');
 // Sinkronisasi nilai BA Tambah Kurang ke BOQ TAMKUR.xlsx (tidak mengubah hitungan)
-const { tulisBoqTamkur } = require('./services/boqTamkur');
+const { tulisBoqTamkur, bacaHargaBoqTamkur } = require('./services/boqTamkur');
 const { bacaRekonDariExcel, bacaDrmDariExcel } = require('./services/boqRekonUpload');
 // Modul laporan MITRATEL berdiri sendiri; tidak mengubah alur dokumen lama.
 const mitratelService = require('./services/mitratel');
@@ -5834,6 +5834,19 @@ app.delete('/api/users/:id', checkAuth('admin'), checkPengguna, async (req, res)
 });
 
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// [API] HARGA SATUAN DARI BOQ TAMKUR
+// Dipakai DRM/REKON untuk mengalikan volume (M- → G material, J- → H jasa).
+// ─────────────────────────────────────────────────────────────────────────────
+app.get('/api/boq-tamkur/harga', checkAuth('admin'), (req, res) => {
+  try {
+    const harga = bacaHargaBoqTamkur();
+    res.json({ success: true, harga, jumlah: Object.keys(harga).length });
+  } catch (e) {
+    res.status(500).json({ message: 'Gagal membaca harga BOQ TAMKUR.', detail: e.message });
+  }
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // [API] UPLOAD EXCEL REKON
