@@ -5,6 +5,8 @@
      • designator material (awalan M-)  → kolom "Designator Material"
      • designator jasa    (awalan J-)  → kolom "Designator Jasa"
      • nilai REKON                     → kolom ber-header "REKON"
+   Baris dengan nilai 0 TIDAK diambil — tidak ditampilkan di textarea
+   maupun di tabel rekonsiliasi.
    Kolom harga (G/H) TIDAK dibaca — harga tetap memakai BOQ TAMKUR.
    Contoh struktur: BOQ REKON EBONI  METLAND.xlsx (sheet "Paket5",
    header baris 11, data mulai baris 12, REKON di kolom K).
@@ -171,10 +173,19 @@ function bacaRekonDariExcel(buffer, mode) {
         laporan.dilewati++;
         return;
       }
+      const jenis = d.indexOf('M-') === 0 ? 'material' : 'jasa';
+
+      // Nilai 0 tidak diambil sama sekali — jangan memenuhi textarea dan
+      // tabel rekonsiliasi dengan baris yang tidak berubah.
+      // (seen diisi setelahnya supaya baris 0 tidak menghalangi baris
+      //  designator yang sama jika kemudian ada nilainya.)
+      if (rekon === 0) {
+        laporan.tanpaRekon++;
+        return;
+      }
+
       if (seen.has(d)) return;
       seen.add(d);
-      const jenis = d.indexOf('M-') === 0 ? 'material' : 'jasa';
-      if (rekon === 0) laporan.tanpaRekon++;
       items.push({ designator: d, satuan, rekon, jenis });
       laporan[jenis]++;
     });

@@ -856,7 +856,7 @@ const CONTOH_REKON = 'M-DC-OF-SM-144D\t42.500\t\t290\tMtr\n'
 function parseRekonPaste(text) {
   const result = [];
   const laporan = {
-    baris: 0, valid: 0, duplikat: 0, dilewati: [], tanpaTab: 0,
+    baris: 0, valid: 0, duplikat: 0, dilewati: [], tanpaTab: 0, dilewatiNol: 0,
     totalJasa: 0, totalMaterial: 0, totalVolume: 0
   };
   let petakan = null;
@@ -895,6 +895,12 @@ function parseRekonPaste(text) {
 
     if (jasa < 0 || material < 0 || volume < 0) {
       laporan.dilewati.push({ baris: nomor + 1, teks: des + ' (nilai negatif)' });
+      return;
+    }
+
+    // Baris dengan nilai volume 0 tidak diambil dan tidak ditampilkan.
+    if (volume === 0) {
+      laporan.dilewatiNol++;
       return;
     }
 
@@ -941,6 +947,7 @@ function previewRekon(text, tipe) {
     html += '<span class="v-chip">Material <b>' + fmtRp(r.totalMaterial) + '</b></span>';
     html += '<span class="v-chip">Volume <b>' + fmtNum(r.totalVolume) + '</b></span>';
   }
+  if (r.dilewatiNol) html += '<span class="v-chip v-warn">' + r.dilewatiNol + ' baris nilai 0 diabaikan</span>';
   if (r.duplikat) html += '<span class="v-chip v-warn">' + r.duplikat + ' duplikat digabung</span>';
   if (r.tanpaTab) {
     html += '<span class="v-chip v-err">' + r.tanpaTab + ' baris tanpa Tab — pakai Tab dari Excel</span>';
@@ -1007,7 +1014,7 @@ async function uploadRekonExcel(input) {
     let pesan = (j.items || []).length + ' designator dimuat';
     if (l.material || l.jasa) pesan += ' (' + (l.material || 0) + ' material, ' + (l.jasa || 0) + ' jasa)';
     if (j.sheet) pesan += ' dari sheet ' + j.sheet;
-    pesan += '. ' + adaNilai + ' baris berisi nilai REKON' + (l.tanpaRekon ? ', ' + l.tanpaRekon + ' baris kosong' : '') + '. Klik Proses REKON.';
+    pesan += '. ' + adaNilai + ' baris berisi nilai REKON' + (l.tanpaRekon ? ', ' + l.tanpaRekon + ' baris nilai 0 diabaikan' : '') + '. Klik Proses REKON.';
     showToast('success', pesan);
   } catch (e) {
     showToast('error', 'Gagal upload: ' + e.message);
@@ -1060,7 +1067,7 @@ async function uploadDrmExcel(input) {
     let pesan = (j.items || []).length + ' designator dimuat';
     if (l.material || l.jasa) pesan += ' (' + (l.material || 0) + ' material, ' + (l.jasa || 0) + ' jasa)';
     if (j.sheet) pesan += ' dari sheet ' + j.sheet;
-    pesan += '. ' + adaNilai + ' baris berisi TOTAL VOLUME' + (l.tanpaRekon ? ', ' + l.tanpaRekon + ' baris kosong' : '') + '. Klik Proses DRM.';
+    pesan += '. ' + adaNilai + ' baris berisi TOTAL VOLUME' + (l.tanpaRekon ? ', ' + l.tanpaRekon + ' baris nilai 0 diabaikan' : '') + '. Klik Proses DRM.';
     showToast('success', pesan);
   } catch (e) {
     showToast('error', 'Gagal upload: ' + e.message);
@@ -1539,6 +1546,7 @@ function prosesDRM() {
   }
   let pesan = drmData.length + ' item DRM diparsing.';
   if (r.tanpaTab) pesan += ' ' + r.tanpaTab + ' baris tanpa Tab dilewati.';
+  if (r.dilewatiNol) pesan += ' ' + r.dilewatiNol + ' baris nilai 0 diabaikan.';
   showToast('success', pesan);
 }
 
@@ -1559,6 +1567,7 @@ function prosesRekonInput() {
   }
   let pesan = rekonData.length + ' item REKON diparsing.';
   if (r.tanpaTab) pesan += ' ' + r.tanpaTab + ' baris tanpa Tab dilewati.';
+  if (r.dilewatiNol) pesan += ' ' + r.dilewatiNol + ' baris nilai 0 diabaikan.';
   showToast('success', pesan);
 }
 
@@ -1619,6 +1628,10 @@ async function hitungRekonsiliasi() {
     const r      = rekonData.find(r => r.designator.toUpperCase() === desUpper);
     const vDrm   = d ? parseNum(d.volume) : 0;
     const vRekon = r ? parseNum(r.volume) : 0;
+
+    // Baris yang DRM dan REKON-nya sama-sama 0 tidak ditampilkan.
+    if (vDrm === 0 && vRekon === 0) return;
+
     const selisih = vRekon - vDrm;
 
     // ── KUNCI: ambil harga satuan — prioritas:
