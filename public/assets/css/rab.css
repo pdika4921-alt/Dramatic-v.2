@@ -145,6 +145,46 @@
 .rab-header .btn-purple:hover { background: #FFFFFF; box-shadow: 0 5px 18px rgba(0, 0, 0, 0.35); transform: translateY(-1px); }
 .rab-header .btn-red-ghost { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.35); color: #FFFFFF; }
 .rab-header .btn-red-ghost:hover { background: rgba(255, 255, 255, 0.22); }
+
+/* ── Rapikan tombol-tombol di header (scope: .rab-header saja) ── */
+/* Kunci: jangan biarkan "Kembali" ter-wrap jadi 2 baris */
+.rab-header .btn-back {
+  box-sizing: border-box;
+  min-height: 30px; height: 30px;
+  padding: 4px 10px; font-size: 8.5px;
+  white-space: nowrap; border-radius: 8px;
+}
+/* Tab Input RAB / DRM vs REKON */
+.rab-header .tab-wrap {
+  padding: 2px; gap: 3px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 9px;
+}
+.rab-header .tab-btn {
+  min-height: 28px; height: 28px;
+  padding: 4px 11px; font-size: 8.5px;
+  white-space: nowrap; border-radius: 7px;
+}
+.rab-header .tab-btn.active { border-radius: 6px; }
+/* Baris aksi: Paste Excel / Simpan / Hitung / Generate / Reset */
+.rab-header .action-bar { padding: 6px 16px; gap: 6px; }
+.rab-header .action-bar > div { gap: 6px !important; }
+.rab-header .action-bar .btn {
+  min-height: 30px; padding: 5px 10px;
+  font-size: 9px; gap: 5px; border-radius: 8px;
+}
+.rab-header .action-bar .btn i { font-size: 8px !important; }
+/* Samakan gradasi hijau dengan theme header supaya tidak kontras */
+.rab-header .action-bar .btn-green {
+  background: rgba(255, 255, 255, 0.20);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #FFFFFF; box-shadow: none;
+}
+.rab-header .action-bar .btn-green:hover {
+  background: rgba(255, 255, 255, 0.30);
+  box-shadow: none; transform: none;
+}
 .logo-box {
   width: 104px; height: 34px;
   background: transparent;
