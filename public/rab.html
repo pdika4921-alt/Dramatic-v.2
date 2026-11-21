@@ -929,9 +929,14 @@ function parseRekonPaste(text) {
       result.push({ designator: des, jasa, material, volume, satuan });
       laporan.valid++;
     }
-    laporan.totalJasa += jasa;
-    laporan.totalMaterial += material;
     laporan.totalVolume += volume;
+  });
+
+  // Jasa/Material di validasi adalah NOMINAL: harga satuan × volume yang masuk.
+  // Dihitung dari result supaya baris duplikat yang digabung tetap benar.
+  result.forEach(r => {
+    laporan.totalJasa     += r.jasa     * r.volume;
+    laporan.totalMaterial += r.material * r.volume;
   });
 
   lastRekonReport = laporan;
