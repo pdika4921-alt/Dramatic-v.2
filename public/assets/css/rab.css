@@ -363,6 +363,9 @@
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px; margin-bottom: 12px;
 }
+/* Kartu TOTAL MATERIAL / JASA / GRAND TOTAL hanya dipakai tab Input RAB.
+   Memakai :has() supaya setMode() tidak perlu diubah. */
+.rab-body:has(#tab_rekon.active) .summary-grid { display: none; }
 .summary-card {
   border-radius: var(--radius-lg); padding: 11px 14px;
   color: #fff; position: relative; overflow: hidden;
