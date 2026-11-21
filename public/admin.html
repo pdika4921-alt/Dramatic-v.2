@@ -2281,6 +2281,33 @@
         .dark .rekap-dok-note, .dark .rekap-dok-filter { background:transparent; border-color:var(--border); color:var(--text); }
         .dark .rekap-dok-filter select { background:var(--header-bg); color:var(--text); border-color:var(--border); }
         .dark .rekap-dok-filter-info { color:#94a3b8; }
+
+        /* ── Tampilan khusus DAFTAR (Detail LOP / Dashboard dokumen) ─────────
+           Tidak lagi mendorong konten dashboard ke bawah: panel menimpa layar,
+           header tetap di atas, dan hanya badan tabel yang di-scroll. */
+        body.rekap-overlay-open .app-main { overflow:hidden; }
+        #rekap_detail, #rekap_dok_dash {
+          position:fixed; inset:0; z-index:900; margin:0 !important;
+          border:0; border-radius:0; background:var(--bg);
+          display:flex; flex-direction:column; box-shadow:none;
+        }
+        #rekap_dok_dash { z-index:910; }
+        #rekap_detail .rekap-detail-head, #rekap_dok_dash .rekap-detail-head {
+          position:sticky; top:0; z-index:5; flex-shrink:0;
+          box-shadow:0 3px 10px -8px rgba(15,23,42,.55);
+        }
+        #rekap_detail .rekap-scroll, #rekap_dok_dash .rekap-scroll {
+          flex:1; min-height:0; overflow:auto; overscroll-behavior:contain;
+        }
+        /* Header dua baris pada Detail LOP ikut melekat saat tabel di-scroll. */
+        #rekap_detail .rekap-detail-tbl thead th { position:sticky; z-index:3; }
+        #rekap_detail .rekap-detail-tbl thead tr:first-child th { top:0; }
+        #rekap_detail .rekap-detail-tbl thead tr:nth-child(2) th { top:22px; z-index:2; }
+        #rekap_dok_dash .rekap-detail-tbl thead th { position:sticky; top:0; z-index:3; }
+        @media (max-width: 767px) {
+          #rekap_detail .rekap-detail-head, #rekap_dok_dash .rekap-detail-head { padding:.45rem .55rem; }
+          #rekap_detail .rekap-detail-cari input { width:10rem; }
+        }
       </style>
     </section>
 
@@ -5205,7 +5232,10 @@ document.addEventListener('DOMContentLoaded', function () {
       });
       // Navigasi keyboard
       document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeCheckerDropdown();
+        if (e.key === "Escape") {
+          closeCheckerDropdown();
+          if (typeof rekapTutupOverlay === 'function') rekapTutupOverlay();
+        }
       });
     });
 
@@ -6702,6 +6732,21 @@ document.addEventListener('DOMContentLoaded', function () {
       renderRekapDetail();
     }
 
+    // Kunci scroll halaman saat salah satu tampilan daftar terbuka.
+    function rekapLockScroll() {
+      const d = document.getElementById('rekap_detail');
+      const k = document.getElementById('rekap_dok_dash');
+      const ada = (d && !d.classList.contains('godc-hide')) || (k && !k.classList.contains('godc-hide'));
+      document.body.classList.toggle('rekap-overlay-open', !!ada);
+    }
+
+    // Escape: tutup dashboard dokumen dulu, baru Detail LOP.
+    function rekapTutupOverlay() {
+      const k = document.getElementById('rekap_dok_dash');
+      if (k && !k.classList.contains('godc-hide')) { rekapBukaDokDash(null); return; }
+      rekapShowDetail(null, null, null);
+    }
+
     // Filter pencarian pada tabel Detail LOP — render ulang + fokus dikembalikan ke input
     function rekapDetailCariSet(v) {
       rekapDetailCari = v;
@@ -6716,13 +6761,13 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderRekapDetail() {
       const el = document.getElementById('rekap_detail');
       if (!el) return;
-      if (!rekapDetail || !rekapData) { el.classList.add('godc-hide'); el.innerHTML = ''; return; }
+      if (!rekapDetail || !rekapData) { el.classList.add('godc-hide'); el.innerHTML = ''; rekapLockScroll(); return; }
 
       const sumbers = rekapData.sumber || [];
       let src = sumbers.find(function (s) { return (s.sumber || '').toUpperCase() === rekapSumber; });
       if (!src) src = sumbers[0] || null;
       const tt = src && (src.tematik || []).find(function (t) { return t.tematik === rekapDetail.tematik; });
-      if (!tt) { el.classList.add('godc-hide'); el.innerHTML = ''; return; }
+      if (!tt) { el.classList.add('godc-hide'); el.innerHTML = ''; rekapLockScroll(); return; }
 
       const filterS = (document.getElementById('rekap_filter_sp') || {}).value || '';
       const filterB = (document.getElementById('rekap_filter_branch') || {}).value || '';
@@ -6855,6 +6900,7 @@ document.addEventListener('DOMContentLoaded', function () {
         + '</tr></tfoot>'
         + '</table></div>'
         + (bisaKoreksi ? '' : '<div class="rekap-dok-note">Koreksi manual status dokumen hanya untuk admin.</div>');
+      rekapLockScroll();
     }
 
     // ── Dashboard per jenis dokumen ────────────────────────────────────────
@@ -6903,7 +6949,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const el = document.getElementById('rekap_dok_dash');
       if (!el) return;
       const jenis = rekapDokDash;
-      if (!jenis) { el.classList.add('godc-hide'); el.innerHTML = ''; return; }
+      if (!jenis) { el.classList.add('godc-hide'); el.innerHTML = ''; rekapLockScroll(); return; }
 
       el.classList.remove('godc-hide');
       el.innerHTML = rekapDokDashHead(jenis, 'Memuat…');
@@ -6922,6 +6968,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (jenis !== rekapDokDash) return;
         el.innerHTML = rekapDokDashHead(jenis, '')
           + '<div class="rekap-empty">Gagal memuat dashboard: ' + htmlEsc(e.message || 'tidak diketahui') + '</div>';
+        rekapLockScroll();
         return;
       }
       // Panel mungkin sudah ditutup / diganti saat respons datang.
@@ -6967,6 +7014,7 @@ document.addEventListener('DOMContentLoaded', function () {
             + '<td class="rekap-detail-drm" style="text-align:right;">' + rekapRp(d.total_drm) + '</td>'
             + '<td></td></tr></tfoot>' : '')
         + '</table></div>';
+      rekapLockScroll();
     }
 
     // Event delegation untuk tabel detail rekap
