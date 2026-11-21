@@ -1850,15 +1850,15 @@ function renderRekonTable() {
       <td class="col-des">${row.designator}</td>
       <td class="col-drm">${fmtVol(row.drm)}</td>
       <td class="col-rek">${fmtVol(row.rekon)}</td>
-      <td class="${hasPlus?'col-plus':'col-zero'}">${hasPlus?'+'+fmtVol(row.tambah):'0'}</td>
-      <td class="${hasMin?'col-min':'col-zero'}">${hasMin?'-'+fmtVol(row.kurang):'0'}</td>
+      <td class="${hasPlus?'col-plus':'col-zero'}">${hasPlus?fmtVol(row.tambah):'0'}</td>
+      <td class="${hasMin?'col-min':'col-zero'}">${hasMin?fmtVol(row.kurang):'0'}</td>
       <td style="text-align:center;color:var(--text-sub);font-size: 9px;">${row.satuan}</td>
-      <td class="col-rp" style="text-align:right;">${hSatDisplay}</td>
+      <td class="col-rp" style="text-align:right;">${raw(hSatDisplay)}</td>
       <td class="col-rp" style="color:${row.nilai_drm>0?'var(--c-drm)':'var(--c-zero)'};text-align:right;">${row.nilai_drm>0?fmtNum(row.nilai_drm):'—'}</td>
       <td class="col-rp" style="color:${row.nilai_rekon>0?'var(--c-rek)':'var(--c-zero)'};text-align:right;">${row.nilai_rekon>0?fmtNum(row.nilai_rekon):'—'}</td>
       <td class="col-rp" style="color:${hasPlus?'var(--c-plus)':'var(--c-zero)'};text-align:right;">${hasPlus?fmtNum(row.nilai_tambah):'—'}</td>
       <td class="col-rp" style="color:${hasMin?'var(--c-min)':'var(--c-zero)'};text-align:right;">${hasMin?fmtNum(row.nilai_kurang):'—'}</td>
-      <td style="text-align:center;">${status}</td>`;
+      <td style="text-align:center;">${raw(status)}</td>`;
     tbody.appendChild(tr);
   });
 
