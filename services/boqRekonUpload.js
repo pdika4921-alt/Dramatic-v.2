@@ -40,25 +40,33 @@ function bacaBaris(sheetXml, shared) {
     const r = /\br="(\d+)"/.exec(m[1] || '');
     if (!r) continue;
     const cells = {};
-    const reC = /<c\b([^>]*)>([\s\S]*?)<\/c>/g;
+    // <c r="H8" s="52"/> adalah sel kosong. Regex lama menggabungkannya
+    // dengan </c> sel berikutnya sehingga nilainya bergeser satu kolom.
+    const reC = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
     let c;
     while ((c = reC.exec(m[2]))) {
       const ref = /\br="([A-Z]+\d+)"/.exec(c[1] || '');
       if (!ref) continue;
       const kol = /^[A-Z]+/.exec(ref[1])[0];
-      cells[kol] = lepasTeks(c[1] + ' ' + c[2], shared);
+      cells[kol] = lepasTeks((c[1] || '') + ' ' + (c[2] || ''), shared);
     }
     baris.push({ nomor: Number(r[1]), cells });
   }
   return baris;
 }
 
-function temukanHeader(baris) {
-  let material = null, jasa = null, rekon = null, satuan = null;
-  let barisDes = 0, barisRekon = 0;
+function temukanHeader(baris, mode) {
+  mode = mode || 'rekon';
+  let material = null, jasa = null, nilai = null, satuan = null;
+  let barisDes = 0, barisNilai = 0;
 
-  // Header designator (mis. baris 8) dan header REKON (mis. baris 11)
-  // boleh berada di baris yang berbeda — seperti pada BOQ REKON EBONI.
+  // REKON → kolom ber-header "REKON" (mis. K11 pada BOQ REKON EBONI).
+  // DRM   → kolom ber-header "TOTAL VOLUME" (mis. I8 pada BOQ RELOKASI).
+  // Header designator dan header nilai boleh berada di baris berbeda.
+  const cariNilai = (s) => mode === 'drm'
+    ? (s === 'TOTAL VOLUME' || s.indexOf('TOTAL VOLUME') >= 0)
+    : (s === 'REKON' || s.indexOf('VOLUME REKON') >= 0);
+
   for (const b of baris) {
     for (const [kol, v] of Object.entries(b.cells)) {
       const s = teks(v).toUpperCase();
@@ -66,13 +74,13 @@ function temukanHeader(baris) {
       if (!material && s.indexOf('DESIGNATOR MATERIAL') >= 0) { material = kol; barisDes = b.nomor; }
       if (!jasa     && s.indexOf('DESIGNATOR JASA') >= 0)     { jasa = kol;     barisDes = b.nomor; }
       if (!satuan   && s === 'SATUAN')                        { satuan = kol; }
-      if (!rekon    && s === 'REKON')                         { rekon = kol;    barisRekon = b.nomor; }
+      if (!nilai    && cariNilai(s))                          { nilai = kol;    barisNilai = b.nomor; }
     }
   }
-  if (material && jasa && rekon) {
+  if (material && jasa && nilai) {
     return {
-      nomor: Math.max(barisDes, barisRekon),
-      material, jasa, rekon,
+      nomor: Math.max(barisDes, barisNilai),
+      material, jasa, rekon: nilai,
       satuan: satuan || 'F'
     };
   }
@@ -112,7 +120,8 @@ function daftarSheet(zip) {
  * Return: { sheet, headerBaris, kolom, items, laporan }
  * items: [{ designator, satuan, rekon, jenis }]
  */
-function bacaRekonDariExcel(buffer) {
+function bacaRekonDariExcel(buffer, mode) {
+  mode = mode || 'rekon';
   const zip = new PizZip(buffer);
   const shared = bacaShared(zip);
   let sheets = daftarSheet(zip);
@@ -126,7 +135,7 @@ function bacaRekonDariExcel(buffer) {
   let dipilih = null;
   for (const s of sheets) {
     const b = bacaBaris(zip.file(s.path).asText(), shared);
-    const h = temukanHeader(b);
+    const h = temukanHeader(b, mode);
     if (h) { dipilih = { ...s, baris: b, header: h }; break; }
   }
   if (!dipilih) {
@@ -174,4 +183,7 @@ function bacaRekonDariExcel(buffer) {
   return { sheet: namaSheet, headerBaris: header.nomor, kolom: header, items, laporan };
 }
 
-module.exports = { bacaRekonDariExcel, angka };
+// DRM memakai parser yang sama, hanya kolom nilainya "TOTAL VOLUME".
+function bacaDrmDariExcel(buffer) { return bacaRekonDariExcel(buffer, 'drm'); }
+
+module.exports = { bacaRekonDariExcel, bacaDrmDariExcel, angka };

@@ -17,7 +17,7 @@ const ImageModule = require('docxtemplater-image-module-free');
 const rekapOpmService = require('./services/rekapOpm');
 // Sinkronisasi nilai BA Tambah Kurang ke BOQ TAMKUR.xlsx (tidak mengubah hitungan)
 const { tulisBoqTamkur } = require('./services/boqTamkur');
-const { bacaRekonDariExcel } = require('./services/boqRekonUpload');
+const { bacaRekonDariExcel, bacaDrmDariExcel } = require('./services/boqRekonUpload');
 // Modul laporan MITRATEL berdiri sendiri; tidak mengubah alur dokumen lama.
 const mitratelService = require('./services/mitratel');
 const sizeOfMod = require('image-size');
@@ -5844,6 +5844,27 @@ app.post('/api/upload-rekon-excel', checkAuth('admin'), upload.single('file'), (
   if (!req.file) return res.status(400).json({ message: 'Pilih file Excel REKON terlebih dahulu.' });
   try {
     const hasil = bacaRekonDariExcel(req.file.buffer);
+    if (!hasil.items.length) {
+      return res.status(400).json({
+        message: 'Tidak ada designator material/jasa yang ditemukan.',
+        sheet: hasil.sheet, laporan: hasil.laporan
+      });
+    }
+    res.json({ success: true, ...hasil });
+  } catch (e) {
+    res.status(500).json({ message: 'Gagal membaca file Excel.', detail: e.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// [API] UPLOAD EXCEL DRM
+// Sama seperti REKON, hanya kolom nilainya "TOTAL VOLUME" (kolom I pada
+// BOQ RELOKASI METLAND 2026). Harga tidak diambil.
+// ─────────────────────────────────────────────────────────────────────────────
+app.post('/api/upload-drm-excel', checkAuth('admin'), upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'Pilih file Excel DRM terlebih dahulu.' });
+  try {
+    const hasil = bacaDrmDariExcel(req.file.buffer);
     if (!hasil.items.length) {
       return res.status(400).json({
         message: 'Tidak ada designator material/jasa yang ditemukan.',

@@ -260,7 +260,11 @@
       <div id="drm_validasi" class="rab-validasi"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;flex-wrap:wrap;">
         <span id="drm_count" class="rekon-count">0 item</span>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="document.getElementById('drm_file').click()" style="font-size: 9px;padding:6px 12px;" title="Upload BOQ DRM .xlsx — hanya designator M-/J- dan kolom TOTAL VOLUME yang diambil">
+            <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> Upload Excel
+          </button>
+          <input type="file" id="drm_file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" onchange="uploadDrmExcel(this)">
           <button class="btn btn-ghost" onclick="isiContohRekon('drm')" style="font-size: 9px;padding:6px 12px;">
             <i class="fa-solid fa-file-circle-plus"></i> Isi Contoh
           </button>
@@ -985,6 +989,55 @@ async function uploadRekonExcel(input) {
     if (l.material || l.jasa) pesan += ' (' + (l.material || 0) + ' material, ' + (l.jasa || 0) + ' jasa)';
     if (j.sheet) pesan += ' dari sheet ' + j.sheet;
     pesan += '. ' + adaNilai + ' baris berisi nilai REKON' + (l.tanpaRekon ? ', ' + l.tanpaRekon + ' baris kosong' : '') + '. Klik Proses REKON.';
+    showToast('success', pesan);
+  } catch (e) {
+    showToast('error', 'Gagal upload: ' + e.message);
+  } finally {
+    input.value = '';
+  }
+}
+
+// Upload file Excel DRM: hanya designator M-/J- dan kolom "TOTAL VOLUME".
+// Harga tidak diisi — tetap memakai BOQ TAMKUR saat generate BA.
+async function uploadDrmExcel(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const ekst = (file.name.split('.').pop() || '').toLowerCase();
+  if (ekst !== 'xlsx' && ekst !== 'xls') {
+    showToast('error', 'File harus berformat .xlsx atau .xls.');
+    input.value = '';
+    return;
+  }
+
+  showToast('info', 'Membaca file Excel DRM: ' + file.name);
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const res = await fetch('/api/upload-drm-excel', {
+      method: 'POST', body: fd, credentials: 'same-origin'
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || !j.success) {
+      showToast('error', j.message || 'Gagal membaca file Excel DRM.');
+      return;
+    }
+
+    // Sama dengan REKON: designator ⇥ jasa ⇥ material ⇥ volume ⇥ satuan.
+    // Header disertakan agar petaKolom memetakan dari nama kolom.
+    const baris = ['Designator\tJasa\tMaterial\tVolume\tSatuan']
+      .concat((j.items || []).map(it =>
+        [it.designator, '', '', it.rekon, it.satuan || ''].join('\t')
+      )).join('\n');
+    document.getElementById('drm_input').value = baris;
+    previewRekon(baris, 'drm');
+
+    const l = j.laporan || {};
+    const adaNilai = (j.items || []).filter(it => Number(it.rekon) > 0).length;
+    let pesan = (j.items || []).length + ' designator dimuat';
+    if (l.material || l.jasa) pesan += ' (' + (l.material || 0) + ' material, ' + (l.jasa || 0) + ' jasa)';
+    if (j.sheet) pesan += ' dari sheet ' + j.sheet;
+    pesan += '. ' + adaNilai + ' baris berisi TOTAL VOLUME' + (l.tanpaRekon ? ', ' + l.tanpaRekon + ' baris kosong' : '') + '. Klik Proses DRM.';
     showToast('success', pesan);
   } catch (e) {
     showToast('error', 'Gagal upload: ' + e.message);
