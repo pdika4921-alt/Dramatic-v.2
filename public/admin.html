@@ -1390,6 +1390,24 @@
   <!-- ── TOAST CONTAINER ──────────────────────────────────────── -->
   <div id="toast_container" class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
 
+  <!-- ══ LOADING GENERATE BERKAS — tampil selama server membuat dokumen ══ -->
+  <div id="gen_loading" class="hidden fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
+    <div class="w-full max-w-sm rounded-2xl bg-white shadow-2xl border border-slate-200 p-6 text-center">
+      <div class="mx-auto w-14 h-14 rounded-full bg-indigo-50 flex items-center justify-center mb-4">
+        <i class="fa-solid fa-spinner fa-spin text-indigo-600 text-xl"></i>
+      </div>
+      <h3 id="gen_loading_judul" class="text-sm font-extrabold text-slate-800">Menyiapkan berkas…</h3>
+      <p id="gen_loading_sub" class="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
+        Mohon tunggu, dokumen sedang dibuat di server.
+      </p>
+      <p id="gen_loading_waktu" class="text-[10px] font-bold text-indigo-500 mt-3">0 detik</p>
+      <div class="mt-3 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+        <div class="h-full w-1/3 bg-indigo-500 rounded-full animate-pulse"></div>
+      </div>
+      <p class="text-[9px] text-slate-400 mt-3">Jangan tutup halaman ini sampai unduhan selesai.</p>
+    </div>
+  </div>
+
   <!-- ── MODAL HAPUS ──────────────────────────────────────────── -->
   <div id="modalHapus" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex justify-center items-center z-[999999] hidden">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 mx-4 animate-fade-in-up">
@@ -3479,6 +3497,14 @@ function sesiRenderTabel() {
   sesiUpdateHal();
   const mulai = (sesiHalaman - 1) * SESI_PER_HAL;
   const halaman = sesiSemua.slice(mulai, mulai + SESI_PER_HAL);
+  if (!halaman.length) {
+    body.innerHTML = '<tr><td colspan="8"><div class="pg-state">' +
+      '<div class="pg-state-ic"><i class="fa-solid fa-user-slash"></i></div>' +
+      '<p>Belum ada sesi login aktif</p>' +
+      '<small>Sesi baru muncul setelah ada yang login ke aplikasi.</small>' +
+      '</div></td></tr>';
+    return;
+  }
   let html = '';
   halaman.forEach(function (d, i) {
       const ico = (d.os === 'Android' || d.os === 'iOS') ? 'fa-mobile-screen-button' :
@@ -5416,6 +5442,86 @@ document.addEventListener('DOMContentLoaded', function () {
         toast.classList.add("opacity-0", "translate-x-full");
         setTimeout(() => toast.remove(), 320);
       }, 3800);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       LOADING GENERATE — indikator saat admin menunggu berkas dibuat
+    ═══════════════════════════════════════════════════════════════ */
+    var genLoadingTimer = null;
+
+    function genLoadingTampil(judul, sub) {
+      const el = document.getElementById('gen_loading');
+      if (!el) return;
+      const j = document.getElementById('gen_loading_judul');
+      const s = document.getElementById('gen_loading_sub');
+      const w = document.getElementById('gen_loading_waktu');
+      if (j) j.textContent = judul || 'Menyiapkan berkas…';
+      if (s) s.textContent = sub || 'Mohon tunggu, dokumen sedang dibuat di server.';
+      if (w) w.textContent = '0 detik';
+      el.classList.remove('hidden');
+      if (genLoadingTimer) clearInterval(genLoadingTimer);
+      const mulai = Date.now();
+      genLoadingTimer = setInterval(function () {
+        const detik = Math.floor((Date.now() - mulai) / 1000);
+        if (w) w.textContent = detik + ' detik' + (detik >= 15 ? ' — masih memproses…' : '');
+      }, 1000);
+    }
+
+    function genLoadingUbah(judul, sub) {
+      const j = document.getElementById('gen_loading_judul');
+      const s = document.getElementById('gen_loading_sub');
+      if (j && judul) j.textContent = judul;
+      if (s && sub) s.textContent = sub;
+    }
+
+    function genLoadingSembunyi() {
+      const el = document.getElementById('gen_loading');
+      if (el) el.classList.add('hidden');
+      if (genLoadingTimer) { clearInterval(genLoadingTimer); genLoadingTimer = null; }
+    }
+
+    /* Unduh berkas dari Response yang sudah jadi (blob), dengan nama file
+       diambil dari header Content-Disposition bila tersedia. */
+    async function unduhRespons(res, namaCadangan) {
+      const blob = await res.blob();
+      const cd = res.headers.get('content-disposition') || '';
+      const mm = cd.match(/filename="?([^";]+)"?/i);
+      let nama = mm ? mm[1] : (namaCadangan || 'berkas.docx');
+      try { nama = decodeURIComponent(nama); } catch (e) {}
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nama;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+      return nama;
+    }
+
+    /* Satu jalur untuk semua generate: tampilkan loading → fetch → unduh →
+       beri tahu hasil. Tidak lagi pakai window.location.href yang membuat
+       halaman "seolah mati" tanpa keterangan saat PDF dikonversi. */
+    async function genUnduh(url, label, namaCadangan) {
+      genLoadingTampil('Menyiapkan ' + label + '…',
+        'Berkas sedang dibuat di server. Mohon tunggu sebentar.');
+      try {
+        const res = await fetch(url, { credentials: 'include' });
+        if (!res.ok) {
+          let d = {};
+          try { d = await res.json(); } catch (e) {}
+          throw new Error(d.message || d.detail || ('Server merespons HTTP ' + res.status));
+        }
+        const nama = await unduhRespons(res, namaCadangan || (label + '.docx'));
+        showToast(label + ' selesai — ' + nama + ' sedang diunduh.', 'success');
+        rekapSegarkanDokumen(600);
+        return true;
+      } catch (e) {
+        showToast('Gagal membuat ' + label + ': ' + (e.message || 'terjadi gangguan server.'), 'error');
+        return false;
+      } finally {
+        genLoadingSembunyi();
+      }
     }
 
     /* ═══════════════════════════════════════════════════════════════
@@ -9368,6 +9474,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!res.ok || !j.success) { showToast(j.message || 'Gagal menyimpan rekap.', 'error'); return; }
 
         txt.textContent = 'Membuat lampiran…';
+        genLoadingTampil('Membuat lampiran rekap OPM…',
+          'Mengisi Excel dan merender lampiran untuk ' + odp_dipilih.length + ' ODP.');
         const res2 = await fetch('/api/rekap-opm/' + checkerLokasiId + '/generate', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
           body: JSON.stringify({ header, odp_dipilih })
@@ -9383,16 +9491,13 @@ document.addEventListener('DOMContentLoaded', function () {
         showToast('Gangguan koneksi saat menyimpan.', 'error');
       } finally {
         btn.disabled = false; txt.textContent = asli || 'Simpan & Buat Lampiran';
+        genLoadingSembunyi();
       }
     }
 
-    function roDownloadLact() {
+    async function roDownloadLact() {
       if (!checkerLokasiId) return;
-      const a = document.createElement('a');
-      a.href = '/api/download-docx/' + checkerLokasiId;
-      a.download = '';
-      document.body.appendChild(a); a.click(); a.remove();
-      showToast('Dokumen LACT sedang dibuat…', 'info');
+      await genUnduh('/api/download-docx/' + checkerLokasiId, 'LACT', 'LACT.docx');
     }
 
     async function ikHapusYa() {
@@ -10846,7 +10951,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // KML TEMATIK — unduh .kml gabungan seluruh hasil satu tematik (Google Earth)
   if (jenis === 'kml_tematik') {
     closeGenDropdown();
-    showToast('Menyiapkan KML tematik untuk Google Earth...', 'info');
+    genLoadingTampil('Menyiapkan KML tematik…', 'Menggabungkan hasil satu tematik untuk Google Earth.');
     try {
       const r = await fetch('/api/kml/tematik/' + genSelectedLokasiId, { credentials: 'include' });
       if (!r.ok) {
@@ -10855,21 +10960,12 @@ document.addEventListener('DOMContentLoaded', function () {
         showToast(d.message || 'File KML asli belum tersedia untuk tematik ini.', 'warning');
         return;
       }
-      const blob = await r.blob();
-      const cd = r.headers.get('content-disposition') || '';
-      const mm = cd.match(/filename="?([^";]+)"?/);
-      const namaFile = mm ? mm[1] : 'KML_Tematik.kml';
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = namaFile;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      const namaFile = await unduhRespons(r, 'KML_Tematik.kml');
       showToast('KML diunduh (' + namaFile + ') — buka file di Google Earth untuk tampilan penuh layar.', 'success');
     } catch (e) {
       showToast('Gagal mengunduh KML: ' + e.message, 'error');
+    } finally {
+      genLoadingSembunyi();
     }
     return;
   }
@@ -10878,42 +10974,13 @@ document.addEventListener('DOMContentLoaded', function () {
   if (jenis === 'microdemand' || jenis === 'hem' || jenis === 'nodeb') {
     closeGenDropdown();
     const label = jenis === 'microdemand' ? 'MICRODEMAND' : jenis === 'nodeb' ? 'NODE B' : 'HEM';
-    showToast('Menyiapkan ' + label + '...', 'info');
-    setTimeout(() => { window.location.href = '/api/download-docx/' + genSelectedLokasiId + genFmt(); }, 300);
-    rekapSegarkanDokumen(2500);
+    await genUnduh('/api/download-docx/' + genSelectedLokasiId + genFmt(), label, label + '.docx');
     return;
   }
 
   closeGenDropdown();
   const label = JENIS_LABEL[jenis] || jenis.toUpperCase();
-  showToast('Menyiapkan ' + label + '...', 'info');
-
-  try {
-    const headRes = await fetch(
-      '/api/generate/' + jenis + '/' + genSelectedLokasiId,
-      { method: 'HEAD' }
-    );
-
-    if (headRes.status === 404) {
-      const getRes = await fetch('/api/generate/' + jenis + '/' + genSelectedLokasiId);
-      let detail = { message: 'Template tidak tersedia di server.' };
-      try { detail = await getRes.json(); } catch(e) {}
-      showToast((detail.message || 'Template tidak tersedia.') + (detail.template ? ' → ' + detail.template : ''), 'warning');
-      return;
-    }
-
-    if (!headRes.ok) {
-      showToast('Kesalahan server (HTTP ' + headRes.status + '). Coba lagi.', 'error');
-      return;
-    }
-
-    showToast('Mengunduh ' + label + '...', 'success');
-    setTimeout(() => { window.location.href = '/api/generate/' + jenis + '/' + genSelectedLokasiId + genFmt(); }, 300);
-    rekapSegarkanDokumen(2500);
-
-  } catch (networkErr) {
-    showToast('Gagal terhubung ke server. Pastikan server berjalan dan coba refresh halaman.', 'error');
-  }
+  await genUnduh('/api/generate/' + jenis + '/' + genSelectedLokasiId + genFmt(), label, label + '.docx');
 }
 
     // ─── KONSEP A: NAVIGASI SIDEBAR (penempatan baru, logic sistem SAMA) ───
@@ -11103,6 +11170,7 @@ async function submitGenerateBaut() {
   const btn = document.getElementById('bautSubmitBtn');
   btn.disabled = true;
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Memproses...';
+  genLoadingTampil('Menyiapkan BAUT…', 'Dokumen dan lampiran sedang diproses di server.');
 
   try {
     // ── BAUT-1 Node B: upload 5 dokumen dulu, lalu unduh dokumen ?baut=1 ──
@@ -11121,7 +11189,14 @@ async function submitGenerateBaut() {
         return;
       }
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Membuat dokumen...';
-      window.location.href = '/api/download-docx/' + bautLokasiId + '?baut=1' + genFmtAmp();
+      genLoadingUbah('Membuat BAUT-1 Node B…', 'Menyusun dokumen dan lampiran yang sudah diunggah.');
+      const res = await fetch('/api/download-docx/' + bautLokasiId + '?baut=1' + genFmtAmp(), { credentials: 'include' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        showToast(d.message || 'Gagal generate BAUT-1 Node B.', 'error');
+        return;
+      }
+      await unduhRespons(res, 'BAUT_NodeB.docx');
       tutupModalBaut();
       showToast('BAUT-1 Node B berhasil digenerate' + (adaFile ? '!' : ' (dokumen tanpa file).'), 'success');
       rekapSegarkanDokumen(400);
@@ -11154,6 +11229,7 @@ formData.append('lokasiabd',  document.getElementById('baut_lokasiabd').value.tr
       }
     }
 
+    genLoadingUbah('Membuat BAUT…', 'Menyusun isi dokumen dan menyiapkan unduhan.');
     const res = await fetch('/api/generate/baut/' + bautLokasiId + genFmt(), {
       method: 'POST',
       body: formData,
@@ -11179,6 +11255,7 @@ formData.append('lokasiabd',  document.getElementById('baut_lokasiabd').value.tr
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-file-arrow-down mr-1"></i> Generate BAUT';
+    genLoadingSembunyi();
   }
 }
 // ─── MODAL BA PRELIM ────────────────────────────────────────────────────────
@@ -11240,6 +11317,7 @@ async function submitGenerateBaPrelim() {
   const btn = document.getElementById('prelimSubmitBtn');
   btn.disabled = true;
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Memproses PDF & Generate...';
+  genLoadingTampil('Menyiapkan BA Prelim…', 'Mengonversi lampiran PDF dan menyusun dokumen.');
 
   try {
     const formData = new FormData();
@@ -11262,6 +11340,7 @@ async function submitGenerateBaPrelim() {
       }
     }
 
+    genLoadingUbah('Membuat BA Prelim…', 'Dokumen sedang dirakit dan disiapkan untuk unduhan.');
     const res = await fetch('/api/generate/ba_prelim/' + prelimLokasiId + genFmt(), {
       method: 'POST',
       body: formData,
@@ -11274,13 +11353,7 @@ async function submitGenerateBaPrelim() {
     }
     
     // Proses Unduh File
-    const blob2 = await res.blob();
-    const url = URL.createObjectURL(blob2);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = res.headers.get('content-disposition')?.match(/filename="?([^"]+)"?/)?.[1] || 'BA_PRELIM.docx';
-    a.click();
-    URL.revokeObjectURL(url);
+    await unduhRespons(res, 'BA_PRELIM.docx');
     tutupModalBaPrelim();
     showToast('BA Prelim berhasil digenerate!', 'success');
     rekapSegarkanDokumen(400);
@@ -11289,6 +11362,7 @@ async function submitGenerateBaPrelim() {
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-file-arrow-down mr-1"></i> Generate BA Prelim';
+    genLoadingSembunyi();
   }
 }
 /* ═══════════════════════════════════════════════════════════════
