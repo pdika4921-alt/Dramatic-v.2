@@ -1,0 +1,177 @@
+/* =====================================================================
+   boqRekonUpload.js — Baca file Excel REKON yang di-upload admin
+   ---------------------------------------------------------------------
+   Yang diambil HANYA:
+     • designator material (awalan M-)  → kolom "Designator Material"
+     • designator jasa    (awalan J-)  → kolom "Designator Jasa"
+     • nilai REKON                     → kolom ber-header "REKON"
+   Kolom harga (G/H) TIDAK dibaca — harga tetap memakai BOQ TAMKUR.
+   Contoh struktur: BOQ REKON EBONI  METLAND.xlsx (sheet "Paket5",
+   header baris 11, data mulai baris 12, REKON di kolom K).
+   ===================================================================== */
+'use strict';
+
+const PizZip = require('pizzip');
+const { bacaShared, lepasTeks } = require('./boqTamkur');
+
+function angka(v) {
+  if (typeof v === 'number') return v;
+  let s = String(v == null ? '' : v).trim();
+  if (!s) return 0;
+  s = s.replace(/[^\d,.-]/g, '');
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else if (s.indexOf(',') >= 0 && s.indexOf('.') >= 0) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else if (/^\d+,\d+$/.test(s)) {
+    s = s.replace(',', '.');
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function teks(v) { return String(v == null ? '' : v).trim(); }
+
+function bacaBaris(sheetXml, shared) {
+  const baris = [];
+  const reRow = /<row\b([^>]*)>([\s\S]*?)<\/row>/g;
+  let m;
+  while ((m = reRow.exec(sheetXml))) {
+    const r = /\br="(\d+)"/.exec(m[1] || '');
+    if (!r) continue;
+    const cells = {};
+    const reC = /<c\b([^>]*)>([\s\S]*?)<\/c>/g;
+    let c;
+    while ((c = reC.exec(m[2]))) {
+      const ref = /\br="([A-Z]+\d+)"/.exec(c[1] || '');
+      if (!ref) continue;
+      const kol = /^[A-Z]+/.exec(ref[1])[0];
+      cells[kol] = lepasTeks(c[1] + ' ' + c[2], shared);
+    }
+    baris.push({ nomor: Number(r[1]), cells });
+  }
+  return baris;
+}
+
+function temukanHeader(baris) {
+  let material = null, jasa = null, rekon = null, satuan = null;
+  let barisDes = 0, barisRekon = 0;
+
+  // Header designator (mis. baris 8) dan header REKON (mis. baris 11)
+  // boleh berada di baris yang berbeda — seperti pada BOQ REKON EBONI.
+  for (const b of baris) {
+    for (const [kol, v] of Object.entries(b.cells)) {
+      const s = teks(v).toUpperCase();
+      if (!s) continue;
+      if (!material && s.indexOf('DESIGNATOR MATERIAL') >= 0) { material = kol; barisDes = b.nomor; }
+      if (!jasa     && s.indexOf('DESIGNATOR JASA') >= 0)     { jasa = kol;     barisDes = b.nomor; }
+      if (!satuan   && s === 'SATUAN')                        { satuan = kol; }
+      if (!rekon    && s === 'REKON')                         { rekon = kol;    barisRekon = b.nomor; }
+    }
+  }
+  if (material && jasa && rekon) {
+    return {
+      nomor: Math.max(barisDes, barisRekon),
+      material, jasa, rekon,
+      satuan: satuan || 'F'
+    };
+  }
+  return null;
+}
+
+// Daftar worksheet urut sesuai workbook.xml (bukan urutan file di zip).
+function daftarSheet(zip) {
+  const hasil = [];
+  if (!zip.file('xl/workbook.xml')) return hasil;
+  const wb = zip.file('xl/workbook.xml').asText();
+  const relasi = {};
+  if (zip.file('xl/_rels/workbook.xml.rels')) {
+    const rx = /<Relationship\b([^>]*)\/>/g;
+    let m;
+    while ((m = rx.exec(zip.file('xl/_rels/workbook.xml.rels').asText()))) {
+      const id = /\bId="([^"]+)"/.exec(m[1]);
+      const target = /\bTarget="([^"]+)"/.exec(m[1]);
+      if (id && target && /worksheet/i.test(m[1])) relasi[id[1]] = target[1];
+    }
+  }
+  const sx = /<sheet\b([^>]*)\/>/g;
+  let s;
+  while ((s = sx.exec(wb))) {
+    const nama = /\bname="([^"]+)"/.exec(s[1]);
+    const rid = /\br:id="([^"]+)"/.exec(s[1]);
+    if (!nama || !rid || !relasi[rid[1]]) continue;
+    let target = relasi[rid[1]].replace(/^\//, '');
+    if (!/^xl\//.test(target)) target = 'xl/' + target;
+    if (zip.file(target)) hasil.push({ nama: nama[1], path: target });
+  }
+  return hasil;
+}
+
+/**
+ * bacaRekonDariExcel(buffer)
+ * Return: { sheet, headerBaris, kolom, items, laporan }
+ * items: [{ designator, satuan, rekon, jenis }]
+ */
+function bacaRekonDariExcel(buffer) {
+  const zip = new PizZip(buffer);
+  const shared = bacaShared(zip);
+  let sheets = daftarSheet(zip);
+  if (!sheets.length) {
+    const fallback = Object.keys(zip.files).find(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n));
+    if (!fallback) throw new Error('Worksheet tidak ditemukan di file Excel.');
+    sheets = [{ nama: 'Sheet1', path: fallback }];
+  }
+
+  // Pilih sheet yang benar-benar memuat header DESIGNATOR + REKON.
+  let dipilih = null;
+  for (const s of sheets) {
+    const b = bacaBaris(zip.file(s.path).asText(), shared);
+    const h = temukanHeader(b);
+    if (h) { dipilih = { ...s, baris: b, header: h }; break; }
+  }
+  if (!dipilih) {
+    const s = sheets[0];
+    const b = bacaBaris(zip.file(s.path).asText(), shared);
+    return {
+      sheet: s.nama, headerBaris: null, kolom: null, items: [],
+      laporan: { totalBaris: b.length, headerBaris: null, material: 0, jasa: 0, tanpaRekon: 0, dilewati: 0 }
+    };
+  }
+
+  const { nama: namaSheet, baris, header } = dipilih;
+  const laporan = {
+    totalBaris: baris.length, headerBaris: header.nomor,
+    material: 0, jasa: 0, tanpaRekon: 0, dilewati: 0
+  };
+
+  const items = [];
+  const seen = new Set();
+  baris.forEach(b => {
+    if (b.nomor <= header.nomor) return;
+    const c = b.cells;
+    const rekon = angka(c[header.rekon]);
+    const satuan = teks(c[header.satuan]);
+
+    // Baca kedua kolom designator. Jenis ditentukan dari awalannya sendiri:
+    // M- = material, J- = jasa. (Pada file nyata, sebagian designator J-
+    // bisa berada di kolom C, jadi tidak boleh bergantung pada posisi kolom.)
+    [teks(c[header.material]), teks(c[header.jasa])].forEach(mentah => {
+      if (!mentah) return;
+      const d = mentah.toUpperCase();
+      if (!/^[MJ]-/.test(d) || !/^[A-Z0-9][A-Z0-9._/-]*-[A-Z0-9._/-]+$/.test(d)) {
+        laporan.dilewati++;
+        return;
+      }
+      if (seen.has(d)) return;
+      seen.add(d);
+      const jenis = d.indexOf('M-') === 0 ? 'material' : 'jasa';
+      if (rekon === 0) laporan.tanpaRekon++;
+      items.push({ designator: d, satuan, rekon, jenis });
+      laporan[jenis]++;
+    });
+  });
+
+  return { sheet: namaSheet, headerBaris: header.nomor, kolom: header, items, laporan };
+}
+
+module.exports = { bacaRekonDariExcel, angka };

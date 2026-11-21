@@ -17,6 +17,7 @@ const ImageModule = require('docxtemplater-image-module-free');
 const rekapOpmService = require('./services/rekapOpm');
 // Sinkronisasi nilai BA Tambah Kurang ke BOQ TAMKUR.xlsx (tidak mengubah hitungan)
 const { tulisBoqTamkur } = require('./services/boqTamkur');
+const { bacaRekonDariExcel } = require('./services/boqRekonUpload');
 // Modul laporan MITRATEL berdiri sendiri; tidak mengubah alur dokumen lama.
 const mitratelService = require('./services/mitratel');
 const sizeOfMod = require('image-size');
@@ -5835,7 +5836,26 @@ app.delete('/api/users/:id', checkAuth('admin'), checkPengguna, async (req, res)
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// [API] GENERATE BA TAMBAH KURANG — khusus data rekonsiliasi DRM vs REKON
+// [API] UPLOAD EXCEL REKON
+// Hanya mengambil designator material (M-), designator jasa (J-), dan nilai
+// REKON. Harga TIDAK diambil — tetap memakai BOQ TAMKUR saat generate BA.
+// ─────────────────────────────────────────────────────────────────────────────
+app.post('/api/upload-rekon-excel', checkAuth('admin'), upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'Pilih file Excel REKON terlebih dahulu.' });
+  try {
+    const hasil = bacaRekonDariExcel(req.file.buffer);
+    if (!hasil.items.length) {
+      return res.status(400).json({
+        message: 'Tidak ada designator material/jasa yang ditemukan.',
+        sheet: hasil.sheet, laporan: hasil.laporan
+      });
+    }
+    res.json({ success: true, ...hasil });
+  } catch (e) {
+    res.status(500).json({ message: 'Gagal membaca file Excel.', detail: e.message });
+  }
+});
+
 // Endpoint: GET /api/generate/ba_tambahkurang/:lokasi_id
 // Template : templates/template_BA_TambahKurang.docx
 //

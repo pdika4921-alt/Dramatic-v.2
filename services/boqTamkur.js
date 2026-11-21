@@ -188,4 +188,4 @@ function tulisBoqTamkur(rows, opsi) {
   }
 }
 
-module.exports = { tulisBoqTamkur, PATH_XLSX, NAMA_SHEET, bacaShared, indeksSheet, cariBaris };
+module.exports = { tulisBoqTamkur, PATH_XLSX, NAMA_SHEET, bacaShared, lepasTeks, indeksSheet, cariBaris };
