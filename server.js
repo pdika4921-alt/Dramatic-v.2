@@ -7463,6 +7463,12 @@ app.post('/api/rekap-opm/:lokasi_id/scan', checkAuth('admin'), async (req, res) 
 
     const hasil = {};
     let dipindai = 0, gagal = 0;
+    const paralel = !!(req.body && req.body.paralel);
+
+    // Kumpulkan dulu foto yang benar-benar perlu dipindai. Mode paralel
+    // menjalankan semuanya bersamaan (dibatasi antrean AI di rekapOpm.js),
+    // mode biasa tetap berurutan untuk fallback / retry yang lebih lembut.
+    const tugas = [];
     for (const nm of target) {
       const mapFile = filePortOpm(fotoRows, nm);
       const kap = odpMap.get(nm) || 8;
@@ -7475,17 +7481,21 @@ app.post('/api/rekap-opm/:lokasi_id/scan', checkAuth('admin'), async (req, res) 
         if (!file) continue;
         const fp = path.join(folderFoto, file);
         if (!fs.existsSync(fp)) continue;
-        try {
-          const angka = await rekapOpmService.bacaAngkaOpm(fp, { odp: nm, port: p });
-          if (angka) { hasil[nm + '|' + p] = angka; dipindai++; }
-        } catch (e) {
-          gagal++;
-          console.warn('[REKAP OPM] scan gagal', nm, p, e.message);
-        }
-        if (!isNaN(hanyaPort) && hanyaPort > 0 && p === hanyaPort) break;
+        tugas.push({ nm, p, fp });
       }
     }
-    res.json({ hasil, dipindai, gagal });
+    const jalankan = async (t) => {
+      try {
+        const angka = await rekapOpmService.bacaAngkaOpm(t.fp, { odp: t.nm, port: t.p });
+        if (angka) { hasil[t.nm + '|' + t.p] = angka; dipindai++; }
+      } catch (e) {
+        gagal++;
+        console.warn('[REKAP OPM] scan gagal', t.nm, t.p, e.message);
+      }
+    };
+    if (paralel) await Promise.all(tugas.map(jalankan));
+    else for (const t of tugas) await jalankan(t);
+    res.json({ hasil, dipindai, gagal, paralel, dipindaiTotal: tugas.length });
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: 'Gagal scan OPM.', detail: e.message });

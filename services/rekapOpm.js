@@ -23,6 +23,22 @@ const sharp = require('sharp');
 
 const cfg = require('./verifyConfig');
 
+/* Antrean scan OPM: beberapa ODP/port boleh dipindai bersamaan, tetapi jumlah
+   panggilan AI yang aktif dibatasi supaya tidak kena rate-limit API. */
+let scanBerjalan = 0;
+const antreanScan = [];
+function tiketScan() {
+  return new Promise(resolve => { antreanScan.push(resolve); lanjutScan(); });
+}
+function lanjutScan() {
+  const maks = Math.max(1, Number(cfg.ai.maxConcurrent) || 3);
+  while (scanBerjalan < maks && antreanScan.length) {
+    scanBerjalan++;
+    antreanScan.shift()();
+  }
+}
+function lepasScan() { scanBerjalan--; lanjutScan(); }
+
 const MASTER_XLS = path.join(__dirname, '..', 'templates', 'REKAP OPM RELOKASI.xls');
 
 // Baris & kolom penting pada template REKAP OPM RELOKASI.xls (sheet DETAIL REKAP REDAMAN)
@@ -186,7 +202,7 @@ function normalisasiAngka(nilai) {
  * Baca angka hasil ukur (dBm) dari satu foto eviden OPM.
  * @returns {Promise<string>} angka (mis. "-15.01") atau '' bila tidak terbaca.
  */
-async function bacaAngkaOpm(filePath, konteks = {}) {
+async function bacaAngkaOpmInti(filePath, konteks = {}) {
   const provider = cfg.ai.provider === 'anthropic' ? 'claude' : cfg.ai.provider;
   if (provider === 'mock') {
     return '';
@@ -215,17 +231,30 @@ async function bacaAngkaOpm(filePath, konteks = {}) {
       // AI menjawab "tidak ada angka" — model vision kadang kosong padahal
       // fotonya berisi angka, jadi coba ulang beberapa kali sebelum menyerah.
       pernahKosong = true;
-      if (percobaan < cfg.ai.retry) await new Promise(r => setTimeout(r, 700));
+      if (percobaan < cfg.ai.retry) await new Promise(r => setTimeout(r, 250));
     } catch (e) {
       galat = e;
       if (percobaan < cfg.ai.retry) {
-        const jeda = Math.min(30000, Math.max(500 * (percobaan + 1), (e && e.retryAfterMs) || 0));
+        // Jeda retry dipangkas: dulu bisa sampai 30 detik per percobaan sehingga
+        // scan 1 ODP terasa lama. Sekarang maksimal 4 detik, masih cukup untuk
+        // menghormati retryAfter dari API bila memang diberikan.
+        const jeda = Math.min(4000, Math.max(250 * (percobaan + 1), (e && e.retryAfterMs) || 0));
         await new Promise(r => setTimeout(r, jeda));
       }
     }
   }
   if (pernahKosong) return '';
   throw galat || new Error('Gagal membaca angka OPM');
+}
+
+/* Versi publik: ambil tiket antrean dulu, lepas setelah selesai (sukses/gagal). */
+async function bacaAngkaOpm(filePath, konteks = {}) {
+  await tiketScan();
+  try {
+    return await bacaAngkaOpmInti(filePath, konteks);
+  } finally {
+    lepasScan();
+  }
 }
 
 /* ───────────────────── Isi Excel + render PDF per ODP ───────────────────── */

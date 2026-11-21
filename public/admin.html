@@ -1364,6 +1364,61 @@
     #view_master .rab-chip { font-size: 7px; padding: 1px 6px; }
     #view_master .rab-none { font-size: 7px; padding: 4px 9px; }
 
+    /* ══ REKAP OPM — tampilan scan yang lebih rapi & profesional ══ */
+    #modal_rekap_opm .ro-pill {
+      display:inline-flex; align-items:center; gap:6px; border-radius:999px;
+      padding:4px 10px; font-size:9px; font-weight:700; letter-spacing:.02em;
+      background:#1f2937; color:#94a3b8; border:1px solid #334155; transition:.2s;
+    }
+    #modal_rekap_opm .ro-pill.aktif {
+      background:#4f46e5; color:#fff; border-color:#6366f1;
+      box-shadow:0 4px 14px -4px rgba(79,70,229,.75);
+    }
+    #modal_rekap_opm .ro-pill.selesai { background:#064e3b; color:#d1fae5; border-color:#047857; }
+    #modal_rekap_opm .ro-pill .ro-nomor {
+      width:15px; height:15px; border-radius:999px; display:inline-flex;
+      align-items:center; justify-content:center; background:rgba(255,255,255,.12); font-size:8px;
+    }
+    #modal_rekap_opm .ro-panel {
+      border:1px solid #e2e8f0; border-radius:14px; background:#fff;
+      box-shadow:0 8px 22px -18px rgba(15,23,42,.55);
+    }
+    #modal_rekap_opm .ro-progres { height:7px; border-radius:999px; background:#e2e8f0; overflow:hidden; }
+    #modal_rekap_opm .ro-progres > i {
+      display:block; height:100%; width:0; border-radius:999px;
+      background:linear-gradient(90deg,#0ea5e9,#4f46e5); transition:width .25s ease;
+    }
+    #modal_rekap_opm .ro-btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:7px;
+      border-radius:10px; font-size:9px; font-weight:800; padding:8px 13px;
+      border:1px solid transparent; transition:.18s; cursor:pointer;
+    }
+    #modal_rekap_opm .ro-btn:disabled { opacity:.55; cursor:not-allowed; transform:none; }
+    #modal_rekap_opm .ro-btn-sky { background:#0369a1; color:#fff; box-shadow:0 6px 14px -8px rgba(3,105,161,.9); }
+    #modal_rekap_opm .ro-btn-sky:hover:not(:disabled) { background:#075985; }
+    #modal_rekap_opm .ro-btn-indigo { background:#4f46e5; color:#fff; box-shadow:0 6px 14px -8px rgba(79,70,229,.9); }
+    #modal_rekap_opm .ro-btn-indigo:hover:not(:disabled) { background:#4338ca; }
+    #modal_rekap_opm .ro-btn-ghost { background:#fff; color:#475569; border-color:#cbd5e1; }
+    #modal_rekap_opm .ro-btn-ghost:hover:not(:disabled) { background:#f1f5f9; }
+    #modal_rekap_opm .ro-btn-emerald { background:#059669; color:#fff; box-shadow:0 6px 14px -8px rgba(5,150,105,.9); }
+    #modal_rekap_opm .ro-btn-emerald:hover:not(:disabled) { background:#047857; }
+    #modal_rekap_opm .ro-tabel { border-collapse:separate; border-spacing:0; width:100%; }
+    #modal_rekap_opm .ro-tabel th { background:#f8fafc; color:#64748b; font-size:8px; text-transform:uppercase; letter-spacing:.04em; padding:7px 9px; }
+    #modal_rekap_opm .ro-tabel td { padding:6px 9px; font-size:9px; border-top:1px solid #f1f5f9; }
+    #modal_rekap_opm .ro-tabel tbody tr:hover { background:#f8fafc; }
+    #modal_rekap_opm .ro-nilai {
+      width:110px; text-align:right; font-size:9px; font-weight:700;
+      border:1px solid #cbd5e1; border-radius:8px; padding:5px 8px; outline:none; transition:.18s;
+    }
+    #modal_rekap_opm .ro-nilai:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.13); }
+    #modal_rekap_opm .ro-nilai.terisi { border-color:#6ee7b7; background:#ecfdf5; color:#065f46; }
+    #modal_rekap_opm .ro-mini {
+      font-size:8px; font-weight:800; padding:4px 8px; border-radius:7px;
+      border:1px solid #bae6fd; background:#f0f9ff; color:#0369a1; cursor:pointer; transition:.15s;
+    }
+    #modal_rekap_opm .ro-mini:hover:not(:disabled) { background:#e0f2fe; }
+    #modal_rekap_opm .ro-mini:disabled { opacity:.5; cursor:not-allowed; }
+
   </style>
   <!-- PDF.js untuk konversi PDF ke JPG di browser (BAUT upload) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.mjs" type="module" id="pdfjs-lib"></script>
@@ -4999,6 +5054,13 @@ document.addEventListener('DOMContentLoaded', function () {
               <i class="fa-solid fa-table-list text-indigo-300"></i> Rekap OPM Relokasi
             </h3>
             <p id="ro_sub" class="text-[9px] text-slate-400 mt-0.5 font-mono">—</p>
+            <div class="flex flex-wrap items-center gap-1.5 mt-2.5">
+              <span id="ro_step_pill_1" class="ro-pill aktif"><span class="ro-nomor">1</span> Pilih ODP</span>
+              <span class="text-slate-600 text-[9px]">›</span>
+              <span id="ro_step_pill_2" class="ro-pill"><span class="ro-nomor">2</span> Preview &amp; Scan</span>
+              <span class="text-slate-600 text-[9px]">›</span>
+              <span id="ro_step_pill_3" class="ro-pill"><span class="ro-nomor">3</span> Selesai</span>
+            </div>
           </div>
           <button onclick="roTutup()" class="text-slate-400 hover:text-white transition cursor-pointer text-lg mt-0.5" aria-label="Tutup form rekap OPM">
             <i class="fa-solid fa-xmark"></i>
@@ -5007,15 +5069,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
         <!-- Langkah 1: pilih ODP -->
         <div id="ro_step_pilih" class="p-5 space-y-3">
-          <div class="bg-indigo-50 border border-indigo-200 rounded-xl px-3.5 py-2.5 text-[9px] text-indigo-800 font-medium">
-            <i class="fa-solid fa-circle-info mr-1"></i>
-            Pilih ODP yang mau dimasukkan ke berkas (terutama yang sudah diinput eviden OPM-nya), lalu lanjut ke preview.
+          <div class="ro-panel px-4 py-3 flex items-start gap-2.5">
+            <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
+              <i class="fa-solid fa-circle-info text-[11px]"></i>
+            </span>
+            <p class="text-[9px] text-slate-600 leading-relaxed">
+              Pilih ODP yang sudah punya eviden <b class="text-slate-800">EVIDENT HASIL UKUR OPM</b>.
+              Nilai akan dibaca otomatis dari foto saat preview dibuka, lalu bisa dikoreksi sebelum disimpan.
+            </p>
           </div>
-          <div class="flex items-center justify-between gap-2 flex-wrap">
-            <span id="ro_jml" class="text-[9px] font-semibold text-slate-500">Memuat ODP…</span>
+          <div class="flex items-center justify-between gap-2 flex-wrap px-0.5">
+            <span id="ro_jml" class="text-[9px] font-bold text-slate-600">Memuat ODP…</span>
             <div class="flex gap-2">
-              <button type="button" onclick="roPilihSemua(true)" class="text-[8px] font-semibold text-indigo-600 hover:bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-lg cursor-pointer"><i class="fa-solid fa-check-double"></i> Pilih Semua</button>
-              <button type="button" onclick="roPilihSemua(false)" class="text-[8px] font-semibold text-slate-500 hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg cursor-pointer"><i class="fa-regular fa-square"></i> Kosongkan</button>
+              <button type="button" onclick="roPilihSemua(true)" class="ro-btn ro-btn-ghost"><i class="fa-solid fa-check-double"></i> Pilih Semua</button>
+              <button type="button" onclick="roPilihSemua(false)" class="ro-btn ro-btn-ghost"><i class="fa-regular fa-square"></i> Kosongkan</button>
             </div>
           </div>
           <div id="ro_daftar_odp" class="space-y-1.5 max-h-[45vh] overflow-y-auto pr-1"></div>
@@ -5023,19 +5090,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
         <!-- Langkah 2: preview / edit -->
         <div id="ro_step_preview" class="p-5 space-y-3 hidden">
+          <div class="ro-panel p-4 space-y-3">
           <div class="flex items-end gap-3 flex-wrap">
             <div class="flex-1 min-w-[180px]">
               <label class="block text-[8px] font-semibold text-slate-500 mb-1 uppercase tracking-wide">Catuan</label>
               <input type="text" id="ro_catuan" placeholder="Contoh: 144 / ODC-A"
                 class="w-full text-xs border border-slate-300 rounded-lg px-2.5 py-2 font-medium focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition">
             </div>
-            <button type="button" id="ro_btn_scan" onclick="roScanSemua()"
-              class="bg-sky-700 hover:bg-sky-800 text-white text-[9px] font-extrabold px-4 py-2 rounded-lg shadow-md transition flex items-center gap-2 cursor-pointer">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Scan OPM (AI)
-            </button>
+            <div class="flex gap-2 flex-wrap justify-end">
+              <button type="button" id="ro_btn_scan" onclick="roScanSemua(false, false)"
+                class="ro-btn ro-btn-ghost" title="Pindai ulang satu per satu (lebih lembut untuk API)">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Scan Ulang
+              </button>
+              <button type="button" id="ro_btn_scan_paralel" onclick="roScanSemua(false, true)"
+                class="ro-btn ro-btn-sky" title="Pindai semua ODP dan port bersamaan (paling cepat)">
+                <i class="fa-solid fa-bolt"></i> Scan Semua (Paralel)
+              </button>
+            </div>
           </div>
-          <div id="ro_status" class="text-[9px] font-semibold text-slate-500"></div>
-          <div id="ro_tabel" class="max-h-[45vh] overflow-y-auto"></div>
+          <div class="flex items-center gap-3 pt-1">
+            <div class="ro-progres flex-1"><i id="ro_progres_bar"></i></div>
+            <span id="ro_progres_teks" class="text-[9px] font-bold text-slate-500 whitespace-nowrap">0 / 0 ODP</span>
+          </div>
+          <div id="ro_status" class="text-[9px] font-semibold text-slate-500 min-h-[14px]"></div>
+          </div>
+          <div id="ro_tabel" class="max-h-[45vh] overflow-y-auto pr-1"></div>
         </div>
 
         <!-- Langkah 3: hasil -->
@@ -5052,11 +5131,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         <!-- Footer -->
         <div class="px-5 py-4 bg-slate-50 border-t border-slate-200 flex justify-between gap-2 rounded-b-2xl">
-          <button type="button" id="ro_btn_kembali" onclick="roKembaliPilih()" class="hidden border border-slate-300 text-slate-700 hover:bg-slate-100 text-[9px] font-semibold px-4 py-2 rounded-lg transition cursor-pointer"><i class="fa-solid fa-arrow-left"></i> Ubah Pilihan</button>
+          <button type="button" id="ro_btn_kembali" onclick="roKembaliPilih()" class="ro-btn ro-btn-ghost hidden"><i class="fa-solid fa-arrow-left"></i> Ubah Pilihan</button>
           <div class="flex gap-2 ml-auto">
-            <button type="button" onclick="roTutup()" class="border border-slate-300 text-slate-700 hover:bg-slate-100 text-[9px] font-semibold px-4 py-2 rounded-lg transition cursor-pointer">Tutup</button>
-            <button type="button" id="ro_btn_lanjut" onclick="roLanjutPreview()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[9px] font-extrabold px-5 py-2 rounded-lg shadow-md transition flex items-center gap-2 cursor-pointer"><i class="fa-solid fa-arrow-right"></i> Lanjut ke Preview</button>
-            <button type="button" id="ro_btn_simpan" onclick="roSimpan()" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-extrabold px-5 py-2 rounded-lg shadow-md transition flex items-center gap-2 cursor-pointer"><i class="fa-solid fa-floppy-disk"></i> <span id="ro_btn_simpan_txt">Simpan &amp; Buat Lampiran</span></button>
+            <button type="button" onclick="roTutup()" class="ro-btn ro-btn-ghost">Tutup</button>
+            <button type="button" id="ro_btn_lanjut" onclick="roLanjutPreview()" class="ro-btn ro-btn-indigo"><i class="fa-solid fa-arrow-right"></i> Lanjut ke Preview</button>
+            <button type="button" id="ro_btn_simpan" onclick="roSimpan()" class="ro-btn ro-btn-emerald hidden"><i class="fa-solid fa-floppy-disk"></i> <span id="ro_btn_simpan_txt">Simpan &amp; Buat Lampiran</span></button>
           </div>
         </div>
       </div>
@@ -9202,6 +9281,23 @@ document.addEventListener('DOMContentLoaded', function () {
       roEl('ro_btn_lanjut').classList.toggle('hidden', step !== 'pilih');
       roEl('ro_btn_kembali').classList.toggle('hidden', step !== 'preview');
       roEl('ro_btn_simpan').classList.toggle('hidden', step !== 'preview');
+
+      const urutan = { pilih: 1, preview: 2, hasil: 3 };
+      const aktif = urutan[step] || 1;
+      for (let i = 1; i <= 3; i++) {
+        const pill = roEl('ro_step_pill_' + i);
+        if (!pill) continue;
+        pill.classList.toggle('selesai', i < aktif);
+        pill.classList.toggle('aktif', i === aktif);
+      }
+    }
+
+    function roProgres(selesai, total) {
+      const bar = roEl('ro_progres_bar');
+      const teks = roEl('ro_progres_teks');
+      const pct = total ? Math.round((selesai / total) * 100) : 0;
+      if (bar) bar.style.width = pct + '%';
+      if (teks) teks.textContent = selesai + ' / ' + total + ' ODP';
     }
 
     async function bukaRekapOpm() {
@@ -9211,6 +9307,7 @@ document.addEventListener('DOMContentLoaded', function () {
       roEl('ro_jml').textContent = 'Memuat ODP…';
       roEl('ro_daftar_odp').innerHTML = '<div class="text-center py-6 text-slate-400 text-xs"><i class="fa-solid fa-spinner fa-spin"></i> Memuat daftar ODP…</div>';
       roEl('ro_status').textContent = '';
+      roProgres(0, 0);
       roEl('ro_tabel').innerHTML = '';
       roEl('ro_catuan').value = '';
       roSetStep('pilih');
@@ -9293,9 +9390,9 @@ document.addEventListener('DOMContentLoaded', function () {
       roRenderTabel(sel);
       roSetStep('preview');
       // Isi otomatis: begitu preview terbuka, nilai yang masih kosong langsung
-      // dipindai dari foto eviden OPM (yang sudah terisi/koreksi manual tidak
-      // ditimpa — biar koreksi pengguna tetap aman).
-      roScanSemua(true);
+      // dipindai paralel dari foto eviden OPM (yang sudah terisi/koreksi manual
+      // tidak ditimpa — biar koreksi pengguna tetap aman).
+      roScanSemua(true, true);
     }
 
     function roRenderTabel(sel) {
@@ -9309,17 +9406,17 @@ document.addEventListener('DOMContentLoaded', function () {
           const val = window.escapeHtml(p.nilai || '');
           const isi = p.status === 'isi';
           const badge = isi
-            ? '<span class="text-[7px] font-extrabold text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">ISI</span>'
-            : (p.file ? '<span class="text-[7px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">foto</span>'
-                      : '<span class="text-[7px] font-semibold text-slate-400 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">kosong</span>');
+            ? '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-bold text-rose-700 bg-rose-50 ring-1 ring-rose-200">ISI</span>'
+            : (p.file ? '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-bold text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200">foto</span>'
+                      : '<span class="inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-semibold text-slate-400 bg-slate-50 ring-1 ring-slate-200">kosong</span>');
           const thumb = (!isi && p.file)
             ? '<a href="' + baseFoto + window.escapeHtml(p.file) + '" target="_blank" title="Lihat foto port ' + p.port + '">'
               + '<img src="' + baseFoto + window.escapeHtml(p.file) + '" alt="foto P' + p.port + '" style="height:42px;width:auto;max-width:70px;border-radius:6px;border:1px solid #e5e7eb;object-fit:contain;background:#fff;cursor:pointer;">'
               + '</a>'
             : (isi ? '<span class="text-[7px] text-slate-400">—</span>' : '<span class="text-[7px] text-slate-400">—</span>');
           const aksiScan = (!isi && p.file)
-            ? '<button type="button" data-ro-scan="' + window.escapeHtml(key) + '" title="Scan AI untuk port ini saja" class="text-[7px] font-extrabold text-sky-700 bg-sky-50 border border-sky-200 hover:bg-sky-100 px-1.5 py-0.5 rounded cursor-pointer whitespace-nowrap">Scan</button>'
-            : '<span class="text-[7px] text-slate-300">—</span>';
+            ? '<button type="button" data-ro-scan="' + window.escapeHtml(key) + '" title="Scan AI untuk port ini saja" class="ro-mini"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Scan</button>'
+            : '<span class="text-[8px] text-slate-300">—</span>';
           return ''
             + '<tr class="border-b border-slate-100 last:border-0">'
             +   '<td class="py-1 px-2 text-[8px] font-semibold text-slate-500 text-center">' + p.port + '</td>'
@@ -9327,18 +9424,18 @@ document.addEventListener('DOMContentLoaded', function () {
             +   '<td class="py-1 px-2 text-center">' + thumb + '</td>'
             +   '<td class="py-1 px-2">'
             +     '<input type="text" data-ro-nilai="' + window.escapeHtml(key) + '" value="' + val + '" placeholder="dBm / ISI"'
-            +       ' class="w-28 text-[9px] font-medium border border-slate-300 rounded-lg px-2 py-1 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition text-right">'
+            +       ' class="ro-nilai' + (String(p.nilai || '').trim() ? ' terisi' : '') + '" oninput="this.classList.toggle(\'terisi\', !!this.value.trim())">'
             +   '</td>'
             +   '<td class="py-1 px-2 text-center">' + aksiScan + '</td>'
             + '</tr>';
         }).join('');
         return ''
-          + '<div class="border border-slate-200 rounded-xl mb-3 overflow-hidden">'
-          +   '<div class="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">'
-          +     '<span class="text-[9px] font-extrabold text-slate-800">' + window.escapeHtml(o.nama) + '</span>'
-          +     '<span class="text-[8px] font-semibold text-slate-500">' + o.kapasitas + ' port</span>'
+          + '<div class="ro-panel mb-3 overflow-hidden">'
+          +   '<div class="px-3.5 py-2.5 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200 flex items-center justify-between">'
+          +     '<span class="text-[10px] font-extrabold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-diagram-project text-indigo-500 text-[9px]"></i>' + window.escapeHtml(o.nama) + '</span>'
+          +     '<span class="text-[8px] font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">' + o.kapasitas + ' port</span>'
           +   '</div>'
-          +   '<table class="w-full"><thead><tr class="text-[7px] uppercase text-slate-400">'
+          +   '<table class="ro-tabel"><thead><tr class="text-[7px] uppercase text-slate-400">'
           +     '<th class="py-1 px-2 font-extrabold w-10">Port</th><th class="py-1 px-2 font-extrabold w-16">Eviden</th><th class="py-1 px-2 font-extrabold w-16">Foto</th><th class="py-1 px-2 font-extrabold text-left">Nilai (dBm)</th><th class="py-1 px-2 font-extrabold w-16">Aksi</th>'
           +   '</tr></thead><tbody>' + baris + '</tbody></table>'
           + '</div>';
@@ -9352,59 +9449,82 @@ document.addEventListener('DOMContentLoaded', function () {
       }, 0);
     }
 
-    // roScanSemua(hanyaKosong) — hanyaKosong=true dipakai scan otomatis saat
-    // preview dibuka: hanya mengisi kolom yang masih kosong supaya koreksi
-    // manual pengguna tidak tertimpa. Scan manual (tombol) menimpa semua nilai.
-    async function roScanSemua(hanyaKosong) {
+    // roScanSemua(hanyaKosong, paralel)
+    // hanyaKosong=true → pakai saat preview dibuka agar koreksi manual tidak tertimpa.
+    // paralel=true    → semua ODP dikirim berbarengan (maks 4 antrean di browser);
+    //                   server juga memindai port di dalam ODP secara paralel.
+    async function roScanSemua(hanyaKosong, paralel) {
       const sel = roSelected();
       if (!sel.length) return;
-      const btn = roEl('ro_btn_scan');
-      const asli = btn.innerHTML;
-      btn.disabled = true;
-      let total = 0, terisi = 0, gagal = 0;
+      const tombol = [roEl('ro_btn_scan'), roEl('ro_btn_scan_paralel')].filter(Boolean);
+      const asli = tombol.map(b => b.innerHTML);
+      tombol.forEach(b => { b.disabled = true; });
+      const btnUtama = paralel ? roEl('ro_btn_scan_paralel') : roEl('ro_btn_scan');
+      let selesai = 0, terisi = 0, gagal = 0;
+      roProgres(0, sel.length);
+      roEl('ro_status').textContent = paralel
+        ? 'Memindai semua ODP secara berbarengan…'
+        : 'Memindai ODP satu per satu…';
+
+      const masukkanHasil = (j) => {
+        const hasil = j.hasil || {};
+        Object.keys(hasil).forEach(k => {
+          const inp = Array.prototype.find.call(
+            document.querySelectorAll('[data-ro-nilai]'),
+            el => el.getAttribute('data-ro-nilai') === k
+          );
+          if (!inp || !hasil[k]) return;
+          if (hanyaKosong && String(inp.value || '').trim() !== '') return; // jangan timpa koreksi
+          inp.value = hasil[k];
+          inp.classList.add('terisi');
+          terisi++;
+        });
+        gagal += (j.gagal || 0);
+      };
+
+      const scanOdp = async (o) => {
+        try {
+          const res = await fetch('/api/rekap-opm/' + checkerLokasiId + '/scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ odp: o.nama, paralel: !!paralel })
+          });
+          const j = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(j.message || ('HTTP ' + res.status));
+          masukkanHasil(j);
+        } catch (e) {
+          gagal++;
+          console.warn('scan gagal', o.nama, e);
+        } finally {
+          selesai++;
+          roProgres(selesai, sel.length);
+          if (btnUtama) btnUtama.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + selesai + '/' + sel.length;
+          roEl('ro_status').textContent = 'Memindai ' + o.nama + ' (' + selesai + '/' + sel.length + ')…';
+        }
+      };
+
       try {
-        for (let i = 0; i < sel.length; i++) {
-          const o = sel[i];
-          roEl('ro_status').textContent = 'Membaca nilai dari foto ' + o.nama + ' (' + (i + 1) + '/' + sel.length + ')…';
-          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Scan ' + (i + 1) + '/' + sel.length;
-          try {
-            const res = await fetch('/api/rekap-opm/' + checkerLokasiId + '/scan', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({ odp: o.nama })
-            });
-            const j = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(j.message || ('HTTP ' + res.status));
-            const hasil = j.hasil || {};
-            Object.keys(hasil).forEach(k => {
-              const inp = Array.prototype.find.call(
-                document.querySelectorAll('[data-ro-nilai]'),
-                el => el.getAttribute('data-ro-nilai') === k
-              );
-              if (!inp || !hasil[k]) return;
-              if (hanyaKosong && String(inp.value || '').trim() !== '') return;   // jangan timpa hasil koreksi
-              inp.value = hasil[k];
-              terisi++;
-            });
-            total += (j.dipindai || 0);
-            gagal += (j.gagal || 0);
-          } catch (e) {
-            gagal++;
-            console.warn('scan gagal', o.nama, e);
-          }
+        if (paralel) {
+          const antre = sel.slice();
+          const pekerja = Array.from({ length: Math.min(4, antre.length) }, async () => {
+            while (antre.length) await scanOdp(antre.shift());
+          });
+          await Promise.all(pekerja);
+        } else {
+          for (const o of sel) await scanOdp(o);
         }
         if (hanyaKosong) {
           roEl('ro_status').textContent = terisi
-            ? terisi + ' nilai terisi otomatis dari foto (hasil scan). Periksa/koreksi lalu tekan "Simpan & Buat Lampiran".'
+            ? terisi + ' nilai terisi otomatis dari foto (scan paralel). Periksa/koreksi lalu tekan "Simpan & Buat Lampiran".'
             : 'Tidak ada nilai baru yang bisa dibaca dari foto. Isi manual, lalu "Simpan & Buat Lampiran".';
         } else {
           roEl('ro_status').textContent = 'Scan selesai: ' + terisi + ' nilai terbaca' + (gagal ? ', ' + gagal + ' gagal (koreksi manual).' : '.');
         }
         if (gagal) showToast('Sebagian foto gagal dipindai. Koreksi manual bila perlu.', 'warning');
       } finally {
-        btn.disabled = false;
-        btn.innerHTML = asli;
+        tombol.forEach((b, i) => { b.disabled = false; b.innerHTML = asli[i]; });
+        roProgres(sel.length, sel.length);
       }
     }
 
