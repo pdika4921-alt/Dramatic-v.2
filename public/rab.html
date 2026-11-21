@@ -255,8 +255,15 @@
         <div class="rf-row rf-grid"><code>M-PROT-SLV</code><code>750</code><code class="rf-kosong">—</code><code>480</code><code>Pcs</code></div>
         <div class="rf-note">Tanda <b>—</b> = kolom dikosongkan tapi <b>tetap dipisah Tab</b>. Jangan diganti spasi.</div>
       </div>
-      <textarea id="drm_input" class="input-area" rows="6" oninput="previewRekon(this.value,'drm')"
+      <textarea id="drm_input" class="input-area" rows="6" oninput="previewRekon(this.value,'drm'); sinkronTeksKeTabel('drm')"
         placeholder="Paste 5 kolom dari Excel di sini…&#10;Atau klik tombol &quot;Isi Contoh&quot; untuk mencoba sekarang."></textarea>
+      <div id="drm_tabel_wrap" class="rekon-tabel-wrap" style="display:none;">
+        <div class="rt-head">
+          <span><i class="fa-solid fa-table" style="margin-right:5px;"></i>DATA DRM — klik sel untuk koreksi</span>
+          <button type="button" id="drm_toggle" class="btn btn-ghost" style="font-size:8px;padding:3px 8px;" onclick="toggleTeksRekon('drm')">Sembunyikan teks</button>
+        </div>
+        <div class="rt-scroll"><table id="drm_tabel" class="rt-table"></table></div>
+      </div>
       <div id="drm_validasi" class="rab-validasi"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;flex-wrap:wrap;">
         <span id="drm_count" class="rekon-count">0 item</span>
@@ -292,8 +299,15 @@
         <div class="rf-row rf-grid"><code>J-CO-OF</code><code class="rf-kosong">—</code><code>32.150</code><code>700</code><code>Core</code></div>
         <div class="rf-note">Volume REKON boleh berbeda dari DRM → dihitung sebagai Tambah / Kurang.</div>
       </div>
-      <textarea id="rekon_input" class="input-area" rows="6" oninput="previewRekon(this.value,'rekon')"
+      <textarea id="rekon_input" class="input-area" rows="6" oninput="previewRekon(this.value,'rekon'); sinkronTeksKeTabel('rekon')"
         placeholder="Paste 5 kolom dari Excel di sini…&#10;Atau klik tombol &quot;Isi Contoh&quot; untuk mencoba sekarang."></textarea>
+      <div id="rekon_tabel_wrap" class="rekon-tabel-wrap" style="display:none;">
+        <div class="rt-head">
+          <span><i class="fa-solid fa-table" style="margin-right:5px;"></i>DATA REKON — klik sel untuk koreksi</span>
+          <button type="button" id="rekon_toggle" class="btn btn-ghost" style="font-size:8px;padding:3px 8px;" onclick="toggleTeksRekon('rekon')">Sembunyikan teks</button>
+        </div>
+        <div class="rt-scroll"><table id="rekon_tabel" class="rt-table"></table></div>
+      </div>
       <div id="rekon_validasi" class="rab-validasi"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;flex-wrap:wrap;">
         <span id="rekon_count" class="rekon-count">0 item</span>
@@ -957,6 +971,107 @@ function previewRekon(text, tipe) {
   box.innerHTML = html;
 }
 
+// ══════════════════════════════════════════════════════════════
+//  TABEL EDITABLE HASIL UPLOAD DRM/REKON
+//  Textarea tetap menjadi sumber data. Tabel hanya memudahkan
+//  koreksi: setiap perubahan sel langsung ditulis kembali ke
+//  textarea, sehingga prosesDRM/prosesRekonInput/hitung lama
+//  tidak perlu diubah.
+// ══════════════════════════════════════════════════════════════
+function renderTabelRekon(tipe) {
+  const wrap = document.getElementById(tipe + '_tabel_wrap');
+  const tbl  = document.getElementById(tipe + '_tabel');
+  const txt  = document.getElementById(tipe + '_input');
+  if (!wrap || !tbl || !txt) return;
+
+  const items = parseRekonPaste(txt.value);
+  if (!items.length) { wrap.style.display = 'none'; return; }
+
+  tbl.innerHTML = '';
+  const thead = document.createElement('thead');
+  const trh = document.createElement('tr');
+  ['Designator', 'Jasa', 'Material', 'Volume', 'Satuan', ''].forEach(label => {
+    const th = document.createElement('th');
+    th.textContent = label;
+    trh.appendChild(th);
+  });
+  thead.appendChild(trh);
+  tbl.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  items.forEach(it => {
+    const tr = document.createElement('tr');
+    [it.designator, it.jasa, it.material, it.volume, it.satuan].forEach((v, kol) => {
+      const td  = document.createElement('td');
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      if (kol >= 1 && kol <= 3) inp.inputMode = 'decimal';
+      inp.value = v == null ? '' : String(v);
+      if (kol === 0) inp.className = 'rt-des';
+      inp.oninput = () => sinkronTabelKeTextarea(tipe);
+      td.appendChild(inp);
+      tr.appendChild(td);
+    });
+    const tdAksi = document.createElement('td');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'rt-hapus';
+    btn.title = 'Hapus baris ini';
+    btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    btn.onclick = () => {
+      tr.remove();
+      sinkronTabelKeTextarea(tipe);
+    };
+    tdAksi.appendChild(btn);
+    tr.appendChild(tdAksi);
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  wrap.style.display = 'block';
+}
+
+// Tabel → textarea (format 5 kolom dipisah Tab, header tetap disertakan).
+function sinkronTabelKeTextarea(tipe) {
+  const tbl = document.getElementById(tipe + '_tabel');
+  const txt = document.getElementById(tipe + '_input');
+  if (!tbl || !txt) return;
+  const baris = ['Designator\tJasa\tMaterial\tVolume\tSatuan'];
+  tbl.querySelectorAll('tbody tr').forEach(tr => {
+    const inp = tr.querySelectorAll('input');
+    if (inp.length < 5) return;
+    baris.push([0, 1, 2, 3, 4].map(i => inp[i].value.trim()).join('\t'));
+  });
+  txt.value = baris.join('\n');
+  previewRekon(txt.value, tipe);
+}
+
+// Textarea → tabel (dipanggil saat user mengetik langsung di textarea).
+function sinkronTeksKeTabel(tipe) {
+  const wrap = document.getElementById(tipe + '_tabel_wrap');
+  if (wrap && wrap.style.display === 'block') renderTabelRekon(tipe);
+}
+
+function toggleTeksRekon(tipe) {
+  const txt = document.getElementById(tipe + '_input');
+  const btn = document.getElementById(tipe + '_toggle');
+  if (!txt) return;
+  const tampilkan = txt.style.display === 'none';
+  txt.style.display = tampilkan ? '' : 'none';
+  if (btn) btn.textContent = tampilkan ? 'Sembunyikan teks' : 'Lihat teks';
+}
+
+// Setelah upload, tabel yang tampil — textarea tetap jadi sumber data
+// tetapi disembunyikan agar mudah dibaca dan dikoreksi.
+function tampilkanTabelRekon(tipe) {
+  renderTabelRekon(tipe);
+  const txt = document.getElementById(tipe + '_input');
+  const btn = document.getElementById(tipe + '_toggle');
+  if (txt && txt.style.display !== 'none') {
+    txt.style.display = 'none';
+    if (btn) btn.textContent = 'Lihat teks';
+  }
+}
+
 function isiContohRekon(tipe) {
   const id = (tipe === 'drm') ? 'drm_input' : 'rekon_input';
   const el = document.getElementById(id);
@@ -964,6 +1079,7 @@ function isiContohRekon(tipe) {
   const contoh = (tipe === 'drm') ? CONTOH_DRM : CONTOH_REKON;
   el.value = contoh;
   previewRekon(contoh, tipe);
+  renderTabelRekon(tipe);
   el.focus();
   const nama = (tipe === 'drm') ? 'DRM' : 'REKON';
   showToast('info', 'Contoh ' + nama + ' dimuat. Klik "Proses ' + nama + '".');
@@ -1008,6 +1124,7 @@ async function uploadRekonExcel(input) {
       })).join('\n');
     document.getElementById('rekon_input').value = baris;
     previewRekon(baris, 'rekon');
+    tampilkanTabelRekon('rekon');
 
     const l = j.laporan || {};
     const adaNilai = (j.items || []).filter(it => Number(it.rekon) > 0).length;
@@ -1061,6 +1178,7 @@ async function uploadDrmExcel(input) {
       })).join('\n');
     document.getElementById('drm_input').value = baris;
     previewRekon(baris, 'drm');
+    tampilkanTabelRekon('drm');
 
     const l = j.laporan || {};
     const adaNilai = (j.items || []).filter(it => Number(it.rekon) > 0).length;
@@ -1759,6 +1877,12 @@ function clearRekon() {
   drmData = []; rekonData = []; rekonResult = [];
   document.getElementById('drm_input').value   = '';
   document.getElementById('rekon_input').value = '';
+  document.getElementById('drm_tabel_wrap').style.display   = 'none';
+  document.getElementById('rekon_tabel_wrap').style.display = 'none';
+  document.getElementById('drm_input').style.display   = '';
+  document.getElementById('rekon_input').style.display = '';
+  document.getElementById('drm_toggle').textContent   = 'Sembunyikan teks';
+  document.getElementById('rekon_toggle').textContent = 'Sembunyikan teks';
   document.getElementById('drm_count').textContent   = '0 item';
   document.getElementById('rekon_count').textContent = '0 item';
   document.getElementById('rekon_table_wrap').classList.remove('active');
