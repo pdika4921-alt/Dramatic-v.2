@@ -269,26 +269,32 @@
       </div>
       <div id="drm_validasi" class="rab-validasi"></div>
       <div id="drm_master_status" class="mc-status"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;flex-wrap:wrap;">
-        <span id="drm_count" class="rekon-count">0 item</span>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="btn btn-ghost" onclick="document.getElementById('drm_file').click()" style="font-size: 9px;padding:6px 12px;" title="Upload BOQ DRM .xlsx — hanya designator M-/J- dan kolom TOTAL VOLUME yang diambil">
-            <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> Upload Excel
-          </button>
-          <input type="file" id="drm_file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" onchange="uploadDrmExcel(this)">
-          <label class="mc-chip" id="drm_master_label" title="Otomatis tercentang bila nama lokasi ditemukan di BOQ DRM ALL.xlsx">
-            <input type="checkbox" id="drm_master_cek" disabled>
-            <span class="mc-kotak"><i class="fa-solid fa-check"></i></span><span>Master BOQ</span>
-          </label>
-          <button class="btn btn-ghost mc-btn" onclick="cekMasterBoq('drm', this)" title="Cek apakah nama lokasi ini sudah ada di baris 4 BOQ DRM ALL.xlsx — bila ada, data langsung terisi">
-            <i class="fa-solid fa-magnifying-glass" style="color:#0284c7;"></i> Cek Data Master BOQ
-          </button>
-          <button class="btn btn-ghost" onclick="isiContohRekon('drm')" style="font-size: 9px;padding:6px 12px;">
-            <i class="fa-solid fa-file-circle-plus"></i> Isi Contoh
-          </button>
-          <button class="btn btn-ghost" onclick="prosesDRM()" style="font-size: 9px;padding:6px 14px;">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Proses DRM
-          </button>
+      <div class="rkb-toolbar rkb-drm">
+        <div class="rkb-info"><i class="fa-solid fa-list-check"></i><span id="drm_count" class="rkb-count">0 item</span></div>
+        <div class="rkb-groups">
+          <div class="rkb-group rkb-sumber">
+            <span class="rkb-caption">SUMBER DATA</span>
+            <button class="btn rkb-btn rkb-upload" onclick="document.getElementById('drm_file').click()" title="Upload BOQ DRM .xlsx — hanya designator M-/J- dan kolom TOTAL VOLUME yang diambil">
+              <i class="fa-solid fa-file-excel"></i><span>Upload Excel</span>
+            </button>
+            <input type="file" id="drm_file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" onchange="uploadDrmExcel(this)">
+            <label class="mc-chip" id="drm_master_label" title="Otomatis tercentang bila nama lokasi ditemukan di BOQ DRM ALL.xlsx">
+              <input type="checkbox" id="drm_master_cek" disabled>
+              <span class="mc-kotak"><i class="fa-solid fa-check"></i></span><span>Master BOQ</span>
+            </label>
+            <button class="btn rkb-btn rkb-cek mc-btn" onclick="cekMasterBoq('drm', this)" title="Cek apakah nama lokasi ini sudah ada di baris 4 BOQ DRM ALL.xlsx — bila ada, data langsung terisi">
+              <i class="fa-solid fa-magnifying-glass"></i><span>Cek Data Master BOQ</span>
+            </button>
+          </div>
+          <div class="rkb-group rkb-aksi">
+            <span class="rkb-caption">AKSI</span>
+            <button class="btn rkb-btn rkb-contoh" onclick="isiContohRekon('drm')">
+              <i class="fa-solid fa-file-circle-plus"></i><span>Isi Contoh</span>
+            </button>
+            <button class="btn rkb-btn rkb-proses" onclick="prosesDRM()">
+              <i class="fa-solid fa-wand-magic-sparkles"></i><span>Proses DRM</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -321,26 +327,32 @@
       </div>
       <div id="rekon_validasi" class="rab-validasi"></div>
       <div id="rekon_master_status" class="mc-status"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;flex-wrap:wrap;">
-        <span id="rekon_count" class="rekon-count">0 item</span>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="btn btn-ghost" onclick="document.getElementById('rekon_file').click()" style="font-size: 9px;padding:6px 12px;" title="Upload BOQ REKON .xlsx — hanya designator M-/J- dan nilai REKON yang diambil">
-            <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> Upload Excel
-          </button>
-          <input type="file" id="rekon_file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" onchange="uploadRekonExcel(this)">
-          <label class="mc-chip" id="rekon_master_label" title="Otomatis tercentang bila nama lokasi ditemukan di BOQ DRM ALL.xlsx">
-            <input type="checkbox" id="rekon_master_cek" disabled>
-            <span class="mc-kotak"><i class="fa-solid fa-check"></i></span><span>Master BOQ</span>
-          </label>
-          <button class="btn btn-ghost mc-btn" onclick="cekMasterBoq('rekon', this)" title="Cek apakah nama lokasi ini sudah ada di baris 4 BOQ DRM ALL.xlsx — bila ada, data langsung terisi">
-            <i class="fa-solid fa-magnifying-glass" style="color:#0284c7;"></i> Cek Data Master BOQ
-          </button>
-          <button class="btn btn-ghost" onclick="isiContohRekon('rekon')" style="font-size: 9px;padding:6px 12px;">
-            <i class="fa-solid fa-file-circle-plus"></i> Isi Contoh
-          </button>
-          <button class="btn btn-rekon-ghost" onclick="prosesRekonInput()" style="font-size: 9px;padding:6px 14px;">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Proses REKON
-          </button>
+      <div class="rkb-toolbar rkb-rekon">
+        <div class="rkb-info"><i class="fa-solid fa-list-check"></i><span id="rekon_count" class="rkb-count">0 item</span></div>
+        <div class="rkb-groups">
+          <div class="rkb-group rkb-sumber">
+            <span class="rkb-caption">SUMBER DATA</span>
+            <button class="btn rkb-btn rkb-upload" onclick="document.getElementById('rekon_file').click()" title="Upload BOQ REKON .xlsx — hanya designator M-/J- dan nilai REKON yang diambil">
+              <i class="fa-solid fa-file-excel"></i><span>Upload Excel</span>
+            </button>
+            <input type="file" id="rekon_file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" onchange="uploadRekonExcel(this)">
+            <label class="mc-chip" id="rekon_master_label" title="Otomatis tercentang bila nama lokasi ditemukan di BOQ DRM ALL.xlsx">
+              <input type="checkbox" id="rekon_master_cek" disabled>
+              <span class="mc-kotak"><i class="fa-solid fa-check"></i></span><span>Master BOQ</span>
+            </label>
+            <button class="btn rkb-btn rkb-cek mc-btn" onclick="cekMasterBoq('rekon', this)" title="Cek apakah nama lokasi ini sudah ada di baris 4 BOQ DRM ALL.xlsx — bila ada, data langsung terisi">
+              <i class="fa-solid fa-magnifying-glass"></i><span>Cek Data Master BOQ</span>
+            </button>
+          </div>
+          <div class="rkb-group rkb-aksi">
+            <span class="rkb-caption">AKSI</span>
+            <button class="btn rkb-btn rkb-contoh" onclick="isiContohRekon('rekon')">
+              <i class="fa-solid fa-file-circle-plus"></i><span>Isi Contoh</span>
+            </button>
+            <button class="btn rkb-btn rkb-proses" onclick="prosesRekonInput()">
+              <i class="fa-solid fa-wand-magic-sparkles"></i><span>Proses REKON</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
