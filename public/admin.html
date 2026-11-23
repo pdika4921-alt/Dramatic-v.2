@@ -6105,19 +6105,20 @@ document.addEventListener('DOMContentLoaded', function () {
         + satu(needEvidencePerSumber('EKSTERNAL'), 'cl-emerald-t', 'fa-globe', 'Eksternal · Need Evidence');
     }
 
-    async function muatGodc() {
+    async function muatGodc(signal) {
       const viewWidget = document.getElementById('view_report_godc');
       const elStatus = document.getElementById('godc_status');
       if (elStatus) elStatus.textContent = 'Memuat...';
       try {
-        const res = await fetch('/api/godc', { credentials: 'include' });
+        const res = await fetch('/api/godc', { credentials: 'include', signal: signal });
         const d = await res.json();
         if (!d.ok) throw new Error(d.detail || 'HTTP ' + res.status);
         godcData = d;
         if (viewWidget && !viewWidget.classList.contains('hidden')) renderGodc(d);
         renderGodcStatCards();
-        refreshLokasiCache();
+        refreshLokasiCache(signal);
       } catch (e) {
+        if (e && e.name === 'AbortError') return;
         if (elStatus) elStatus.textContent = 'Gagal memuat: ' + e.message;
       }
     }
@@ -6126,11 +6127,11 @@ document.addEventListener('DOMContentLoaded', function () {
        agar dropdown Generate Dokumen / Pilih lokasi selalu sinkron dgn data terbaru
        hasil sinkronisasi GODC yang menambah lokasi baru. */
     let lokasiCacheBusy = false;
-    async function refreshLokasiCache() {
+    async function refreshLokasiCache(signal) {
       if (lokasiCacheBusy) return;
       lokasiCacheBusy = true;
       try {
-        const res = await fetch('/api/lokasi', { credentials: 'include' });
+        const res = await fetch('/api/lokasi', { credentials: 'include', signal: signal });
         if (res.status === 401 || res.status === 403) return;
         if (!res.ok) return;
         const d = await res.json();
@@ -6138,7 +6139,7 @@ document.addEventListener('DOMContentLoaded', function () {
         cacheListProyek = d;
         if (sideLocOpen) renderSideLocList();
         else if (genDdOpen) filterGenSearchDropdown();
-      } catch (e) { /* abaikan — retry pd siklus berikut */ }
+      } catch (e) { /* abaikan — retry pd siklus berikut (termasuk AbortError) */ }
       finally { lokasiCacheBusy = false; }
     }
 
@@ -6364,7 +6365,7 @@ document.addEventListener('DOMContentLoaded', function () {
       renderGodcStatCards();
     }
 
-    async function muatRekapStatus(force) {
+    async function muatRekapStatus(force, signal) {
       const view = document.getElementById('view_dashboard');
       const elStat = document.getElementById('rekap_status');
       if (!view || view.classList.contains('hidden')) return;
@@ -6379,13 +6380,14 @@ document.addEventListener('DOMContentLoaded', function () {
         if (force) q.push('force=1');
         if (rekapBranch) q.push('branch=' + encodeURIComponent(rekapBranch));
         if (rekapStatusKerja) q.push('status=' + encodeURIComponent(rekapStatusKerja));
-        const res = await fetch('/api/rekap-status' + (q.length ? '?' + q.join('&') : ''), { credentials: 'include' });
+        const res = await fetch('/api/rekap-status' + (q.length ? '?' + q.join('&') : ''), { credentials: 'include', signal: signal });
         const d = await res.json();
         if (!d.ok) throw new Error(d.message || 'HTTP ' + res.status);
         rekapData = d;
         renderRekapKpis();
         renderRekapStatus();
       } catch (e) {
+        if (e && e.name === 'AbortError') return;
         if (elStat) elStat.textContent = 'Gagal memuat rekap: ' + e.message;
       }
     }
@@ -8462,8 +8464,38 @@ document.addEventListener('DOMContentLoaded', function () {
       godcDownloadCsv(godcNamaFile('REPORT_GODC_' + (all || !secs.length ? 'SEMUA' : 'MATRIKS')), all || !secs.length ? [head].concat(body) : body);
     }
 
-    setInterval(muatGodc, 300000);
-    setInterval(function () { muatRekapStatus(false); }, 60000);
+    /* ── Penjadwalan beban berat dashboard ─────────────────────────────
+       /api/godc (±14 MB) dan /api/rekap-status (±4 MB) tidak dijalankan
+       saat user sedang di Audit. Keduanya ditunda sebentar saat dashboard
+       dibuka, lalu dibatalkan bila user berpindah view. Endpoint, filter,
+       dan hitungan tetap sama — hanya waktu panggilnya saja. */
+    let viewSaatIni = 'dashboard';
+    let dashBeratTimer = null;
+    let dashBeratAbort = null;
+
+    function jadwalDashBerat() {
+      if (dashBeratTimer || viewSaatIni !== 'dashboard') return;
+      dashBeratTimer = setTimeout(function () {
+        dashBeratTimer = null;
+        if (viewSaatIni !== 'dashboard') return;
+        if (dashBeratAbort) { try { dashBeratAbort.abort(); } catch (e) {} }
+        dashBeratAbort = new AbortController();
+        const signal = dashBeratAbort.signal;
+        muatGodc(signal);
+        muatRekapStatus(false, signal);
+      }, 1500);
+    }
+    function batalkanDashBerat() {
+      if (dashBeratTimer) { clearTimeout(dashBeratTimer); dashBeratTimer = null; }
+      if (dashBeratAbort) { try { dashBeratAbort.abort(); } catch (e) {} dashBeratAbort = null; }
+    }
+
+    setInterval(function () {
+      if (viewSaatIni === 'dashboard' || viewSaatIni === 'report_godc') muatGodc();
+    }, 300000);
+    setInterval(function () {
+      if (viewSaatIni === 'dashboard') muatRekapStatus(false);
+    }, 60000);
 
     /* ═══════════════════════════════════════════════════════════════
        TAMBAH LOKASI
@@ -11224,7 +11256,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       }
 
-      if (viewKey === 'dashboard') { muatAktivitas(); muatGodc(); muatRekapStatus(false); }
+      viewSaatIni = viewKey;
+      if (viewKey === 'dashboard') { muatAktivitas(); jadwalDashBerat(); }
+      else { batalkanDashBerat(); }
       if (viewKey === 'master') { muatDaftarLokasi(); renderGodcStatCards(); masterLokasiStartTimer(); }
       else { masterLokasiStopTimer(); }
       if (viewKey === 'report_godc') {
