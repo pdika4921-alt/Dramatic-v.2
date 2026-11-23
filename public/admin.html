@@ -1736,11 +1736,34 @@
               #gen_dropdown_panel .gen-icon { width: 24px; height: 24px; font-size: 9px; border-radius: 7px; }
               #gen_dropdown_panel .gen-badge-soon, #gen_dropdown_panel .gen-badge-active { font-size: 7px; padding: 1.5px 6px; }
               #gen_search_list { max-height: 12rem; }
-              /* Sakelar format unduhan DOCX / PDF */
-              .genfmt { font-size: 7px; font-weight: 700; letter-spacing:.04em; padding:4px 10px; color:#94a3b8;
-                        background:transparent; border:0; cursor:pointer; transition:.15s; }
-              .genfmt:hover { color:#e2e8f0; background:#334155; }
-              .genfmt.active { background:#4f46e5; color:#fff; box-shadow:0 1px 6px rgba(79,70,229,.55); }
+              /* Sakelar format unduhan Word / PDF — tampilan lebih lembut */
+              #gen_dropdown_panel .gen-format-bar {
+                background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+                border-bottom: 1px solid #e2e8f0;
+              }
+              #gen_dropdown_panel .gen-format-label {
+                color: #64748b; font-size: 8.5px; font-weight: 700; letter-spacing: .06em;
+              }
+              #gen_dropdown_panel .gen-format-label i { color: #818cf8; }
+              #gen_dropdown_panel .gen-format-switch {
+                display: flex; gap: 2px; padding: 3px; background: #fff;
+                border: 1px solid #e2e8f0; border-radius: 10px;
+                box-shadow: 0 1px 2px rgba(15,23,42,.04);
+              }
+              #gen_dropdown_panel .genfmt {
+                display:inline-flex; align-items:center; gap:5px; font-size:8px; font-weight:700;
+                line-height:1; letter-spacing:.01em; padding:5px 9px; color:#94a3b8;
+                background:transparent; border:0; border-radius:7px; cursor:pointer;
+                transition: color .18s ease, background .18s ease, box-shadow .18s ease;
+              }
+              #gen_dropdown_panel .genfmt i { font-size:9px; opacity:.85; }
+              #gen_dropdown_panel .genfmt small { font-size:6.5px; font-weight:600; opacity:.7; }
+              #gen_dropdown_panel .genfmt:hover { color:#475569; background:#f1f5f9; }
+              #gen_dropdown_panel .genfmt.active {
+                color:#4338ca; background:#eef2ff;
+                box-shadow: inset 0 0 0 1px rgba(99,102,241,.22), 0 1px 3px rgba(99,102,241,.12);
+              }
+              #gen_dropdown_panel .genfmt.active i { opacity:1; }
             </style>
 
             <!-- ══ CUSTOM SEARCH LOKASI DI DALAM GENERATE ══ -->
@@ -1770,14 +1793,18 @@
    </div>
 </div>
 
-            <!-- ══ PILIH FORMAT HASIL: DOCX / PDF ══ -->
-            <div class="px-3 py-2 bg-[#0b1120] border-b border-slate-800 flex-shrink-0 flex items-center justify-between gap-2 relative z-[104]">
-              <div class="text-[9.5px] font-extrabold text-slate-400 uppercase tracking-wider">
-                <i class="fa-solid fa-file-export mr-1"></i>Format unduhan
+            <!-- ══ PILIH FORMAT HASIL: WORD / PDF ══ -->
+            <div class="gen-format-bar px-3 py-2 flex-shrink-0 flex items-center justify-between gap-2 relative z-[104]">
+              <div class="gen-format-label uppercase flex items-center gap-1.5">
+                <i class="fa-solid fa-download"></i> Format Unduhan
               </div>
-              <div class="flex bg-[#1e2640] border border-slate-700 rounded-lg overflow-hidden" id="gen_format_switch">
-                <button type="button" class="genfmt active" data-fmt="docx" onclick="setGenFormat('docx')">DOCX</button>
-                <button type="button" class="genfmt" data-fmt="pdf" onclick="setGenFormat('pdf')">PDF</button>
+              <div class="gen-format-switch" id="gen_format_switch">
+                <button type="button" class="genfmt active" data-fmt="docx" onclick="setGenFormat('docx')">
+                  <i class="fa-solid fa-file-word"></i><span>Word</span><small>.docx</small>
+                </button>
+                <button type="button" class="genfmt" data-fmt="pdf" onclick="setGenFormat('pdf')">
+                  <i class="fa-solid fa-file-pdf"></i><span>PDF</span><small>.pdf</small>
+                </button>
               </div>
             </div>
 
