@@ -174,7 +174,7 @@ async function renderPdfHalaman(pdfPath) {
   try {
     const st = fs.statSync(pdfPath);
     const kunci = require('crypto').createHash('sha1')
-      .update(pdfPath + '|' + st.mtimeMs + '|' + st.size).digest('hex').slice(0, 16);
+      .update(pdfPath + '|' + st.mtimeMs + '|' + st.size + '|pdf30').digest('hex').slice(0, 16);
     pastikanFolderEksis(PDF_CACHE_DIR);
     const cache = [];
     for (let i = 1; ; i++) {
@@ -199,7 +199,8 @@ async function renderPdfHalaman(pdfPath) {
     const maks = Math.min(doc.numPages, 30); // batas wajar, jaga waktu generate
     for (let i = 1; i <= maks; i++) {
       const page = await doc.getPage(i);
-      const viewport = page.getViewport({ scale: 1.6 });
+      // Skala 3.0 ≈ 216 DPI (dulu 1.6 ≈ 115 DPI) supaya teks/gambar PDF tidak buram saat zoom.
+      const viewport = page.getViewport({ scale: 3.0 });
       const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = '#ffffff';
@@ -324,13 +325,13 @@ function gambarTerpotong(canvas) {
   }
 }
 
-// Render PDF hasil plot DWG: skala lebih tajam (2.6) + pangkas tepi putih.
+// Render PDF hasil plot DWG: skala lebih tajam (3.2) + pangkas tepi putih.
 // Cache terpisah: uploads/_dwgcache/<kunci>_p<N>.png
 async function renderPdfDwg(pdfPath) {
   try {
     const st = fs.statSync(pdfPath);
     const kunci = require('crypto').createHash('sha1')
-      .update(pdfPath + '|' + st.mtimeMs + '|' + st.size + '|dwg26').digest('hex').slice(0, 16);
+      .update(pdfPath + '|' + st.mtimeMs + '|' + st.size + '|dwg32').digest('hex').slice(0, 16);
     pastikanFolderEksis(DWG_CACHE_DIR);
     const cache = [];
     for (let i = 1; ; i++) {
@@ -352,7 +353,8 @@ async function renderPdfDwg(pdfPath) {
     const maks = Math.min(doc.numPages, 10);
     for (let i = 1; i <= maks; i++) {
       const page = await doc.getPage(i);
-      const viewport = page.getViewport({ scale: 2.6 });
+      // 3.2 ≈ 230 DPI, lebih tajam saat gambar hasil plot DWG di-zoom di Word/PDF.
+      const viewport = page.getViewport({ scale: 3.2 });
       const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = '#ffffff';
@@ -2430,13 +2432,14 @@ app.post('/api/upload', checkAuth(), upload.array('files'), async (req, res) => 
       } else {
         await sharp(file.buffer)
           .resize({
-              width: 1000, 
-              height: 1000, 
+              width: 2480,
+              height: 3508,
               fit: 'inside', // Wajib 'inside' agar tidak ada bagian yang terpotong
-              withoutEnlargement: true // Mencegah gambar kecil jadi pecah
+              withoutEnlargement: true // Mencegah gambar kecil jadi pecah karena di-upscale
           })
           .withMetadata() // Pertahankan EXIF (tanggal/GPS/software) untuk verifikasi keaslian
-          .jpeg({ quality: 75 })
+          // A4 @300 DPI + kualitas tinggi: gambar tetap tajam saat di-zoom di Word/PDF.
+          .jpeg({ quality: 90, chromaSubsampling: '4:4:4' })
           .toFile(fileDestination);
       }
 
@@ -3510,10 +3513,10 @@ app.get('/api/get-lokasi', async (req, res) => {
 const DIR_FOTO_SERAGAM = path.join(os.tmpdir(), 'foto_seragam_webbogor');
 // Skala supersampling: letterbox dirender pada kelipatan ini lalu ditampilkan di
 // dokumen pada ukuran kotak asli (w×h). Rasio & tampilan identik, tetapi jumlah
-// piksel jauh lebih banyak → hasil cetak/zoom TIDAK PECAH (tajam). 3× ≈ 285 DPI
-// pada kotak ~2,2 inci. Ubah angka ini bila ingin lebih tajam (mis. 4).
-const FOTO_SERAGAM_SCALE = 3;
-const FOTO_SERAGAM_CACHE_V = 'v3'; // naikkan bila algoritma berubah → cache lama hangus
+// piksel jauh lebih banyak → hasil cetak/zoom TIDAK PECAH (tajam). 4× ≈ 380 DPI
+// pada kotak ~2,2 inci, tetap tajam saat PDF di-zoom.
+const FOTO_SERAGAM_SCALE = 4;
+const FOTO_SERAGAM_CACHE_V = 'v4'; // naikkan bila algoritma berubah → cache lama hangus
 async function seragamkanFoto(srcPath, w, h) {
   try {
     if (!srcPath || !fs.existsSync(srcPath)) return srcPath;
@@ -6220,7 +6223,7 @@ const lokasiabd  = (req.body.lokasiabd  || lokasiData.nama_lokasi || '-').trim()
       const spDest = path.join(folderSP, `SURATPENUNJUKAN_${nlc}.jpg`);
       await sharp(spBuf)
         .resize({ width: 2480, height: 3508, fit: 'inside', withoutEnlargement: true })
-        .jpeg({ quality: 88 })
+        .jpeg({ quality: 92, chromaSubsampling: '4:4:4' })
         .toFile(spDest);
       pathSP = spDest;
     }
@@ -6236,7 +6239,7 @@ const lokasiabd  = (req.body.lokasiabd  || lokasiData.nama_lokasi || '-').trim()
       const ssboqDest = path.join(folderSSBOQ, `SSBOQ_${nlc}.jpg`);
       await sharp(ssboqBuf)
         .resize({ width: 2480, height: 1754, fit: 'inside', withoutEnlargement: true })
-        .jpeg({ quality: 85 })
+        .jpeg({ quality: 92, chromaSubsampling: '4:4:4' })
         .toFile(ssboqDest);
       pathSSBOQ = ssboqDest;
     }
@@ -6409,8 +6412,8 @@ app.post('/api/baut-nodeb/upload/:lokasi_id', checkAuth('admin'),
             no++;
             await sharp(f.buffer)
               .flatten({ background: '#ffffff' })
-              .resize({ width: 1800, withoutEnlargement: true })
-              .jpeg({ quality: 88 })
+              .resize({ width: 2480, height: 3508, fit: 'inside', withoutEnlargement: true })
+              .jpeg({ quality: 92, chromaSubsampling: '4:4:4' })
               .toFile(path.join(dir, 'page-' + String(no).padStart(3, '0') + '.jpg'));
           }
         }
@@ -6493,7 +6496,7 @@ app.post('/api/generate/ba_prelim/:lokasi_id', checkAuth('admin'), upload.fields
         // Standarkan ukuran A4 (bisa disesuaikan ukurannya bila tidak ingin seukuran A4 penuh)
         await sharp(fileBuf)
           .resize({ width: 2480, height: 3508, fit: 'inside', withoutEnlargement: true })
-          .jpeg({ quality: 85 })
+          .jpeg({ quality: 92, chromaSubsampling: '4:4:4' })
           .toFile(destPath);
         
         payload[slot] = destPath; // Misal {%kesepakatan}
