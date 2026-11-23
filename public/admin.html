@@ -5220,6 +5220,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let cacheRowsRendered   = [];
     let cacheRowsExport     = [];
     let checkerLokasiId     = null;
+    let auditRenderGate     = null; // menahan penulisan data ODP/ePODP sampai baris audit selesai di-render
     let currentPage         = 1;
     let ITEMS_PER_PAGE      = 10;
     let activeFilterTematik = null;
@@ -5730,6 +5731,9 @@ document.addEventListener('DOMContentLoaded', function () {
        MUAT DAFTAR LOKASI
     ═══════════════════════════════════════════════════════════════ */
     async function muatDaftarLokasi() {
+      const tokenLokasi = ++daftarLokasiToken;
+      daftarLokasiAktif = true;
+      daftarLokasiPerluUlang = false;
       try {
         // Coba endpoint dengan RAB dulu, fallback ke /api/lokasi jika gagal (misal sesi bukan admin)
         let listLokasi = [];
@@ -5829,6 +5833,10 @@ document.addEventListener('DOMContentLoaded', function () {
         var rowIdx = 0;
 
         for (let [index, loc] of listLokasi.entries()) {
+          if (tokenLokasi !== daftarLokasiToken) {
+            daftarLokasiPerluUlang = true;
+            return;
+          }
           // Filter: hanya tampilkan proyek trigger jika data GODC tersedia
           if (useTriggerFilter) {
             var normLoc = (loc.nama_lokasi || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
@@ -5952,6 +5960,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (typeof showToast === 'function') showToast('Gagal memuat data lokasi.', 'error');
         dashAgregat = {};
         updateStatCards(0, 0, 0, 0);
+      } finally {
+        if (tokenLokasi === daftarLokasiToken) daftarLokasiAktif = false;
       }
     }
 
@@ -8472,6 +8482,11 @@ document.addEventListener('DOMContentLoaded', function () {
     let viewSaatIni = 'dashboard';
     let dashBeratTimer = null;
     let dashBeratAbort = null;
+    // Loop progres di muatDaftarLokasi() dihentikan saat user meninggalkan
+    // dashboard/master supaya tidak menyita server saat memilih lokasi di Audit.
+    let daftarLokasiToken = 0;
+    let daftarLokasiAktif = false;
+    let daftarLokasiPerluUlang = false;
 
     function jadwalDashBerat() {
       if (dashBeratTimer || viewSaatIni !== 'dashboard') return;
@@ -8753,19 +8768,28 @@ document.addEventListener('DOMContentLoaded', function () {
       loading.classList.remove("hidden");
       refreshBtn.classList.remove("hidden");
 
+      let bukaGate;
       try {
-        const resP  = await fetch(`/api/progres/${selectId}`);
-        if (!resP.ok) throw new Error(`Server error ${resP.status}`);
-        const dataP = await resP.json();
+        auditRenderGate = new Promise(function (r) { bukaGate = r; });
+        // Fetch pendukung ODP/ePODP dijalankan lebih awal: hasilnya tetap
+        // ditulis setelah render, tapi tidak ikut mengantre di belakangnya.
+        muatInfoOdpRow();
+        muatInfoEpodpRow();
+
         const lokInfo = cacheListProyek.find(l => String(l.id) === String(selectId));
 
-        // Pengecualian per lokasi (hanya admin yang boleh mengubah)
-        await rekapSesi();
+        // Semua fetch audit saling independen → jalankan bersamaan.
+        // Endpoint, filter, dan hitungan tidak berubah; hanya urutan tunggunya.
+        const [resP, , daftarSkip] = await Promise.all([
+          fetch(`/api/progres/${selectId}`),
+          rekapSesi(),
+          muatAuditSkip(selectId),
+          muatVerifikasiSummary(selectId),
+          muatCheckerRAB(selectId, [], lokInfo ? lokInfo.tematik : null)
+        ]);
+        if (!resP.ok) throw new Error(`Server error ${resP.status}`);
+        const dataP = await resP.json();
         auditBisaSkip = rekapRole === 'admin';
-        const daftarSkip = await muatAuditSkip(selectId);
-
-        // Ringkasan verifikasi keaslian eviden (AI) per kategori
-        await muatVerifikasiSummary(selectId);
         const btnVerifSemua = document.getElementById('btn_verifikasi_semua');
         const labelVerif = document.getElementById('btn_verifikasi_semua_label');
         if (btnVerifSemua) {
@@ -8862,17 +8886,14 @@ document.addEventListener('DOMContentLoaded', function () {
         renderCheckerList("list_berkas_belum", belum, false);
         renderAuditSkip(tidakBerlaku);
         renderCheckerInputs(dataP.inputs || []);
-        muatInfoOdpRow();
-        muatInfoEpodpRow();
-
-        /* RAB + Acuan */
-        await muatCheckerRAB(selectId, sudahGabung, lokInfo ? lokInfo.tematik : null);
+        if (bukaGate) { bukaGate(); bukaGate = null; }
 
         loading.classList.add("hidden");
         content.classList.remove("hidden");
 
       } catch (e) {
         console.error(e);
+        if (bukaGate) { bukaGate(); bukaGate = null; }
         loading.classList.add("hidden");
         ph.classList.remove("hidden");
         showToast("Gagal memuat data progres berkas.", "error");
@@ -11257,8 +11278,18 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       viewSaatIni = viewKey;
-      if (viewKey === 'dashboard') { muatAktivitas(); jadwalDashBerat(); }
-      else { batalkanDashBerat(); }
+      if (viewKey === 'dashboard') {
+        muatAktivitas();
+        jadwalDashBerat();
+        if (daftarLokasiPerluUlang) muatDaftarLokasi();
+      } else {
+        batalkanDashBerat();
+        if (viewKey !== 'master' && daftarLokasiAktif) {
+          daftarLokasiToken++;
+          daftarLokasiAktif = false;
+          daftarLokasiPerluUlang = true;
+        }
+      }
       if (viewKey === 'master') { muatDaftarLokasi(); renderGodcStatCards(); masterLokasiStartTimer(); }
       else { masterLokasiStopTimer(); }
       if (viewKey === 'report_godc') {
@@ -11675,6 +11706,7 @@ async function submitGenerateBaPrelim() {
         const j = await resOpm.json();
         const galeri = await resGal.json().catch(() => []);
         const daftar = j.daftar || [];
+        if (auditRenderGate) await auditRenderGate;
 
         // Peta foto OPM: { namaODP: { noPort: {url, id, file} } }
         const KAT_OPM = '-EVIDENT HASIL UKUR OPM';
@@ -11830,6 +11862,7 @@ async function submitGenerateBaPrelim() {
         const res = await fetch(`/api/epodp/${checkerLokasiId}`);
         const j = await res.json();
         const daftar = j.daftar || [];
+        if (auditRenderGate) await auditRenderGate;
         document.querySelectorAll('.info-epodp-target').forEach(el => {
           if (!daftar.length) {
             el.innerHTML = '<div class="text-[8px] text-slate-400 text-center py-3 italic">Belum ada data Pemasangan ODP untuk lokasi ini.</div>';
