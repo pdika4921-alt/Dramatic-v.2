@@ -5373,13 +5373,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
       container.style.display = "";
       emptyEl.classList.add("hidden");
-      countEl.textContent = keyword
-        ? `${list.length} dari ${cacheListProyek.length} lokasi`
-        : `${list.length} lokasi tersedia`;
+      // Batasi jumlah node yang dirender: daftar bisa mencapai ribuan lokasi.
+      // Semua lokasi tetap bisa ditemukan lewat kolom cari.
+      const BATAS_ITEM = 200;
+      const tampil = list.length > BATAS_ITEM ? list.slice(0, BATAS_ITEM) : list;
+      countEl.textContent = list.length > BATAS_ITEM
+        ? `${tampil.length} ditampilkan dari ${list.length} lokasi — ketik untuk mencari`
+        : (keyword ? `${list.length} dari ${cacheListProyek.length} lokasi` : `${list.length} lokasi tersedia`);
 
       // Group by tematik
       const grouped = {};
-      list.forEach(l => {
+      tampil.forEach(l => {
         const t = l.tematik || "Lainnya";
         if (!grouped[t]) grouped[t] = [];
         grouped[t].push(l);
@@ -5402,6 +5406,7 @@ document.addEventListener('DOMContentLoaded', function () {
         'MICRODEMAND':  { bg: 'rgba(6,182,212,0.12)',  color: '#0e7490' },
       };
       const defaultBadge = { bg: 'rgba(100,116,139,0.12)', color: '#475569' };
+      const frag = document.createDocumentFragment();
 
       sortedKeys.forEach(tematik => {
         // Group header
@@ -5411,7 +5416,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <span style="font-size: 7px; font-weight: 600; letter-spacing:0.1em; text-transform:uppercase; color:#94a3b8;">${tematik}</span>
           <span style="flex:1; height:1px; background:#e2e8f0;"></span>
           <span style="font-size: 7px; font-weight: 500; color:#cbd5e1;">${grouped[tematik].length}</span>`;
-        container.appendChild(header);
+        frag.appendChild(header);
 
         grouped[tematik].forEach(loc => {
           const isSelected = String(loc.id) === String(ddSelectedId);
@@ -5477,9 +5482,10 @@ document.addEventListener('DOMContentLoaded', function () {
           item.appendChild(textDiv);
           item.appendChild(badge);
           item.onclick = () => selectCheckerItem(loc);
-          container.appendChild(item);
+          frag.appendChild(item);
         });
       });
+      container.appendChild(frag);
     }
 
     function selectCheckerItem(loc) {
@@ -5832,6 +5838,15 @@ document.addEventListener('DOMContentLoaded', function () {
         var useTriggerFilter = triggerNames.size > 0;
         var rowIdx = 0;
 
+        // Tunda loop progres: bila user langsung membuka Audit, loop ini
+        // dibatalkan (lihat switchView) sehingga tidak memenuhi server
+        // saat memilih lokasi. Data yang ditampilkan tetap sama.
+        await new Promise(function (resolve) { setTimeout(resolve, 2500); });
+        if (tokenLokasi !== daftarLokasiToken) {
+          daftarLokasiPerluUlang = true;
+          return;
+        }
+
         for (let [index, loc] of listLokasi.entries()) {
           if (tokenLokasi !== daftarLokasiToken) {
             daftarLokasiPerluUlang = true;
@@ -5990,9 +6005,13 @@ document.addEventListener('DOMContentLoaded', function () {
       if (elBelumT) elBelumT.textContent = belumMulai > 0 ? `${belumMulai} lokasi perlu segera dimulai` : '✅ Semua sudah dimulai';
 
       // Sinkronkan widget Dashboard (Aktivitas + GODC + Rekap)
-      muatAktivitas();
-      muatGodc();
-      muatRekapStatus(false);
+      // Hanya saat view dashboard aktif: jangan memenuhi server saat user
+      // sedang di Audit. Widget tetap terisi saat kembali ke dashboard.
+      if (viewSaatIni === 'dashboard' || viewSaatIni === 'report_godc') {
+        muatAktivitas();
+        muatGodc();
+        muatRekapStatus(false);
+      }
     }
 
     /* ═══════════════════════════════════════════════════════════════
@@ -8498,7 +8517,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const signal = dashBeratAbort.signal;
         muatGodc(signal);
         muatRekapStatus(false, signal);
-      }, 1500);
+      }, 4000);
     }
     function batalkanDashBerat() {
       if (dashBeratTimer) { clearTimeout(dashBeratTimer); dashBeratTimer = null; }
