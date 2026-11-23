@@ -1626,7 +1626,8 @@
               <i id="gen_dd_arrow" class="fa-solid fa-chevron-down" style="margin-left:auto;font-size: 7px;opacity:.7;transition:transform .2s;"></i>
             </button>
           </div>
-          <button type="button" class="nav-btn" data-view="master" onclick="switchView('master')">
+          <!-- Master Lokasi disembunyikan sementara; view & endpoint tetap berfungsi -->
+          <button type="button" class="nav-btn" data-view="master" onclick="switchView('master')" style="display:none !important;">
             <i class="fa-solid fa-map-location-dot"></i><span>Master Lokasi</span>
           </button>
           <button type="button" class="nav-btn" data-view="audit" onclick="switchView('audit')">
@@ -2516,7 +2517,7 @@
             </span>
             <span style="display:flex; align-items:center; gap:.4rem;">
               <span id="godc_perlu_count" style="font-size:.68rem; font-weight: 700; color:#8b5cf6; background:#ede9fe; border-radius:999px; padding:.18rem .55rem; white-space:nowrap;">—</span>
-              <button type="button" class="dash-icbtn" onclick="event.stopPropagation();switchView('master')" title="Buka Master Lokasi" style="padding:.2rem .5rem; font-size:.65rem; border-color:#c4b5fd; background:#f3e8ff; color:#7c3aed;"><i class="fa-solid fa-table-list"></i></button>
+              <button type="button" class="dash-icbtn" onclick="event.stopPropagation();switchView('master')" title="Buka Master Lokasi" style="display:none !important; padding:.2rem .5rem; font-size:.65rem; border-color:#c4b5fd; background:#f3e8ff; color:#7c3aed;"><i class="fa-solid fa-table-list"></i></button>
               <i id="godc_perlu_chev" class="fa-solid fa-chevron-down" style="color:#94a3b8;"></i>
             </span>
           </div>
