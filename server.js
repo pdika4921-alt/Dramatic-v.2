@@ -5858,11 +5858,11 @@ app.get('/api/boq-tamkur/harga', checkAuth('admin'), (req, res) => {
 // Endpoint BARU — tidak mengubah upload Excel / hitungan / endpoint lama.
 // Master hanya dibaca; bila lokasi tidak ada, frontend tetap mengizinkan upload.
 // ─────────────────────────────────────────────────────────────────────────────
-app.get('/api/boq-drm-all/cek', checkAuth('admin'), (req, res) => {
+app.get('/api/boq-drm-all/cek', checkAuth('admin'), async (req, res) => {
   try {
     const nama = String(req.query.nama_lokasi || '').trim();
     if (!nama) return res.status(400).json({ message: 'Nama lokasi belum dipilih.' });
-    const hasil = cariLokasiDiMasterDrm(nama);
+    const hasil = await cariLokasiDiMasterDrm(nama);
     res.json({ success: true, ...hasil });
   } catch (e) {
     res.status(500).json({ message: 'Gagal membaca data master BOQ DRM ALL.', detail: e.message });

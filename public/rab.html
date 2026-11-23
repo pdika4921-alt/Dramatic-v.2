@@ -2398,7 +2398,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setStatus(tipe, 'kosong',
           '<i class="fa-solid fa-circle-exclamation"></i> Lokasi <b>' + esc(nama) + '</b> <b>belum ada</b> di master BOQ DRM ALL' +
           (j.jumlahMaster ? ' (' + j.jumlahMaster + ' lokasi)' : '') + '. Silakan upload file Excel ' + labelTipe + ' seperti biasa.' +
-          (saran ? '<br><span style="opacity:.8">Mungkin maksudnya: ' + saran + '</span>' : ''));
+          (saran ? '<br><span style="opacity:.8">Mungkin maksudnya: ' + saran + '</span>' : '') +
+          '<br><span style="opacity:.7">Sumber: ' + (j.sumber === 'google' ? 'Google Sheet' : 'file lokal') + ' · ' + esc(j.sheet || '') + '</span>');
         if (typeof showToast === 'function') showToast('info', 'Lokasi belum ada di master — silakan upload Excel.');
         return;
       }
@@ -2426,7 +2427,8 @@ document.addEventListener('DOMContentLoaded', () => {
       setCentang(tipe, true);
       let html = '<i class="fa-solid fa-circle-check"></i> Data <b>' + labelTipe + '</b> lokasi <b>' + esc(j.nama_master) +
         '</b> sudah ada di master — <b>' + bagian.jumlah + ' item</b> otomatis terisi' +
-        ' (sheet <b>' + esc(j.sheet) + '</b>, kolom <b>' + esc((j.blok || {})[tipe] || '-') + '</b>).';
+        ' (sheet <b>' + esc(j.sheet) + '</b>, kolom <b>' + esc((j.blok || {})[tipe] || '-') + '</b>).' +
+        '<br><span style="opacity:.7">Sumber: ' + (j.sumber === 'google' ? 'Google Sheet' : 'file lokal') + '</span>';
       if (!bagianLain.adaData) {
         html += '<br><span style="opacity:.8">Data ' + (tipe === 'drm' ? 'REKON' : 'DRM') + ' belum ada di master — silakan upload Excel ' +
           (tipe === 'drm' ? 'REKON' : 'DRM') + ' bila diperlukan.</span>';
