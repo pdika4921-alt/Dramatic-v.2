@@ -268,6 +268,7 @@
         <div class="rt-scroll"><table id="drm_tabel" class="rt-table"></table></div>
       </div>
       <div id="drm_validasi" class="rab-validasi"></div>
+      <div id="drm_master_status" class="mc-status"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;flex-wrap:wrap;">
         <span id="drm_count" class="rekon-count">0 item</span>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -275,6 +276,13 @@
             <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> Upload Excel
           </button>
           <input type="file" id="drm_file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" onchange="uploadDrmExcel(this)">
+          <label class="mc-chip" id="drm_master_label" title="Otomatis tercentang bila nama lokasi ditemukan di BOQ DRM ALL.xlsx">
+            <input type="checkbox" id="drm_master_cek" disabled>
+            <span class="mc-kotak"><i class="fa-solid fa-check"></i></span><span>Master BOQ</span>
+          </label>
+          <button class="btn btn-ghost mc-btn" onclick="cekMasterBoq('drm', this)" title="Cek apakah nama lokasi ini sudah ada di baris 4 BOQ DRM ALL.xlsx — bila ada, data langsung terisi">
+            <i class="fa-solid fa-magnifying-glass" style="color:#0284c7;"></i> Cek Data Master BOQ
+          </button>
           <button class="btn btn-ghost" onclick="isiContohRekon('drm')" style="font-size: 9px;padding:6px 12px;">
             <i class="fa-solid fa-file-circle-plus"></i> Isi Contoh
           </button>
@@ -312,6 +320,7 @@
         <div class="rt-scroll"><table id="rekon_tabel" class="rt-table"></table></div>
       </div>
       <div id="rekon_validasi" class="rab-validasi"></div>
+      <div id="rekon_master_status" class="mc-status"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;flex-wrap:wrap;">
         <span id="rekon_count" class="rekon-count">0 item</span>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -319,6 +328,13 @@
             <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> Upload Excel
           </button>
           <input type="file" id="rekon_file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden" onchange="uploadRekonExcel(this)">
+          <label class="mc-chip" id="rekon_master_label" title="Otomatis tercentang bila nama lokasi ditemukan di BOQ DRM ALL.xlsx">
+            <input type="checkbox" id="rekon_master_cek" disabled>
+            <span class="mc-kotak"><i class="fa-solid fa-check"></i></span><span>Master BOQ</span>
+          </label>
+          <button class="btn btn-ghost mc-btn" onclick="cekMasterBoq('rekon', this)" title="Cek apakah nama lokasi ini sudah ada di baris 4 BOQ DRM ALL.xlsx — bila ada, data langsung terisi">
+            <i class="fa-solid fa-magnifying-glass" style="color:#0284c7;"></i> Cek Data Master BOQ
+          </button>
           <button class="btn btn-ghost" onclick="isiContohRekon('rekon')" style="font-size: 9px;padding:6px 12px;">
             <i class="fa-solid fa-file-circle-plus"></i> Isi Contoh
           </button>
@@ -2305,6 +2321,140 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     CEK DATA MASTER BOQ DRM ALL — script ISOLATED.
+     Tidak mengubah uploadDrmExcel / uploadRekonExcel / parseRekonPaste /
+     hitungRekonsiliasi / renderRekonTable / endpoint lama.
+     ══════════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  const API_CEK_MASTER = '/api/boq-drm-all/cek';
+  const aktif = { drm: false, rekon: false };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function el(id) { return document.getElementById(id); }
+  function setStatus(tipe, kelas, html) {
+    const box = el(tipe + '_master_status');
+    if (!box) return;
+    box.className = 'mc-status' + (html ? ' aktif ' + kelas : '');
+    box.innerHTML = html || '';
+  }
+  function setCentang(tipe, ada) {
+    aktif[tipe] = !!ada;
+    const cb = el(tipe + '_master_cek');
+    const label = el(tipe + '_master_label');
+    if (cb) cb.checked = !!ada;
+    if (label) label.classList.toggle('tercentang', !!ada);
+  }
+  window.resetMasterCek = function (tipe) {
+    const daftar = tipe ? [tipe] : ['drm', 'rekon'];
+    daftar.forEach(t => { setCentang(t, false); setStatus(t, '', ''); });
+  };
+
+  // Format SAMA persis dengan format 5 kolom yang dipakai upload Excel lama.
+  function jadiTeks(items) {
+    const baris = ['Designator\tJasa\tMaterial\tVolume\tSatuan'];
+    (items || []).forEach(it => {
+      baris.push([
+        it.designator,
+        Number(it.jasa || 0),
+        Number(it.material || 0),
+        Number(it.volume || 0),
+        it.satuan || ''
+      ].join('\t'));
+    });
+    return baris.join('\n');
+  }
+
+  window.cekMasterBoq = async function (tipe, tombol) {
+    const nama = (selectedLokasi && (selectedLokasi.nama_lokasi || selectedLokasi.pid)) || '';
+    if (!nama) {
+      setCentang(tipe, false);
+      setStatus(tipe, 'err', '<i class="fa-solid fa-circle-exclamation"></i> Pilih lokasi dulu sebelum mengecek data master BOQ.');
+      if (typeof showToast === 'function') showToast('error', 'Pilih lokasi dulu!');
+      return;
+    }
+    const btn = tombol || null;
+    if (btn) { btn.disabled = true; }
+    setCentang(tipe, false);
+    setStatus(tipe, '', '<i class="fa-solid fa-spinner fa-spin"></i> Mencari <b>' + esc(nama) + '</b> di data master BOQ DRM ALL…');
+
+    try {
+      const res = await fetch(API_CEK_MASTER + '?nama_lokasi=' + encodeURIComponent(nama), { credentials: 'same-origin' });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.success) throw new Error(j.message || 'Gagal mengecek data master.');
+
+      const labelTipe = tipe === 'drm' ? 'DRM' : 'REKON';
+      const lain = tipe === 'drm' ? 'rekon' : 'drm';
+
+      if (!j.ditemukan) {
+        const saran = (j.saran || []).slice(0, 3).map(x => '<b>' + esc(x) + '</b>').join(', ');
+        setCentang(tipe, false);
+        setStatus(tipe, 'kosong',
+          '<i class="fa-solid fa-circle-exclamation"></i> Lokasi <b>' + esc(nama) + '</b> <b>belum ada</b> di master BOQ DRM ALL' +
+          (j.jumlahMaster ? ' (' + j.jumlahMaster + ' lokasi)' : '') + '. Silakan upload file Excel ' + labelTipe + ' seperti biasa.' +
+          (saran ? '<br><span style="opacity:.8">Mungkin maksudnya: ' + saran + '</span>' : ''));
+        if (typeof showToast === 'function') showToast('info', 'Lokasi belum ada di master — silakan upload Excel.');
+        return;
+      }
+
+      const bagian = j[tipe] || { items: [], jumlah: 0 };
+      const bagianLain = j[lain] || { items: [], jumlah: 0 };
+      if (!bagian.adaData || !bagian.items.length) {
+        setCentang(tipe, false);
+        setStatus(tipe, 'kosong',
+          '<i class="fa-solid fa-circle-info"></i> Lokasi <b>' + esc(j.nama_master) + '</b> ditemukan di master (sheet <b>' +
+          esc(j.sheet) + '</b>, kolom <b>' + esc((j.blok || {})[tipe] || '-') + '</b>), tetapi data <b>' + labelTipe +
+          '</b> masih kosong. Silakan upload file Excel ' + labelTipe + ' seperti biasa.' +
+          (bagianLain.jumlah ? '<br><span style="opacity:.8">Data ' + (tipe === 'drm' ? 'REKON' : 'DRM') + ' tersedia: ' + bagianLain.jumlah + ' item.</span>' : ''));
+        if (typeof showToast === 'function') showToast('info', 'Lokasi ada, tapi data ' + labelTipe + ' kosong — silakan upload Excel.');
+        return;
+      }
+
+      const teks = jadiTeks(bagian.items);
+      const input = el(tipe + '_input');
+      if (input) input.value = teks;
+      // Pakai fungsi tampilan lama — tidak mengubah cara hitung/proses.
+      if (typeof previewRekon === 'function') previewRekon(teks, tipe);
+      if (typeof tampilkanTabelRekon === 'function') tampilkanTabelRekon(tipe);
+
+      setCentang(tipe, true);
+      let html = '<i class="fa-solid fa-circle-check"></i> Data <b>' + labelTipe + '</b> lokasi <b>' + esc(j.nama_master) +
+        '</b> sudah ada di master — <b>' + bagian.jumlah + ' item</b> otomatis terisi' +
+        ' (sheet <b>' + esc(j.sheet) + '</b>, kolom <b>' + esc((j.blok || {})[tipe] || '-') + '</b>).';
+      if (!bagianLain.adaData) {
+        html += '<br><span style="opacity:.8">Data ' + (tipe === 'drm' ? 'REKON' : 'DRM') + ' belum ada di master — silakan upload Excel ' +
+          (tipe === 'drm' ? 'REKON' : 'DRM') + ' bila diperlukan.</span>';
+      }
+      setStatus(tipe, 'ok', html);
+      if (typeof showToast === 'function') showToast('success', bagian.jumlah + ' item ' + labelTipe + ' dari data master BOQ berhasil dimuat.');
+    } catch (e) {
+      setCentang(tipe, false);
+      setStatus(tipe, 'err', '<i class="fa-solid fa-circle-exclamation"></i> Gagal mengecek data master: ' + esc(e.message || e));
+      if (typeof showToast === 'function') showToast('error', 'Gagal cek data master: ' + (e.message || e));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  };
+
+  // Reset otomatis: tanpa menyentuh selectLokasi() / clearRekon().
+  document.addEventListener('DOMContentLoaded', function () {
+    ['drm', 'rekon'].forEach(function (tipe) {
+      const input = el(tipe + '_input');
+      if (input) input.addEventListener('input', function () { window.resetMasterCek(tipe); });
+    });
+    const namaAktif = el('lokasi_aktif_nama');
+    if (namaAktif && typeof MutationObserver !== 'undefined') {
+      new MutationObserver(function () { window.resetMasterCek(); })
+        .observe(namaAktif, { childList: true, characterData: true, subtree: true });
+    }
+  });
+})();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>

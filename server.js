@@ -18,6 +18,8 @@ const rekapOpmService = require('./services/rekapOpm');
 // Sinkronisasi nilai BA Tambah Kurang ke BOQ TAMKUR.xlsx (tidak mengubah hitungan)
 const { tulisBoqTamkur, bacaHargaBoqTamkur } = require('./services/boqTamkur');
 const { bacaRekonDariExcel, bacaDrmDariExcel } = require('./services/boqRekonUpload');
+// Data master BOQ DRM ALL — baca saja (dipakai tombol "CEK DATA MASTER BOQ").
+const { cariLokasiDiMasterDrm } = require('./services/boqDrmMaster');
 // Modul laporan MITRATEL berdiri sendiri; tidak mengubah alur dokumen lama.
 const mitratelService = require('./services/mitratel');
 const sizeOfMod = require('image-size');
@@ -5848,6 +5850,22 @@ app.get('/api/boq-tamkur/harga', checkAuth('admin'), (req, res) => {
     res.json({ success: true, harga, jumlah: Object.keys(harga).length });
   } catch (e) {
     res.status(500).json({ message: 'Gagal membaca harga BOQ TAMKUR.', detail: e.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// [API] CEK DATA MASTER BOQ DRM ALL (baris 4 = nama lokasi)
+// Endpoint BARU — tidak mengubah upload Excel / hitungan / endpoint lama.
+// Master hanya dibaca; bila lokasi tidak ada, frontend tetap mengizinkan upload.
+// ─────────────────────────────────────────────────────────────────────────────
+app.get('/api/boq-drm-all/cek', checkAuth('admin'), (req, res) => {
+  try {
+    const nama = String(req.query.nama_lokasi || '').trim();
+    if (!nama) return res.status(400).json({ message: 'Nama lokasi belum dipilih.' });
+    const hasil = cariLokasiDiMasterDrm(nama);
+    res.json({ success: true, ...hasil });
+  } catch (e) {
+    res.status(500).json({ message: 'Gagal membaca data master BOQ DRM ALL.', detail: e.message });
   }
 });
 
