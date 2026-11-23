@@ -51,9 +51,23 @@
     .app-sidebar-bg{display:none}
 
     /* ── TOPBAR (identik Dashboard Admin & Laporan M-tel) ────────── */
-    .app-topbar{box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:space-between;gap:.75rem;background:linear-gradient(180deg,#B71C1C 0%,#C62828 100%);border:none;border-radius:0;box-shadow:0 10px 26px rgba(15,23,42,.18);margin:-16px -22px 0;min-height:150px;padding:18px 26px 44px;overflow:hidden;color:#fff}
-    .app-topbar::before{content:'';position:absolute;inset:0;z-index:0;background:url('/header.jpg') center bottom / 158% auto no-repeat;pointer-events:none;animation:headArtDrift 28s ease-in-out infinite alternate}
+    .app-topbar{box-sizing:border-box;position:sticky;top:-16px;z-index:120;display:flex;align-items:center;justify-content:space-between;gap:.75rem;background:linear-gradient(180deg,#B71C1C 0%,#C62828 100%);border:none;border-radius:0;box-shadow:0 10px 26px rgba(15,23,42,.18);margin:-16px -22px 0;min-height:150px;padding:18px 26px 44px;overflow:hidden;color:#fff;transition:min-height .22s ease,padding .22s ease,box-shadow .22s ease}
+    .app-topbar::before{content:'';position:absolute;inset:0;z-index:0;background:url('/header.jpg') center bottom / 158% auto no-repeat;pointer-events:none;animation:headArtDrift 28s ease-in-out infinite alternate;transition:opacity .22s ease}
     .app-topbar > *{position:relative}
+    /* Header menyusut saat halaman digulir, tapi tetap menempel di atas */
+    .app-topbar.compact{min-height:56px;padding:8px 26px;box-shadow:0 8px 22px rgba(15,23,42,.32)}
+    .app-topbar.compact::before{opacity:.4}
+    .app-topbar.compact .topbar-brand-sub,.app-topbar.compact .topbar-sub{display:none}
+    .app-topbar.compact .topbar-brand-title{font-size:10.5px}
+    .app-topbar.compact .topbar-title{font-size:12.5px}
+    .app-topbar.compact .topbar-divider{height:26px}
+    .app-topbar.compact #live_clock{font-size:11px}
+    .app-topbar.compact #live_date{display:none}
+    .topbar-brand-block{display:flex;align-items:center;gap:.9rem;min-width:0}
+    .topbar-divider{width:1px;height:34px;background:rgba(255,255,255,.25);flex-shrink:0;transition:height .22s ease}
+    .topbar-heading{min-width:0}
+    .topbar-meta{display:flex;align-items:center;gap:.6rem;flex-shrink:0}
+    .app-topbar.compact .topbar-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .topbar-brand-title{font-size:12px;font-weight:600;letter-spacing:.02em;color:#fff;line-height:1.1;white-space:nowrap}
     .topbar-brand-sub{font-size:9px;color:rgba(255,255,255,.8);margin-top:2px;white-space:nowrap}
     #live_clock{color:#fff;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.05em}
@@ -306,7 +320,7 @@
       .app-sidebar-bg.show{opacity:1;pointer-events:auto}
       .hamburger{display:inline-flex}
       .app-main{padding:14px 14px 24px;overflow:visible}
-      .app-topbar{margin:-14px -14px 0;min-height:auto;padding:14px 16px 34px;flex-wrap:wrap}
+      .app-topbar{margin:-14px -14px 0;min-height:auto;padding:14px 16px 34px;flex-wrap:wrap;top:0}
       .layout{grid-template-columns:1fr}
       .loc-list{max-height:240px}
       .content{padding:0}
@@ -344,20 +358,20 @@
   </aside>
   <div class="app-sidebar-bg" id="sidebar_backdrop" onclick="toggleSidebar(false)"></div>
   <div class="app-main">
-    <nav class="app-topbar">
+    <nav class="app-topbar" id="app_topbar">
       <button type="button" class="hamburger" onclick="toggleSidebar()" aria-label="Buka menu sidebar"><i class="fa-solid fa-bars"></i></button>
-      <div class="min-w-0 flex items-center gap-3.5" style="display:flex;align-items:center;gap:.9rem;min-width:0;">
+      <div class="topbar-brand-block">
         <div style="display:flex;flex-direction:column;flex-shrink:0;">
           <span class="topbar-brand-title">DRAMATIC</span>
           <span class="topbar-brand-sub">Telkom Akses Regional 2</span>
         </div>
-        <div style="width:1px;height:34px;background:rgba(255,255,255,.25);flex-shrink:0;"></div>
-        <div style="min-width:0;">
+        <div class="topbar-divider"></div>
+        <div class="topbar-heading">
           <div class="topbar-title">MITRATEL — ATP REPORT INPUT</div>
           <div class="topbar-sub">Eviden Foto OTDR · OTB/ODP &amp; Label · Cable Route In/Out · KMZ · Lay Out ABD → Generate Excel</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:.6rem;flex-shrink:0;">
+      <div class="topbar-meta">
         <div style="display:flex;flex-direction:column;align-items:flex-end;">
           <span id="live_clock" class="font-mono">--:--:--</span>
           <span id="live_date">—</span>
@@ -1164,6 +1178,20 @@ async function generate(){
     msg('Report ATP berhasil dibuat.');
   }catch(e){console.error('Generate ATP error:',e);genGagal(e.message);msg(e.message,true)}
 }
+// Header tetap menempel saat halaman digulir, menyusut jadi bar ringkas.
+(function () {
+  const main = document.querySelector('.app-main');
+  const bar  = document.getElementById('app_topbar');
+  if (!main || !bar) return;
+  function updateHeader() {
+    const y = Math.max(main.scrollTop || 0, window.scrollY || 0);
+    bar.classList.toggle('compact', y > 24);
+  }
+  main.addEventListener('scroll', updateHeader, { passive: true });
+  window.addEventListener('scroll', updateHeader, { passive: true });
+  updateHeader();
+})();
+
 loadList();
 
 
