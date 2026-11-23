@@ -669,6 +669,111 @@
     .form-section-amber  { border-color: #f59e0b; }
     .form-section-rose   { border-color: #f43f5e; }
 
+    /* ── MODAL PILIH MODUL MITRATEL ─────────────────────────── */
+    .mtl-dialog {
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(226,232,240,.9);
+      box-shadow: 0 24px 70px rgba(15,23,42,.32), 0 4px 16px rgba(15,23,42,.12);
+    }
+    .mtl-head {
+      position: relative;
+      display: flex; align-items: center; gap: 14px;
+      padding: 20px 24px;
+      color: #fff;
+      background: linear-gradient(120deg, #111827 0%, #1f2937 58%, #7f1d1d 150%);
+    }
+    .mtl-head::after {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(circle at 88% -35%, rgba(239,68,68,.24), transparent 58%);
+    }
+    .mtl-head-icon {
+      position: relative; z-index: 1; flex-shrink: 0;
+      width: 46px; height: 46px; border-radius: 13px;
+      display: grid; place-items: center; font-size: 19px;
+      color: #fecaca; background: rgba(239,68,68,.16);
+      border: 1px solid rgba(248,113,113,.32);
+    }
+    .mtl-head-text { position: relative; z-index: 1; flex: 1; min-width: 0; }
+    .mtl-head-text h3 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: .01em; }
+    .mtl-head-text p  { margin: 4px 0 0; font-size: 10px; line-height: 1.55; color: #cbd5e1; }
+    .mtl-close {
+      position: relative; z-index: 1; flex-shrink: 0;
+      width: 32px; height: 32px; border-radius: 9px;
+      display: grid; place-items: center; font-size: 13px;
+      color: #cbd5e1; background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.14);
+      cursor: pointer; transition: background .15s ease, color .15s ease;
+    }
+    .mtl-close:hover { background: rgba(220,38,38,.9); color: #fff; }
+    .mtl-body { padding: 22px 24px 6px; }
+    .mtl-section-label {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 12px;
+      font-size: 8px; font-weight: 800; letter-spacing: .12em;
+      text-transform: uppercase; color: #94a3b8;
+    }
+    .mtl-section-label::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; }
+    .mtl-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+    @media (max-width: 560px) { .mtl-grid { grid-template-columns: 1fr; } }
+    .mtl-card {
+      position: relative; display: flex; flex-direction: column;
+      padding: 18px; border: 1.5px solid #e2e8f0; border-radius: 14px;
+      background: #fff; text-decoration: none; overflow: hidden;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .mtl-card::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--mtl-accent); opacity: .9;
+    }
+    .mtl-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 32px rgba(15,23,42,.10);
+      border-color: var(--mtl-accent);
+    }
+    .mtl-card-opm { --mtl-accent:#2563eb; --mtl-soft:#eff6ff; --mtl-ink:#1d4ed8; --mtl-border:#bfdbfe; }
+    .mtl-card-atp { --mtl-accent:#ea580c; --mtl-soft:#fff7ed; --mtl-ink:#c2410c; --mtl-border:#fed7aa; }
+    .mtl-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .mtl-card-icon {
+      width: 42px; height: 42px; border-radius: 11px;
+      display: grid; place-items: center; font-size: 17px;
+      color: var(--mtl-ink); background: var(--mtl-soft);
+    }
+    .mtl-tag {
+      padding: 4px 8px; border-radius: 99px;
+      font-size: 7px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--mtl-ink); background: var(--mtl-soft); border: 1px solid var(--mtl-border);
+    }
+    .mtl-card h4 { margin: 0; font-size: 12px; font-weight: 800; color: #0f172a; }
+    .mtl-desc { margin: 6px 0 12px; font-size: 9.5px; line-height: 1.65; color: #64748b; }
+    .mtl-feat { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 6px; }
+    .mtl-feat li { display: flex; align-items: center; gap: 7px; font-size: 9px; color: #475569; }
+    .mtl-feat i { font-size: 8px; color: var(--mtl-accent); }
+    .mtl-cta {
+      margin-top: auto; padding-top: 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px dashed #e2e8f0;
+      font-size: 9px; font-weight: 800; color: var(--mtl-ink);
+    }
+    .mtl-cta i { transition: transform .18s ease; }
+    .mtl-card:hover .mtl-cta i { transform: translateX(4px); }
+    .mtl-foot {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 14px; padding: 13px 24px;
+      background: #f8fafc; border-top: 1px solid #e2e8f0;
+      font-size: 9px; color: #64748b;
+    }
+    .mtl-foot > i { font-size: 11px; color: #94a3b8; }
+    .mtl-foot span { flex: 1; }
+    .mtl-foot b { color: #334155; }
+    .mtl-batal {
+      padding: 7px 14px; border-radius: 9px;
+      border: 1px solid #cbd5e1; background: #fff; color: #475569;
+      font-size: 9px; font-weight: 700; cursor: pointer;
+      transition: background .15s ease, border-color .15s ease;
+    }
+    .mtl-batal:hover { background: #f1f5f9; border-color: #94a3b8; }
+
     /* ── CLOCK ───────────────────────────────────────────────── */
     #live_clock { font-variant-numeric: tabular-nums; letter-spacing: 0.05em; }
 
@@ -1496,31 +1601,65 @@
     </div>
   </div>
 
-  <!-- ── MODAL PILIHAN INPUT MITRATEL (OPM / ATP) ────────────── -->
-  <div id="modalPilihMitratel" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex justify-center items-center z-[999999] hidden">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 mx-4 animate-fade-in-up">
-      <div class="flex items-center gap-3 mb-1">
-        <div class="bg-red-100 text-red-600 p-3 rounded-xl text-xl"><i class="fa-solid fa-tower-cell"></i></div>
-        <div>
-          <h3 class="text-sm font-extrabold text-slate-900">Tambahkan MITRATEL</h3>
-          <p class="text-[9px] text-slate-400">Pilih jenis input yang mau dibuka.</p>
+  <!-- ── MODAL PILIH MODUL MITRATEL (OPM / ATP) ──────────────── -->
+  <div id="modalPilihMitratel" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm flex justify-center items-center z-[999999] hidden p-4"
+       onclick="if(event.target===this) tutupModalPilihMitratel()">
+    <div class="mtl-dialog bg-white w-full max-w-2xl animate-fade-in-up" role="dialog" aria-modal="true" aria-labelledby="mtlJudul">
+
+      <div class="mtl-head">
+        <div class="mtl-head-icon"><i class="fa-solid fa-tower-cell"></i></div>
+        <div class="mtl-head-text">
+          <h3 id="mtlJudul">Modul Input MITRATEL</h3>
+          <p>Pilih modul yang sesuai dengan kebutuhan dokumentasi pekerjaan lapangan Anda.</p>
+        </div>
+        <button type="button" class="mtl-close" onclick="tutupModalPilihMitratel()" aria-label="Tutup modal" title="Tutup">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="mtl-body">
+        <div class="mtl-section-label"><i class="fa-solid fa-grip"></i> Pilih Modul</div>
+        <div class="mtl-grid">
+
+          <a href="/mitratel" class="mtl-card mtl-card-opm">
+            <div class="mtl-card-top">
+              <div class="mtl-card-icon"><i class="fa-solid fa-file-circle-check"></i></div>
+              <span class="mtl-tag">OPM</span>
+            </div>
+            <h4>OPM Report</h4>
+            <p class="mtl-desc">Kelola data Sheet3, dokumentasi foto OPM &amp; kalibrasi, lalu hasilkan laporan OPM secara otomatis.</p>
+            <ul class="mtl-feat">
+              <li><i class="fa-solid fa-circle-check"></i> Data Sheet3 &amp; titik ODP</li>
+              <li><i class="fa-solid fa-circle-check"></i> Foto OPM &amp; kalibrasi</li>
+              <li><i class="fa-solid fa-circle-check"></i> Generate report OPM</li>
+            </ul>
+            <div class="mtl-cta"><span>Buka Modul OPM</span><i class="fa-solid fa-arrow-right"></i></div>
+          </a>
+
+          <a href="/mitratel/atp" class="mtl-card mtl-card-atp">
+            <div class="mtl-card-top">
+              <div class="mtl-card-icon"><i class="fa-solid fa-tower-broadcast"></i></div>
+              <span class="mtl-tag">ATP</span>
+            </div>
+            <h4>ATP MITRATEL</h4>
+            <p class="mtl-desc">Kelola eviden foto OTDR, OTB/ODP &amp; label, serta cable route untuk menghasilkan dokumen ATP.</p>
+            <ul class="mtl-feat">
+              <li><i class="fa-solid fa-circle-check"></i> Eviden foto OTDR</li>
+              <li><i class="fa-solid fa-circle-check"></i> OTB/ODP &amp; label</li>
+              <li><i class="fa-solid fa-circle-check"></i> Cable route → ATP</li>
+            </ul>
+            <div class="mtl-cta"><span>Buka Modul ATP</span><i class="fa-solid fa-arrow-right"></i></div>
+          </a>
+
         </div>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">
-        <a href="/mitratel" class="group border-2 border-slate-200 hover:border-red-500 rounded-xl p-4 transition cursor-pointer block no-underline">
-          <div class="bg-red-50 text-red-600 w-11 h-11 rounded-xl grid place-items-center text-lg mb-3 group-hover:bg-red-600 group-hover:text-white transition"><i class="fa-solid fa-file-excel"></i></div>
-          <b class="text-xs text-slate-900 block">INPUT MITRATEL – OPM REPORT</b>
-          <span class="text-[9px] text-slate-500 leading-relaxed block mt-1">Data Sheet3, foto OPM &amp; kalibrasi, generate report OPM.</span>
-        </a>
-        <a href="/mitratel/atp" class="group border-2 border-slate-200 hover:border-red-500 rounded-xl p-4 transition cursor-pointer block no-underline">
-          <div class="bg-red-50 text-red-600 w-11 h-11 rounded-xl grid place-items-center text-lg mb-3 group-hover:bg-red-600 group-hover:text-white transition"><i class="fa-solid fa-tower-broadcast"></i></div>
-          <b class="text-xs text-slate-900 block">ATP MITRATEL</b>
-          <span class="text-[9px] text-slate-500 leading-relaxed block mt-1">Eviden foto OTDR, OTB/ODP &amp; Label, Cable Route → generate ATP.</span>
-        </a>
+
+      <div class="mtl-foot">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>Modul dapat dibuka kembali kapan saja melalui menu <b>Tambahkan MITRATEL</b> pada sidebar.</span>
+        <button type="button" class="mtl-batal" onclick="tutupModalPilihMitratel()">Tutup</button>
       </div>
-      <div class="flex justify-end mt-5">
-        <button onclick="document.getElementById('modalPilihMitratel').classList.add('hidden')" class="border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold px-5 py-2.5 rounded-xl transition cursor-pointer">Batal</button>
-      </div>
+
     </div>
   </div>
 
@@ -1640,7 +1779,7 @@
             <i class="fa-solid fa-file-invoice-dollar"></i><span>BOQ TAMBAH KURANG</span>
           </a>
           <!-- Modul tambahan MITRATEL — pilih OPM Report atau ATP MITRATEL. -->
-          <a href="#" class="nav-btn nav-link" title="Input dan Report OPM / ATP MITRATEL" onclick="event.preventDefault();document.getElementById('modalPilihMitratel').classList.remove('hidden')">
+          <a href="#" class="nav-btn nav-link" title="Pilih modul OPM Report atau ATP MITRATEL" onclick="event.preventDefault();bukaModalPilihMitratel()">
             <i class="fa-solid fa-tower-cell"></i><span>Tambahkan MITRATEL</span>
           </a>
 
@@ -2712,15 +2851,20 @@
         </div>
       </div>
 
-      <!-- MITRATEL: section tambahan, hanya tampil untuk Tematik M-tel.
-           Penyimpanan data NE/FE dilakukan oleh modul mandiri /mitratel setelah lokasi disimpan. -->
-      <div id="mtel_lokasi_hint" class="hidden mt-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-tower-cell"></i></div>
-        <div class="flex-1 min-w-0">
-          <p class="text-[9px] font-extrabold text-orange-900">INPUT KHUSUS MITRATEL — SITE NE &amp; FE</p>
-          <p class="text-[8px] text-orange-700 mt-0.5">Simpan lokasi M-tel ini terlebih dahulu, lalu buka form MITRATEL untuk mengisi Site NE, Site FE, koordinat, OPM, dan report OPM.</p>
+      <!-- MITRATEL: panduan singkat saat Tematik M-tel dipilih.
+           Penyimpanan data NE/FE dilakukan modul mandiri setelah lokasi disimpan. -->
+      <div id="mtel_lokasi_hint" class="hidden mt-4 rounded-xl border border-slate-200 overflow-hidden">
+        <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-orange-50 to-white">
+          <div class="w-9 h-9 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-tower-cell"></i></div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[9px] font-extrabold text-slate-800">Tematik MITRATEL terdeteksi</p>
+            <p class="text-[8px] text-slate-500 mt-0.5">Simpan lokasi ini terlebih dahulu, lalu lanjutkan ke modul OPM Report atau ATP MITRATEL untuk mengisi data lapangan.</p>
+          </div>
         </div>
-        <a href="/mitratel" class="text-[8px] font-extrabold bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg whitespace-nowrap transition"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Buka Form</a>
+        <div class="flex flex-wrap gap-2 px-4 py-2.5 bg-slate-50 border-t border-slate-100">
+          <a href="/mitratel" class="inline-flex items-center gap-1.5 text-[8px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1.5 rounded-lg transition no-underline"><i class="fa-solid fa-file-circle-check"></i> OPM Report</a>
+          <a href="/mitratel/atp" class="inline-flex items-center gap-1.5 text-[8px] font-bold text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 px-2.5 py-1.5 rounded-lg transition no-underline"><i class="fa-solid fa-tower-broadcast"></i> ATP MITRATEL</a>
+        </div>
       </div>
 
       <!-- ══ MODE BULK (tersembunyi default) ══ -->
@@ -5267,6 +5411,7 @@ document.addEventListener('DOMContentLoaded', function () {
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") {
           closeCheckerDropdown();
+          if (typeof tutupModalPilihMitratel === 'function') tutupModalPilihMitratel();
           if (typeof rekapTutupOverlay === 'function') rekapTutupOverlay();
         }
       });
@@ -8539,6 +8684,15 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('loc_tematik')?.addEventListener('change', function () {
       document.getElementById('mtel_lokasi_hint')?.classList.toggle('hidden', this.value !== 'M-tel');
     });
+
+    function bukaModalPilihMitratel() {
+      const m = document.getElementById('modalPilihMitratel');
+      if (m) m.classList.remove('hidden');
+    }
+    function tutupModalPilihMitratel() {
+      const m = document.getElementById('modalPilihMitratel');
+      if (m) m.classList.add('hidden');
+    }
 
     async function tambahLokasi() {
       const nama    = document.getElementById("loc_nama").value.trim();
