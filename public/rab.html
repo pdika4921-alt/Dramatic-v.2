@@ -2022,7 +2022,7 @@ async function simpanRekon() {
     tambah:       r.tambah,
     kurang:       r.kurang,
     satuan:       r.satuan,
-    harga_satuan: priceMap[r.designator.toUpperCase().trim()] || r.harga_satuan || 0,
+    harga_satuan: priceMap[kunciCocok(r.designator)] || priceMap[r.designator.toUpperCase().trim()] || r.harga_satuan || 0,
   }));
 
   try {
@@ -2065,7 +2065,7 @@ async function generateBoqExcel() {
       tambah:       r.tambah,
       kurang:       r.kurang,
       satuan:       r.satuan,
-      harga_satuan: priceMap[r.designator.toUpperCase().trim()] || r.harga_satuan || 0,
+      harga_satuan: priceMap[kunciCocok(r.designator)] || priceMap[r.designator.toUpperCase().trim()] || r.harga_satuan || 0,
     }));
 
     const saveRes = await fetch(`/api/rekon/${selectedLokasi.id}`, {
@@ -2074,7 +2074,11 @@ async function generateBoqExcel() {
     });
     if (!saveRes.ok) throw new Error('Gagal simpan rekon ke server');
 
-    const resp = await fetch(`/api/generate/boq_tambahkurang/${selectedLokasi.id}`);
+    // Template BOQ ikut master VLOOKUP: amd4 → BOQ TAMKUR,
+    // amd5 → BOQ TAMKUR AMD 5 PAKET 5 (harga 115081 / 3796, bukan 66220).
+    const sumber = sumberMaster === 'amd5' ? 'amd5' : 'amd4';
+    const resp = await fetch(`/api/generate/boq_tambahkurang/${selectedLokasi.id}` +
+      '?sumber_master=' + encodeURIComponent(sumber));
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
       throw new Error(err.message || 'Gagal generate Excel BOQ');
@@ -2189,7 +2193,7 @@ async function generateBA() {
         tambah:       r.tambah,
         kurang:       r.kurang,
         satuan:       r.satuan,
-        harga_satuan: priceMap2[r.designator.toUpperCase().trim()] || r.harga_satuan || 0,
+        harga_satuan: priceMap2[kunciCocok(r.designator)] || priceMap2[r.designator.toUpperCase().trim()] || r.harga_satuan || 0,
       }));
 
       // 1. Simpan rekon ke DB
@@ -2215,7 +2219,11 @@ async function generateBA() {
       // 3. Download dari server
       const mauPdf = d.tipeDok === 'pdf';
       showToast('info', mauPdf ? 'Generating dokumen PDF (dikonversi lewat MS Word)...' : 'Generating dokumen Word...');
-      const resp = await fetch(`/api/generate/ba_tambahkurang/${selectedLokasi.id}` + (mauPdf ? '?format=pdf' : ''));
+      const sumber = sumberMaster === 'amd5' ? 'amd5' : 'amd4';
+      const query = new URLSearchParams();
+      if (mauPdf) query.set('format', 'pdf');
+      query.set('sumber_master', sumber);
+      const resp = await fetch(`/api/generate/ba_tambahkurang/${selectedLokasi.id}?` + query.toString());
       if (!resp.ok) {
         const err = await resp.json();
         throw new Error(err.message || 'Gagal generate dari server');

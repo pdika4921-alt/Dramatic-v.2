@@ -5990,6 +5990,9 @@ app.get('/api/generate/ba_tambahkurang/:lokasi_id', checkAuth('admin'), async (r
   try {
     const { lokasi_id } = req.params;
     const templatePath  = path.join(__dirname, 'templates', 'templateTambahKurang.docx');
+    // Harga BA ikut pemilih VLOOKUP: amd4 = BOQ TAMKUR, amd5 = BOQ AMD 5 PAKET 5.
+    const sumberMaster = String(req.query.sumber_master || 'amd4').toLowerCase() === 'amd5'
+      ? 'amd5' : 'amd4';
 
     if (!fs.existsSync(templatePath)) {
       return res.status(404).json({ message: 'Template templateTambahKurang.docx tidak ditemukan di folder /templates/' });
@@ -6031,6 +6034,16 @@ const rekonItems = await db.all(`
   WHERE rk.lokasi_id = ?
 `, [lokasi_id]);
 
+    // Harga satuan WAJIB dari BOQ TAMKUR sesuai master yang dipilih.
+    // Kunci kanonik menyatukan ejaan "J-PRELIMINARY PROJECT" /
+    // "J-PRELIMINARY-PROJECT" tanpa mengubah teks designator asli.
+    const hargaBoq = bacaHargaBoqTamkur(sumberMaster);
+    const hargaBoqKunci = {};
+    Object.keys(hargaBoq).forEach(k => {
+      const kunci = String(k).toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (kunci && hargaBoqKunci[kunci] == null) hargaBoqKunci[kunci] = hargaBoq[k];
+    });
+
 console.log('DEBUG rekonItems:', JSON.stringify(rekonItems.slice(0,3), null, 2));
     let tkRows = [];
     let totalDrmRp = 0, totalRekRp = 0, totalPlusRp = 0, totalMinRp = 0;
@@ -6039,10 +6052,15 @@ console.log('DEBUG rekonItems:', JSON.stringify(rekonItems.slice(0,3), null, 2))
 rekonItems.forEach((item, i) => {
   const hSatRAB       = parseFloat(item.harga_dari_rab)  || 0;
   const hSatTersimpan = parseFloat(item.harga_tersimpan) || 0;
-  // Prioritas: dari RAB join → dari harga_satuan tersimpan saat simpanRekon
-  const hSat = hSatRAB > 0 ? hSatRAB : hSatTersimpan;
+  const kunciDes = String(item.designator || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const hSatBoq  = hargaBoqKunci[kunciDes];
+  // Prioritas: BOQ TAMKUR (master terpilih) → RAB → harga tersimpan.
+  // Google Doc / BOQ DRM ALL hanya memberi volume, bukan harga.
+  const hSat = typeof hSatBoq === 'number' && hSatBoq > 0
+    ? hSatBoq
+    : (hSatRAB > 0 ? hSatRAB : hSatTersimpan);
 
-  console.log(`[HSAT] ${item.designator} | rab=${hSatRAB} | tersimpan=${hSatTersimpan} | pakai=${hSat}`);
+  console.log(`[HSAT] ${item.designator} | boq=${typeof hSatBoq === 'number' ? hSatBoq : 0} | rab=${hSatRAB} | tersimpan=${hSatTersimpan} | pakai=${hSat} | sumber=${sumberMaster}`);
 
   const volDrm   = parseFloat(item.vol_drm)   || 0;
   const volRekon = parseFloat(item.vol_rekon)  || 0;
@@ -6088,7 +6106,8 @@ rekonItems.forEach((item, i) => {
         rekon: parseFloat(it.vol_rekon) || 0
       })), {
         lokasi: namaDariLokasi(lokasiData),
-        area:   areaDariLokasi(lokasiData, adminInput)
+        area:   areaDariLokasi(lokasiData, adminInput),
+        sumberMaster
       });
       console.log('[BOQ TAMKUR] sinkronisasi:', JSON.stringify(sinkron));
     } catch (e) {
@@ -6189,7 +6208,8 @@ console.log('[BA-TK] Summary →',
 });
 // ─────────────────────────────────────────────────────────────────────────────
 // [API] GENERATE EXCEL BOQ TAMBAH KURANG — HANYA BOQ
-// Sumber : templates/BOQ TAMKUR.xlsx (template tidak ditimpa)
+// Sumber : templates/BOQ TAMKUR.xlsx (amd4) atau
+//          templates/BOQ TAMKUR AMD 5 PAKET 5.xlsx (amd5) — template tidak ditimpa.
 // Isi    : K = DRM, L = REKON dari rab_rekon; I/J/M/N dihitung ulang.
 // ─────────────────────────────────────────────────────────────────────────────
 const { bangunBoqTamkur } = require('./services/boqTamkur');
@@ -6197,6 +6217,8 @@ const { bangunBoqTamkur } = require('./services/boqTamkur');
 app.get('/api/generate/boq_tambahkurang/:lokasi_id', checkAuth('admin'), async (req, res) => {
   try {
     const { lokasi_id } = req.params;
+    const sumberMaster = String(req.query.sumber_master || 'amd4').toLowerCase() === 'amd5'
+      ? 'amd5' : 'amd4';
     const lokasiData = await db.get(
       'SELECT nama_lokasi, pid, tematik, detail_tambahan FROM lokasi WHERE id = ?', [lokasi_id]
     );
@@ -6219,7 +6241,8 @@ app.get('/api/generate/boq_tambahkurang/:lokasi_id', checkAuth('admin'), async (
       rekon: parseFloat(it.rekon) || 0,
     })), {
       lokasi: namaDariLokasi(lokasiData),
-      area:   areaDariLokasi(lokasiData, laporan)
+      area:   areaDariLokasi(lokasiData, laporan),
+      sumberMaster
     });
 
     if (!hasil.ok || !hasil.buffer) {
@@ -6232,6 +6255,7 @@ app.get('/api/generate/boq_tambahkurang/:lokasi_id', checkAuth('admin'), async (
     res.send(hasil.buffer);
 
     console.log('[BOQ TAMKUR] download Excel: lokasi=' + lokasi_id +
+      ', sumber=' + sumberMaster + ', sheet=' + (hasil.sheet || '-') +
       ', ditulis=' + hasil.ditulis + ', dilewati=' + hasil.dilewati.length +
       ', identitas=' + JSON.stringify(hasil.identitas) +
       (hasil.dilewati.length ? ' (' + hasil.dilewati.slice(0, 3).join(', ') + ')' : ''));
@@ -6889,7 +6913,10 @@ app.get('/api/generate/lact/:lokasi_id', checkAuth(), async (req, res) => {
 app.get('/api/generate/:jenis/:lokasi_id', checkAuth('admin'), async (req, res) => {
   const { jenis, lokasi_id } = req.params;
   if (jenis === 'baut')            return res.status(405).json({ message: 'BAUT menggunakan metode POST.' });
-  if (jenis === 'ba_tambahkurang') return res.redirect(`/api/generate/ba_tambahkurang/${lokasi_id}`);
+  if (jenis === 'ba_tambahkurang') {
+    const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+    return res.redirect(`/api/generate/ba_tambahkurang/${lokasi_id}${qs}`);
+  }
   try {
     await handleGenerate(jenis, lokasi_id, req, res, db, path, fs, PizZip, Docxtemplater, ImageModule, sizeOf);
     if (res.statusCode < 400) await catatAktivitas(jenis, lokasi_id);
@@ -6923,7 +6950,8 @@ app.get('/api/generate/:jenis/:lokasi_id', checkAuth('admin'), async (req, res) 
   }
   // BA Tambah Kurang sudah punya route sendiri di atas
   if (jenis === 'ba_tambahkurang') {
-    return res.redirect(`/api/generate/ba_tambahkurang/${lokasi_id}`);
+    const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+    return res.redirect(`/api/generate/ba_tambahkurang/${lokasi_id}${qs}`);
   }
 
   const templateNama = TEMPLATE_MAP[jenis];

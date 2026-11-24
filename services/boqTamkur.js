@@ -22,10 +22,20 @@ const PATH_XLSX = path.join(__dirname, '..', 'templates', 'BOQ TAMKUR.xlsx');
 const NAMA_SHEET = 'BOQ TAMKUR';
 const PATH_LOCK = path.join(__dirname, '..', 'templates', '~$BOQ TAMKUR.xlsx');
 
-// Master harga alternatif (AMD5). Dipakai ONLY untuk baca harga/VLOOKUP.
-// File ini TIDAK pernah ditulis oleh tulisBoqTamkur()/generate BA.
+// Master harga alternatif (AMD5). Dipakai untuk baca harga/VLOOKUP dan,
+// bila pemilih VLOOKUP AMD5 aktif, sebagai template generate/download BOQ.
 const PATH_XLSX_AMD5 = path.join(__dirname, '..', 'templates', 'BOQ TAMKUR AMD 5 PAKET 5.xlsx');
 const NAMA_SHEET_AMD5 = 'AMD 5 Paket5';
+const PATH_LOCK_AMD5 = path.join(__dirname, '..', 'templates', '~$BOQ TAMKUR AMD 5 PAKET 5.xlsx');
+
+// Pilih template sesuai pemilih VLOOKUP di toolbar.
+// Default 'amd4' = alur lama (BOQ TAMKUR.xlsx), 'amd5' = BOQ AMD 5 PAKET 5.
+function pilihTemplate(opsi) {
+  const amd5 = String((opsi && opsi.sumberMaster) || '').toLowerCase() === 'amd5';
+  return amd5
+    ? { amd5: true,  file: PATH_XLSX_AMD5, lock: PATH_LOCK_AMD5, sheet: NAMA_SHEET_AMD5 }
+    : { amd5: false, file: PATH_XLSX,      lock: PATH_LOCK,      sheet: NAMA_SHEET };
+}
 
 function norm(s) {
   return String(s == null ? '' : s).trim().toUpperCase().replace(/\s+/g, '');
@@ -159,12 +169,17 @@ function isiIdentitasBoq(zip, opsi) {
  */
 function tulisBoqTamkur(rows, opsi) {
   opsi = opsi || {};
-  const fileXlsx = opsi.pathXlsx || PATH_XLSX;
-  const fileLock = opsi.pathLock || PATH_LOCK;
-  const hasil = { ok: false, ditulis: 0, dilewati: [], alasan: '', identitas: { area: false, lokasi: false } };
+  const tpl = pilihTemplate(opsi);
+  const fileXlsx = opsi.pathXlsx || tpl.file;
+  const fileLock = opsi.pathLock || tpl.lock;
+  const hasil = {
+    ok: false, ditulis: 0, dilewati: [], alasan: '',
+    identitas: { area: false, lokasi: false },
+    sumber_master: tpl.amd5 ? 'amd5' : 'amd4', sheet: tpl.sheet
+  };
 
   if (!fs.existsSync(fileXlsx)) {
-    hasil.alasan = 'templates/BOQ TAMKUR.xlsx tidak ditemukan';
+    hasil.alasan = 'templates/' + path.basename(tpl.file) + ' tidak ditemukan';
     return hasil;
   }
   if (fs.existsSync(fileLock)) {
@@ -205,9 +220,11 @@ function tulisBoqTamkur(rows, opsi) {
     hasil.identitas = isiIdentitasBoq(zip, opsi);
 
     // Seragamkan nama sheet, termasuk referensi di definedNames.
+    // AMD5 memakai sheet aslinya ("AMD 5 Paket5") — jangan diganti ke
+    // "BOQ TAMKUR" karena itu nama sheet template AMD4.
     if (zip.file('xl/workbook.xml')) {
       let wb = zip.file('xl/workbook.xml').asText();
-      wb = wb.split('BOQ AMD4 PAKET 5').join(NAMA_SHEET);
+      if (!tpl.amd5) wb = wb.split('BOQ AMD4 PAKET 5').join(NAMA_SHEET);
       // Paksa Excel menghitung ulang SUMIF/IF setelah kolom K/L berubah.
       if (/<calcPr\b/.test(wb)) {
         wb = wb.replace(/<calcPr\b([^>]*)\/?>/, (utuh, a) => {
@@ -306,10 +323,11 @@ function segarkanTurunan(sheetXml, baris, drm, rekon) {
 }
 
 /** Nama sheet + paksa Excel menghitung ulang (dipakai builder download). */
-function siapSheetBoq(zip, sheetPath, sheetXml) {
+function siapSheetBoq(zip, sheetPath, sheetXml, tpl) {
   if (zip.file('xl/workbook.xml')) {
     let wb = zip.file('xl/workbook.xml').asText();
-    wb = wb.split('BOQ AMD4 PAKET 5').join(NAMA_SHEET);
+    // AMD5 mempertahankan sheet aslinya; AMD4 tetap diseragamkan.
+    if (!tpl || !tpl.amd5) wb = wb.split('BOQ AMD4 PAKET 5').join(NAMA_SHEET);
     if (/<calcPr\b/.test(wb)) {
       wb = wb.replace(/<calcPr\b([^>]*)\/?>/, (utuh, a) => {
         if (/fullCalcOnLoad=/.test(a)) return utuh;
@@ -334,10 +352,15 @@ function siapSheetBoq(zip, sheetPath, sheetXml) {
  */
 function bangunBoqTamkur(rows, opsi) {
   opsi = opsi || {};
-  const hasil = { ok: false, ditulis: 0, dilewati: [], alasan: '', identitas: { area: false, lokasi: false }, buffer: null };
+  const tpl = pilihTemplate(opsi);
+  const hasil = {
+    ok: false, ditulis: 0, dilewati: [], alasan: '',
+    identitas: { area: false, lokasi: false }, buffer: null,
+    sumber_master: tpl.amd5 ? 'amd5' : 'amd4', sheet: tpl.sheet
+  };
 
-  if (!fs.existsSync(PATH_XLSX)) {
-    hasil.alasan = 'templates/BOQ TAMKUR.xlsx tidak ditemukan';
+  if (!fs.existsSync(tpl.file)) {
+    hasil.alasan = 'templates/' + path.basename(tpl.file) + ' tidak ditemukan';
     return hasil;
   }
   if (!Array.isArray(rows) || !rows.length) {
@@ -346,7 +369,7 @@ function bangunBoqTamkur(rows, opsi) {
   }
 
   try {
-    const zip = new PizZip(fs.readFileSync(PATH_XLSX)); // read-only
+    const zip = new PizZip(fs.readFileSync(tpl.file)); // read-only
     const shared = bacaShared(zip);
     const sheetPath = zip.file('xl/worksheets/sheet1.xml')
       ? 'xl/worksheets/sheet1.xml'
@@ -384,7 +407,7 @@ function bangunBoqTamkur(rows, opsi) {
     });
 
     hasil.identitas = isiIdentitasBoq(zip, opsi);
-    siapSheetBoq(zip, sheetPath, sheetXml);
+    siapSheetBoq(zip, sheetPath, sheetXml, tpl);
     hasil.buffer = zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
     hasil.ok = true;
     return hasil;
