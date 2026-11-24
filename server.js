@@ -5958,6 +5958,26 @@ app.post('/api/upload-drm-excel', checkAuth('admin'), upload.single('file'), (re
 //  Summary     : {tk_total_plus} {tk_total_min} {tk_jumlah_item}
 //                {tk_jumlah_tambah} {tk_jumlah_kurang}
 // ─────────────────────────────────────────────────────────────────────────────
+// Identitas untuk placeholder {{AREA}} / {{LOKASI}} di BOQ TAMKUR.xlsx.
+// AREA diambil dari branch di detail_tambahan (contoh: BOGOR), bukan tematik.
+// ─────────────────────────────────────────────────────────────────────────────
+function areaDariLokasi(lokasiData, laporan) {
+  let detail = lokasiData && lokasiData.detail_tambahan;
+  if (typeof detail === 'string') {
+    try { detail = JSON.parse(detail); } catch (e) { detail = {}; }
+  }
+  detail = detail || {};
+  const l = laporan || {};
+  return String(
+    detail.branch || detail.area || detail.wilayah || detail.pm_area ||
+    l.pm_area || l.district ||
+    (lokasiData && lokasiData.tematik) || '-'
+  ).trim();
+}
+function namaDariLokasi(lokasiData) {
+  return String((lokasiData && (lokasiData.nama_lokasi || lokasiData.pid)) || '-').trim();
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // [API] GENERATE BA TAMBAH KURANG — string-replace langsung di XML
 // ─────────────────────────────────────────────────────────────────────────────
@@ -6061,7 +6081,10 @@ rekonItems.forEach((item, i) => {
         designator: it.designator,
         drm:  parseFloat(it.vol_drm)   || 0,
         rekon: parseFloat(it.vol_rekon) || 0
-      })));
+      })), {
+        lokasi: namaDariLokasi(lokasiData),
+        area:   areaDariLokasi(lokasiData, adminInput)
+      });
       console.log('[BOQ TAMKUR] sinkronisasi:', JSON.stringify(sinkron));
     } catch (e) {
       console.warn('[BOQ TAMKUR] gagal sinkronisasi (diabaikan):', e.message);
@@ -6169,8 +6192,14 @@ const { bangunBoqTamkur } = require('./services/boqTamkur');
 app.get('/api/generate/boq_tambahkurang/:lokasi_id', checkAuth('admin'), async (req, res) => {
   try {
     const { lokasi_id } = req.params;
-    const lokasiData = await db.get('SELECT nama_lokasi FROM lokasi WHERE id = ?', [lokasi_id]);
+    const lokasiData = await db.get(
+      'SELECT nama_lokasi, pid, tematik, detail_tambahan FROM lokasi WHERE id = ?', [lokasi_id]
+    );
     if (!lokasiData) return res.status(404).json({ message: 'Data lokasi tidak ditemukan.' });
+
+    const laporan = await db.get(
+      'SELECT pm_area, district FROM laporan_rekon WHERE lokasi_id = ?', [lokasi_id]
+    ) || {};
 
     const rekonItems = await db.all(
       'SELECT designator, drm, rekon FROM rab_rekon WHERE lokasi_id = ?', [lokasi_id]
@@ -6183,7 +6212,10 @@ app.get('/api/generate/boq_tambahkurang/:lokasi_id', checkAuth('admin'), async (
       designator: it.designator,
       drm:  parseFloat(it.drm)   || 0,
       rekon: parseFloat(it.rekon) || 0,
-    })));
+    })), {
+      lokasi: namaDariLokasi(lokasiData),
+      area:   areaDariLokasi(lokasiData, laporan)
+    });
 
     if (!hasil.ok || !hasil.buffer) {
       return res.status(500).json({ message: 'Gagal menyusun BOQ: ' + (hasil.alasan || 'tidak diketahui') });
@@ -6196,6 +6228,7 @@ app.get('/api/generate/boq_tambahkurang/:lokasi_id', checkAuth('admin'), async (
 
     console.log('[BOQ TAMKUR] download Excel: lokasi=' + lokasi_id +
       ', ditulis=' + hasil.ditulis + ', dilewati=' + hasil.dilewati.length +
+      ', identitas=' + JSON.stringify(hasil.identitas) +
       (hasil.dilewati.length ? ' (' + hasil.dilewati.slice(0, 3).join(', ') + ')' : ''));
   } catch (err) {
     console.error('Error generate BOQ Tambah Kurang:', err);

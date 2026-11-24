@@ -114,16 +114,54 @@ function tulisPasangan(sheetXml, baris, drm, rekon) {
 
 function enamBelas(n) { return String(Math.round(Number(n) * 100) / 100); }
 
+function xmlTeks(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 /**
- * tulisBoqTamkur(rows)
+ * isiIdentitasBoq(zip, opsi)
+ * Isi placeholder {{AREA}} / {{LOKASI}} di xl/sharedStrings.xml.
+ * Hanya shared string yang isinya PERSIS placeholder yang diganti —
+ * sel, rumus, designator, dan harga tidak disentuh sama sekali.
+ * Tanpa opsi.area / opsi.lokasi → file dibiarkan apa adanya (alur lama).
+ */
+function isiIdentitasBoq(zip, opsi) {
+  const hasil = { area: false, lokasi: false };
+  if (!zip.file('xl/sharedStrings.xml')) return hasil;
+  opsi = opsi || {};
+  const area   = String(opsi.area   == null ? '' : opsi.area).trim();
+  const lokasi = String(opsi.lokasi == null ? '' : opsi.lokasi).trim();
+  if (!area && !lokasi) return hasil;
+
+  const sebelum = zip.file('xl/sharedStrings.xml').asText();
+  const ganti = (teks, placeholder, nilai) => teks.replace(
+    new RegExp('<si>\\s*<t([^>]*)>\\s*\\{\\{' + placeholder + '\\}\\}\\s*<\\/t>\\s*<\\/si>', 'g'),
+    (utuh, attr) => '<si><t' + attr + '>' + xmlTeks(nilai) + '</t></si>'
+  );
+
+  const sesudahArea = area ? ganti(sebelum, 'AREA', area) : sebelum;
+  hasil.area = sesudahArea !== sebelum;
+  const sesudah = lokasi ? ganti(sesudahArea, 'LOKASI', lokasi) : sesudahArea;
+  hasil.lokasi = sesudah !== sesudahArea;
+
+  if (sesudah !== sebelum) zip.file('xl/sharedStrings.xml', sesudah);
+  return hasil;
+}
+
+/**
+ * tulisBoqTamkur(rows, opsi)
  * rows: [{ designator, drm, rekon }, ...]
- * Return: { ok, ditulis, dilewati, alasan }
+ * opsi (opsional): { area, lokasi, pathXlsx, pathLock }
+ * Return: { ok, ditulis, dilewati, alasan, identitas }
  */
 function tulisBoqTamkur(rows, opsi) {
   opsi = opsi || {};
   const fileXlsx = opsi.pathXlsx || PATH_XLSX;
   const fileLock = opsi.pathLock || PATH_LOCK;
-  const hasil = { ok: false, ditulis: 0, dilewati: [], alasan: '' };
+  const hasil = { ok: false, ditulis: 0, dilewati: [], alasan: '', identitas: { area: false, lokasi: false } };
 
   if (!fs.existsSync(fileXlsx)) {
     hasil.alasan = 'templates/BOQ TAMKUR.xlsx tidak ditemukan';
@@ -162,6 +200,9 @@ function tulisBoqTamkur(rows, opsi) {
       if (t.ketemu) { sheetXml = t.xml; hasil.ditulis++; }
       else hasil.dilewati.push(String(item.designator) + ' (baris ' + baris + ' tidak ditemukan)');
     });
+
+    // Isi identitas lokasi/area pada placeholder template (kalau dikirim).
+    hasil.identitas = isiIdentitasBoq(zip, opsi);
 
     // Seragamkan nama sheet, termasuk referensi di definedNames.
     if (zip.file('xl/workbook.xml')) {
@@ -284,14 +325,16 @@ function siapSheetBoq(zip, sheetPath, sheetXml) {
 }
 
 /**
- * bangunBoqTamkur(rows)
+ * bangunBoqTamkur(rows, opsi)
  * Sama seperti tulisBoqTamkur, tetapi template tidak ditimpa: hasil
  * dikembalikan sebagai Buffer .xlsx siap di-download.
  * rows: [{ designator, drm, rekon }, ...]
- * Return: { ok, ditulis, dilewati, alasan, buffer }
+ * opsi (opsional): { area, lokasi }
+ * Return: { ok, ditulis, dilewati, alasan, identitas, buffer }
  */
-function bangunBoqTamkur(rows) {
-  const hasil = { ok: false, ditulis: 0, dilewati: [], alasan: '', buffer: null };
+function bangunBoqTamkur(rows, opsi) {
+  opsi = opsi || {};
+  const hasil = { ok: false, ditulis: 0, dilewati: [], alasan: '', identitas: { area: false, lokasi: false }, buffer: null };
 
   if (!fs.existsSync(PATH_XLSX)) {
     hasil.alasan = 'templates/BOQ TAMKUR.xlsx tidak ditemukan';
@@ -340,6 +383,7 @@ function bangunBoqTamkur(rows) {
       sheetXml = segarkanTurunan(sheetXml, x.baris, x.drm, x.rekon);
     });
 
+    hasil.identitas = isiIdentitasBoq(zip, opsi);
     siapSheetBoq(zip, sheetPath, sheetXml);
     hasil.buffer = zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
     hasil.ok = true;
@@ -403,5 +447,5 @@ function bacaHargaBoqTamkur(sumber) {
 module.exports = {
   tulisBoqTamkur, bacaHargaBoqTamkur, bangunBoqTamkur,
   PATH_XLSX, NAMA_SHEET, PATH_XLSX_AMD5, NAMA_SHEET_AMD5,
-  bacaShared, lepasTeks, indeksSheet, cariBaris
+  isiIdentitasBoq, bacaShared, lepasTeks, indeksSheet, cariBaris
 };
