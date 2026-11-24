@@ -680,6 +680,15 @@ let boqHargaCache = {};    // cache per sumber supaya ganti bolak-balik tetap ce
 //   amd4 → templates/BOQ TAMKUR.xlsx        (sheet BOQ TAMKUR)
 //   amd5 → templates/BOQ TAMKUR AMD 5 PAKET 5.xlsx (sheet AMD 5 Paket5)
 // M- → kolom G (material), J- → kolom H (jasa). Alur/hitungan lama tidak diubah.
+// Harga selalu dari BOQ TAMKUR — Google Sheet/BOQ DRM ALL hanya sumber volume.
+function withKunciHarga(peta) {
+  const out = Object.assign({}, peta || {});
+  Object.keys(out).forEach(k => {
+    const alias = kunciCocok(k);
+    if (alias && out[alias] == null) out[alias] = out[k];
+  });
+  return out;
+}
 async function muatHargaBoqTamkur() {
   const sumber = sumberMaster === 'amd5' ? 'amd5' : 'amd4';
   if (boqHargaCache[sumber]) {
@@ -691,8 +700,8 @@ async function muatHargaBoqTamkur() {
       { credentials: 'same-origin' });
     const j = await r.json();
     if (j && j.success && j.harga) {
-      boqHargaCache[sumber] = j.harga;
-      boqHargaMap = j.harga;
+      boqHargaCache[sumber] = withKunciHarga(j.harga);
+      boqHargaMap = boqHargaCache[sumber];
     }
   } catch (e) { console.warn('Gagal memuat harga BOQ TAMKUR (' + sumber + '):', e); }
   return boqHargaMap;
@@ -803,6 +812,13 @@ function buildPriceMap(items) {
 // ══════════════════════════════════════════════════════════════
 function normDes(d) {
   return String(d || '').trim().toUpperCase().replace(/\s+/g, '');
+}
+// Kunci pencocokan: semua tanda baca dibuang. Dipakai HANYA untuk mencocokkan
+// designator & mencari harga, bukan untuk menampilkan/menyimpan designator.
+// Contoh: "J-PRELIMINARY PROJECT", "J-PRELIMINARYPROJECT" dan
+//         "J-PRELIMINARY-PROJECT" → "JPRELIMINARYPROJECT".
+function kunciCocok(d) {
+  return String(d || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 function isDesKode(d) {
   return /^[A-Z0-9][A-Z0-9._\/\-]*-[A-Z0-9._\/\-]+$/.test(d);
@@ -1817,15 +1833,19 @@ async function hitungRekonsiliasi() {
   console.log('[REKON] priceMap:', Object.keys(priceMap).length, 'designator');
 
   // ── 3. Gabungkan semua designator ──────────────────────────
+  // Kunci cocok memakai kunciCocok() (tanda baca dibuang) supaya ejaan
+  // "J-PRELIMINARY PROJECT" (master) dan "J-PRELIMINARY-PROJECT" (Excel)
+  // tidak jadi dua baris TAMBAH/KURANG. Designator yang disimpan/ditampilkan
+  // tetap memakai teks asli sumbernya.
   const allDes = new Set([
-    ...drmData.map(r => r.designator.toUpperCase()),
-    ...rekonData.map(r => r.designator.toUpperCase()),
+    ...drmData.map(r => kunciCocok(r.designator)),
+    ...rekonData.map(r => kunciCocok(r.designator)),
   ]);
 
   rekonResult = [];
-  allDes.forEach(desUpper => {
-    const d      = drmData.find(r  => r.designator.toUpperCase()  === desUpper);
-    const r      = rekonData.find(r => r.designator.toUpperCase() === desUpper);
+  allDes.forEach(kunci => {
+    const d      = drmData.find(r  => kunciCocok(r.designator) === kunci);
+    const r      = rekonData.find(r => kunciCocok(r.designator) === kunci);
     const vDrm   = d ? parseNum(d.volume) : 0;
     const vRekon = r ? parseNum(r.volume) : 0;
 
@@ -1840,7 +1860,9 @@ async function hitungRekonsiliasi() {
     //    (3) harga jasa+material yang ikut ter-paste di input REKON
     const hDrm = d ? parseNum(d.jasa) + parseNum(d.material) : 0;
     const hRek = r ? parseNum(r.jasa) + parseNum(r.material) : 0;
-    const hSat = priceMap[desUpper.trim()] || hDrm || hRek || 0;
+    // Prioritas harga: BOQ TAMKUR (AMD4/AMD5) → RAB → harga yang ikut terpaste.
+    const hSat = priceMap[kunci] ||
+      priceMap[(d || r).designator.toUpperCase().trim()] || hDrm || hRek || 0;
 
     rekonResult.push({
       designator:   d ? d.designator : r.designator,

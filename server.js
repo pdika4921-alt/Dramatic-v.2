@@ -5869,34 +5869,39 @@ app.get('/api/boq-drm-all/cek', checkAuth('admin'), async (req, res) => {
   try {
     const nama = String(req.query.nama_lokasi || '').trim();
     if (!nama) return res.status(400).json({ message: 'Nama lokasi belum dipilih.' });
-    // Pilihan VLOOKUP harga: amd4 = alur lama (harga dari master DRM),
-    // amd5 = harga jasa/material diambil dari BOQ TAMKUR AMD 5 PAKET 5.
-    // Volume lokasi TETAP berasal dari BOQ DRM ALL (tidak diubah).
+    // Google Sheet / BOQ DRM ALL = SUMBER VOLUME (untuk ditampilkan).
+    // Harga jasa/material = BOQ TAMKUR AMD4 / AMD5 (database harga).
+    // Keduanya dipakai sesuai pemilih VLOOKUP di toolbar.
     const sumberMaster = String(req.query.sumber_master || 'amd4').toLowerCase() === 'amd5'
       ? 'amd5' : 'amd4';
     const hasil = await cariLokasiDiMasterDrm(nama);
     hasil.sumber_master = sumberMaster;
 
-    if (sumberMaster === 'amd5') {
-      const harga = bacaHargaBoqTamkur('amd5');
-      ['drm', 'rekon'].forEach(kunci => {
-        const bagian = hasil[kunci];
-        if (!bagian || !Array.isArray(bagian.items)) return;
-        bagian.items = bagian.items.map(it => {
-          const h = harga[String(it.designator || '').toUpperCase().trim()];
-          if (typeof h !== 'number') return it; // designator tidak ada → biarkan apa adanya
-          const salinan = Object.assign({}, it);
-          if (/^J-/.test(salinan.designator)) salinan.jasa = h;
-          else if (/^M-/.test(salinan.designator)) salinan.material = h;
-          return salinan;
-        });
+    const harga = bacaHargaBoqTamkur(sumberMaster);
+    // Kunci cadangan: spasi/tanda baca di designator master (mis.
+    // "J-PRELIMINARY PROJECT" vs "J-PRELIMINARY-PROJECT") tidak boleh
+    // membuat harga gagal ditemukan. Tidak ada tabrakan harga di kedua master.
+    const hargaKunci = {};
+    Object.keys(harga).forEach(k => {
+      const kunci = String(k).toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (kunci && hargaKunci[kunci] == null) hargaKunci[kunci] = harga[k];
+    });
+
+    ['drm', 'rekon'].forEach(kunci => {
+      const bagian = hasil[kunci];
+      if (!bagian || !Array.isArray(bagian.items)) return;
+      bagian.items = bagian.items.map(it => {
+        const asli = String(it.designator || '').toUpperCase().trim();
+        const kunciDes = asli.replace(/[^A-Z0-9]/g, '');
+        const h = typeof harga[asli] === 'number' ? harga[asli] : hargaKunci[kunciDes];
+        const salinan = Object.assign({}, it);
+        if (/^J-/.test(salinan.designator)) salinan.jasa  = typeof h === 'number' ? h : 0;
+        else if (/^M-/.test(salinan.designator)) salinan.material = typeof h === 'number' ? h : 0;
+        return salinan;
       });
-      hasil.sumber_harga = 'file';
-      hasil.sheet_harga = 'AMD 5 Paket5';
-    } else {
-      hasil.sumber_harga = 'master DRM (AMD4)';
-      hasil.sheet_harga = hasil.sheet;
-    }
+    });
+    hasil.sumber_harga = 'file';
+    hasil.sheet_harga = sumberMaster === 'amd5' ? 'AMD 5 Paket5' : 'BOQ AMD4 PAKET 5';
     res.json({ success: true, ...hasil });
   } catch (e) {
     res.status(500).json({ message: 'Gagal membaca data master BOQ DRM ALL.', detail: e.message });
