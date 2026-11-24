@@ -909,6 +909,54 @@ async function init() {
     console.log(' Kolom "harga_satuan" berhasil ditambahkan ke rab_rekon.');
   } catch (e) { /* sudah ada, abaikan */ }
 
+  // ── MIGRASI: sumber harga (AMD4/AMD5) yang dipakai saat rekon disimpan ──
+  // Dipakai supaya download dari menu mana pun memakai master yang sama
+  // dengan saat hitung realisasi (tidak lagi default ke AMD4).
+  let kolomSumberBaru = false;
+  try {
+    await db.run(`ALTER TABLE rab_rekon ADD COLUMN sumber_master TEXT DEFAULT 'amd4'`);
+    kolomSumberBaru = true;
+    console.log(' Kolom "sumber_master" berhasil ditambahkan ke rab_rekon.');
+  } catch (e) { /* sudah ada */ }
+
+  if (kolomSumberBaru) {
+    // Data lama belum punya sumber master. Cocokkan harga tersimpan dengan
+    // kedua BOQ TAMKUR; bila jelas lebih cocok ke AMD5, tandai AMD5.
+    try {
+      const kunciHarga = sumber => {
+        const out = {};
+        const peta = bacaHargaBoqTamkur(sumber);
+        Object.keys(peta).forEach(k => {
+          const kk = String(k).toUpperCase().replace(/[^A-Z0-9]/g, '');
+          if (kk && out[kk] == null) out[kk] = peta[k];
+        });
+        return out;
+      };
+      const p4 = kunciHarga('amd4'), p5 = kunciHarga('amd5');
+      const lokasiList = await db.all('SELECT DISTINCT lokasi_id FROM rab_rekon');
+      for (const rowLok of lokasiList) {
+        const items = await db.all(
+          'SELECT designator, harga_satuan FROM rab_rekon WHERE lokasi_id = ?', [rowLok.lokasi_id]
+        );
+        let cocok4 = 0, cocok5 = 0;
+        items.forEach(it => {
+          const k = String(it.designator || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+          const h4 = p4[k], h5 = p5[k];
+          if (typeof h4 !== 'number' || typeof h5 !== 'number' || h4 === h5) return;
+          const hs = Number(it.harga_satuan) || 0;
+          if (Math.abs(hs - h4) < 0.5) cocok4++;
+          if (Math.abs(hs - h5) < 0.5) cocok5++;
+        });
+        if (cocok5 > cocok4) {
+          await db.run('UPDATE rab_rekon SET sumber_master = ? WHERE lokasi_id = ?',
+            ['amd5', rowLok.lokasi_id]);
+        }
+      }
+    } catch (e) {
+      console.warn(' [rab_rekon] gagal menginferensi sumber_master lama:', e.message);
+    }
+  }
+
   // ── MIGRASI: tambah created_at ke rab jika belum ada ──
   try { await db.run(`ALTER TABLE rab ADD COLUMN created_at TEXT DEFAULT (datetime('now','localtime'))`); } catch {}
 
@@ -4269,18 +4317,33 @@ app.get('/api/laporan-rekon/:lokasi_id', checkAuth('admin'), async (req, res) =>
 
 app.post('/api/rekon/:lokasi_id', checkAuth('admin'), async (req, res) => {
   const lokasiId = req.params.lokasi_id;
-  const { items } = req.body; // items dari rekonResult
+  const { items, sumber_master } = req.body || {}; // items dari rekonResult
+  const sumber = String(sumber_master || 'amd4').toLowerCase() === 'amd5' ? 'amd5' : 'amd4';
   try {
     await db.run(`DELETE FROM rab_rekon WHERE lokasi_id = ?`, [lokasiId]);
     const stmt = await db.prepare(
-      `INSERT INTO rab_rekon (lokasi_id, designator, drm, rekon, tambah, kurang, satuan, harga_satuan)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO rab_rekon (lokasi_id, designator, drm, rekon, tambah, kurang, satuan, harga_satuan, sumber_master)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     );
     for (const item of items) {
-      await stmt.run(lokasiId, item.designator, item.drm, item.rekon, item.tambah, item.kurang, item.satuan, item.harga_satuan || 0);
+      await stmt.run(lokasiId, item.designator, item.drm, item.rekon, item.tambah, item.kurang, item.satuan, item.harga_satuan || 0, sumber);
     }
     await stmt.finalize();
-    res.json({ ok: true });
+    res.json({ ok: true, sumber_master: sumber });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Simpan pemilih master VLOOKUP tanpa mengubah baris rekon.
+// Dipanggil saat pengguna mengganti AMD4/AMD5 di toolbar RAB.
+app.post('/api/rekon/:lokasi_id/sumber-master', checkAuth('admin'), async (req, res) => {
+  try {
+    const sumber = String((req.body || {}).sumber_master || 'amd4').toLowerCase() === 'amd5'
+      ? 'amd5' : 'amd4';
+    await db.run('UPDATE rab_rekon SET sumber_master = ? WHERE lokasi_id = ?',
+      [sumber, req.params.lokasi_id]);
+    res.json({ ok: true, sumber_master: sumber });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -5840,6 +5903,22 @@ app.delete('/api/users/:id', checkAuth('admin'), checkPengguna, async (req, res)
 
 
 
+// Tentukan master harga untuk generate BA/BOQ.
+// Prioritas: query ?sumber_master= → sumber tersimpan di rab_rekon → amd4.
+// Ini menyamakan angka "hitung realisasi" dengan angka saat download,
+// termasuk download dari menu Admin yang tidak mengirim query.
+async function sumberMasterUntukRekon(lokasi_id, dariQuery) {
+  const q = String(dariQuery == null ? '' : dariQuery).toLowerCase();
+  if (q === 'amd5' || q === 'amd4') return q;
+  try {
+    const row = await db.get(
+      'SELECT sumber_master FROM rab_rekon WHERE lokasi_id = ? LIMIT 1', [lokasi_id]
+    );
+    if (row && String(row.sumber_master).toLowerCase() === 'amd5') return 'amd5';
+  } catch (e) { /* kolom belum ada → pakai default */ }
+  return 'amd4';
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // [API] HARGA SATUAN DARI BOQ TAMKUR
 // Dipakai DRM/REKON untuk mengalikan volume (M- → G material, J- → H jasa).
@@ -5991,8 +6070,8 @@ app.get('/api/generate/ba_tambahkurang/:lokasi_id', checkAuth('admin'), async (r
     const { lokasi_id } = req.params;
     const templatePath  = path.join(__dirname, 'templates', 'templateTambahKurang.docx');
     // Harga BA ikut pemilih VLOOKUP: amd4 = BOQ TAMKUR, amd5 = BOQ AMD 5 PAKET 5.
-    const sumberMaster = String(req.query.sumber_master || 'amd4').toLowerCase() === 'amd5'
-      ? 'amd5' : 'amd4';
+    // Bila download dari menu Admin (tanpa query), pakai sumber tersimpan.
+    const sumberMaster = await sumberMasterUntukRekon(lokasi_id, req.query.sumber_master);
 
     if (!fs.existsSync(templatePath)) {
       return res.status(404).json({ message: 'Template templateTambahKurang.docx tidak ditemukan di folder /templates/' });
@@ -6097,19 +6176,25 @@ rekonItems.forEach((item, i) => {
 });
 
     // ── Tulis DRM/REKON ke BOQ TAMKUR.xlsx ──────────────────────────────
-    // Memakai angka mentah dari database. Kegagalan sinkronisasi TIDAK
-    // mengubah perhitungan dan tidak menggagalkan unduhan BA.
+    // Hanya untuk AMD4. File AMD5 adalah MASTER HARGA (read-only):
+    // penulis lama tulisBoqTamkur() bisa merusak sel/price di file itu.
+    // Template AMD5 tetap dipakai read-only oleh download BOQ.
+    // Kegagalan sinkronisasi TIDAK mengubah hitungan / menggagalkan BA.
     try {
-      const sinkron = tulisBoqTamkur(rekonItems.map(it => ({
-        designator: it.designator,
-        drm:  parseFloat(it.vol_drm)   || 0,
-        rekon: parseFloat(it.vol_rekon) || 0
-      })), {
-        lokasi: namaDariLokasi(lokasiData),
-        area:   areaDariLokasi(lokasiData, adminInput),
-        sumberMaster
-      });
-      console.log('[BOQ TAMKUR] sinkronisasi:', JSON.stringify(sinkron));
+      if (sumberMaster === 'amd5') {
+        console.log('[BOQ TAMKUR] sinkronisasi dilewati (AMD5 = master harga read-only)');
+      } else {
+        const sinkron = tulisBoqTamkur(rekonItems.map(it => ({
+          designator: it.designator,
+          drm:  parseFloat(it.vol_drm)   || 0,
+          rekon: parseFloat(it.vol_rekon) || 0
+        })), {
+          lokasi: namaDariLokasi(lokasiData),
+          area:   areaDariLokasi(lokasiData, adminInput),
+          sumberMaster
+        });
+        console.log('[BOQ TAMKUR] sinkronisasi:', JSON.stringify(sinkron));
+      }
     } catch (e) {
       console.warn('[BOQ TAMKUR] gagal sinkronisasi (diabaikan):', e.message);
     }
@@ -6217,8 +6302,7 @@ const { bangunBoqTamkur } = require('./services/boqTamkur');
 app.get('/api/generate/boq_tambahkurang/:lokasi_id', checkAuth('admin'), async (req, res) => {
   try {
     const { lokasi_id } = req.params;
-    const sumberMaster = String(req.query.sumber_master || 'amd4').toLowerCase() === 'amd5'
-      ? 'amd5' : 'amd4';
+    const sumberMaster = await sumberMasterUntukRekon(lokasi_id, req.query.sumber_master);
     const lokasiData = await db.get(
       'SELECT nama_lokasi, pid, tematik, detail_tambahan FROM lokasi WHERE id = ?', [lokasi_id]
     );

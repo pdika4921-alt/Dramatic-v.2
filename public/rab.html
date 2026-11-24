@@ -720,9 +720,25 @@ function gantiSumberMaster(sumber) {
   });
   boqHargaMap = boqHargaCache[sumberMaster] || {};
   if (typeof window.resetMasterCek === 'function') window.resetMasterCek();
+  // Simpan pilihan master ke server supaya download dari menu Admin tetap
+  // memakai master yang sama dengan saat hitung realisasi.
+  if (selectedLokasi && selectedLokasi.id) {
+    fetch('/api/rekon/' + selectedLokasi.id + '/sumber-master', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ sumber_master: sumberMaster })
+    }).catch(() => {});
+  }
   // Isi ulang cache sumber baru di latar belakang; Upload/Cek tetap memakai
   // master yang sedang aktif karena muatHargaBoqTamkur() memakai sumberMaster.
-  muatHargaBoqTamkur();
+  muatHargaBoqTamkur().then(() => {
+    // Hitung ulang bila tabel rekon sudah ada, agar angka di layar tidak
+    // tertinggal dari master yang baru dipilih.
+    if (rekonResult.length && typeof hitungRekonsiliasi === 'function') {
+      Promise.resolve(hitungRekonsiliasi()).catch(() => {});
+    }
+  });
   if (typeof showToast === 'function') {
     showToast('info', 'Master VLOOKUP: ' +
       (sumberMaster === 'amd5' ? 'BOQ TAMKUR AMD 5 PAKET 5' : 'BOQ TAMKUR (AMD4 PAKET 5)') +
@@ -2029,7 +2045,10 @@ async function simpanRekon() {
     const res = await fetch(`/api/rekon/${selectedLokasi.id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: itemsToSave }),
+      body: JSON.stringify({
+        items: itemsToSave,
+        sumber_master: sumberMaster === 'amd5' ? 'amd5' : 'amd4'
+      }),
     });
     const data = await res.json();
     if (data.ok) showToast('success', 'Rekon berhasil disimpan!');
@@ -2070,7 +2089,10 @@ async function generateBoqExcel() {
 
     const saveRes = await fetch(`/api/rekon/${selectedLokasi.id}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: itemsToSave }),
+      body: JSON.stringify({
+        items: itemsToSave,
+        sumber_master: sumberMaster === 'amd5' ? 'amd5' : 'amd4'
+      }),
     });
     if (!saveRes.ok) throw new Error('Gagal simpan rekon ke server');
 
@@ -2199,7 +2221,10 @@ async function generateBA() {
       // 1. Simpan rekon ke DB
       const saveRes = await fetch(`/api/rekon/${selectedLokasi.id}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: itemsWithHarga }),
+        body: JSON.stringify({
+          items: itemsWithHarga,
+          sumber_master: sumberMaster === 'amd5' ? 'amd5' : 'amd4'
+        }),
       });
       if (!saveRes.ok) throw new Error('Gagal simpan rekon ke server');
 

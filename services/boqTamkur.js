@@ -23,7 +23,8 @@ const NAMA_SHEET = 'BOQ TAMKUR';
 const PATH_LOCK = path.join(__dirname, '..', 'templates', '~$BOQ TAMKUR.xlsx');
 
 // Master harga alternatif (AMD5). Dipakai untuk baca harga/VLOOKUP dan,
-// bila pemilih VLOOKUP AMD5 aktif, sebagai template generate/download BOQ.
+// bila pemilih VLOOKUP AMD5 aktif, sebagai template download BOQ.
+// File ini sengaja TIDAK ditulis oleh generate BA (master harga read-only).
 const PATH_XLSX_AMD5 = path.join(__dirname, '..', 'templates', 'BOQ TAMKUR AMD 5 PAKET 5.xlsx');
 const NAMA_SHEET_AMD5 = 'AMD 5 Paket5';
 const PATH_LOCK_AMD5 = path.join(__dirname, '..', 'templates', '~$BOQ TAMKUR AMD 5 PAKET 5.xlsx');
