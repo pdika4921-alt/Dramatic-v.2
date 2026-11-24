@@ -913,12 +913,16 @@ table.rt-table input.rt-des { font-weight: 700; color: var(--brand-fg); }
    Sekadar tampilan: id, onclick, atribut data-fmt dan alur lama tidak
    diubah. Tombol tetap memuat teks yang sama persis.                    */
 .rkb-toolbar {
-  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  display:grid;
+  grid-template-columns:minmax(0,auto) minmax(0,1fr);
+  grid-template-areas:"info aksi" "sumber sumber";
+  align-items:center; gap:8px;
   margin-top:10px; padding:8px 10px;
   border:1px solid var(--border); border-radius:11px;
   background:linear-gradient(180deg, rgba(148,163,184,.08), rgba(148,163,184,.02));
 }
 .rkb-info {
+  grid-area:info;
   display:inline-flex; align-items:center; gap:6px; flex:0 0 auto;
   min-width:86px; padding:0 11px; min-height:32px;
   border-right:1px solid var(--border);
@@ -927,14 +931,16 @@ table.rt-table input.rt-des { font-weight: 700; color: var(--brand-fg); }
 .rkb-info i { color:var(--c-drm); font-size:10px; }
 .rkb-rekon .rkb-info i { color:var(--c-rek); }
 .rkb-count { color:var(--text-main); font-family:var(--font-mono); font-weight:800; white-space:nowrap; }
-.rkb-groups { display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:1 1 auto; }
+/* Wrapper hanya pembagian area; child-nya yang jadi grid item toolbar. */
+.rkb-groups { display:contents; }
 .rkb-group {
   position:relative; display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  min-width:0;
   padding:6px 9px 7px; border-radius:9px;
   background:var(--bg-card); border:1px solid var(--border);
 }
-.rkb-sumber { border-color:rgba(2,132,199,.30); }
-.rkb-aksi   { border-color:rgba(211,47,47,.26); }
+.rkb-sumber { grid-area:sumber; min-width:0; border-color:rgba(2,132,199,.30); }
+.rkb-aksi   { grid-area:aksi; justify-self:end; border-color:rgba(211,47,47,.26); }
 .rkb-rekon .rkb-aksi { border-color:rgba(4,120,87,.30); }
 .rkb-caption {
   position:absolute; top:-7px; left:10px; padding:0 5px;
@@ -993,9 +999,13 @@ table.rt-table input.rt-des { font-weight: 700; color: var(--brand-fg); }
 .rkb-toolbar .mc-chip input { min-width:0; min-height:0; width:0; height:0; }
 .rkb-toolbar .mc-kotak { width:13px; height:13px; flex-basis:13px; }
 @media (max-width:768px) {
-  .rkb-toolbar { gap:6px; padding:7px 9px; }
-  .rkb-info { width:100%; border-right:0; border-bottom:1px solid var(--border); padding:0 2px 6px; min-height:auto; }
-  .rkb-groups, .rkb-group { width:100%; }
+  .rkb-toolbar {
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"info" "sumber" "aksi";
+    gap:6px; padding:7px 9px;
+  }
+  .rkb-info { border-right:0; border-bottom:1px solid var(--border); padding:0 2px 6px; min-height:auto; }
+  .rkb-aksi { justify-self:stretch; }
   .rkb-select { flex:1 1 auto; min-width:0; }
   .rkb-btn { flex:1 1 auto; }
 }
