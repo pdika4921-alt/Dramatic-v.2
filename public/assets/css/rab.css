@@ -941,6 +941,20 @@ table.rt-table input.rt-des { font-weight: 700; color: var(--brand-fg); }
   background:var(--bg-panel); color:var(--text-faint);
   font-size:7px; font-weight:800; letter-spacing:.11em; line-height:1.4;
 }
+.rkb-pilih {
+  flex:0 0 auto; color:var(--text-faint);
+  font-size:7px; font-weight:800; letter-spacing:.09em;
+}
+.rkb-select {
+  flex:0 1 148px; min-width:120px; height:29px;
+  padding:0 6px; border-radius:8px; cursor:pointer;
+  background:var(--bg-input); color:var(--text-main);
+  border:1px solid rgba(124,58,237,.38);
+  font-size:9px; font-weight:700; line-height:1;
+  transition:border-color .15s, box-shadow .15s;
+}
+.rkb-select:hover { border-color:rgba(124,58,237,.65); }
+.rkb-select:focus-visible { outline:2px solid rgba(124,58,237,.45); outline-offset:1px; }
 .rkb-btn {
   display:inline-flex; align-items:center; justify-content:center; gap:6px;
   min-height:29px; padding:5px 11px; border-radius:8px;
@@ -982,6 +996,7 @@ table.rt-table input.rt-des { font-weight: 700; color: var(--brand-fg); }
   .rkb-toolbar { gap:6px; padding:7px 9px; }
   .rkb-info { width:100%; border-right:0; border-bottom:1px solid var(--border); padding:0 2px 6px; min-height:auto; }
   .rkb-groups, .rkb-group { width:100%; }
+  .rkb-select { flex:1 1 auto; min-width:0; }
   .rkb-btn { flex:1 1 auto; }
 }
 .rab-toolbar {

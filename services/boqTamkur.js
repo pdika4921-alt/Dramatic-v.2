@@ -7,6 +7,8 @@
    • Pencocokan memakai kolom C (designator material, awalan M-) dan
      kolom D (designator jasa, awalan J-), dengan fallback ke kolom B.
    • Nama sheet diseragamkan menjadi "BOQ TAMKUR".
+   • bacaHargaBoqTamkur('amd4'|'amd5') = VLOOKUP harga jasa/material dari
+     BOQ TAMKUR (AMD4) atau BOQ TAMKUR AMD 5 PAKET 5. File AMD5 dibaca saja.
    • Memakai PizZip (sudah ada di package.json) — tanpa dependency baru.
    • Kegagalan menulis TIDAK boleh menggagalkan generate BA.
    ===================================================================== */
@@ -19,6 +21,11 @@ const PizZip = require('pizzip');
 const PATH_XLSX = path.join(__dirname, '..', 'templates', 'BOQ TAMKUR.xlsx');
 const NAMA_SHEET = 'BOQ TAMKUR';
 const PATH_LOCK = path.join(__dirname, '..', 'templates', '~$BOQ TAMKUR.xlsx');
+
+// Master harga alternatif (AMD5). Dipakai ONLY untuk baca harga/VLOOKUP.
+// File ini TIDAK pernah ditulis oleh tulisBoqTamkur()/generate BA.
+const PATH_XLSX_AMD5 = path.join(__dirname, '..', 'templates', 'BOQ TAMKUR AMD 5 PAKET 5.xlsx');
+const NAMA_SHEET_AMD5 = 'AMD 5 Paket5';
 
 function norm(s) {
   return String(s == null ? '' : s).trim().toUpperCase().replace(/\s+/g, '');
@@ -344,17 +351,22 @@ function bangunBoqTamkur(rows) {
 }
 
 /**
- * bacaHargaBoqTamkur()
- * Harga satuan diambil dari templates/BOQ TAMKUR.xlsx:
+ * bacaHargaBoqTamkur(sumber)
+ * Harga satuan untuk VLOOKUP:
+ *   • sumber 'amd4' (DEFAULT, alur lama) → templates/BOQ TAMKUR.xlsx
+ *   • sumber 'amd5'                    → templates/BOQ TAMKUR AMD 5 PAKET 5.xlsx
+ * Kedua file memakai aturan kolom yang sama:
  *   • designator M- di kolom C → harga material kolom G
  *   • designator J- di kolom D → harga jasa    kolom H
  * Return: { "M-...": 7098, "J-...": 2169, ... }
  */
-function bacaHargaBoqTamkur() {
+function bacaHargaBoqTamkur(sumber) {
   const peta = {};
-  if (!fs.existsSync(PATH_XLSX)) return peta;
+  const pakaiAmd5 = String(sumber == null ? '' : sumber).toLowerCase() === 'amd5';
+  const filePath = pakaiAmd5 ? PATH_XLSX_AMD5 : PATH_XLSX;
+  if (!fs.existsSync(filePath)) return peta;
   try {
-    const zip = new PizZip(fs.readFileSync(PATH_XLSX));
+    const zip = new PizZip(fs.readFileSync(filePath));
     const shared = bacaShared(zip);
     const sheetPath = zip.file('xl/worksheets/sheet1.xml')
       ? 'xl/worksheets/sheet1.xml'
@@ -383,12 +395,13 @@ function bacaHargaBoqTamkur() {
       pasang('D', 'H');
     }
   } catch (e) {
-    console.warn('[BOQ TAMKUR] gagal membaca harga:', e.message);
+    console.warn('[BOQ TAMKUR] gagal membaca harga ' + path.basename(filePath) + ':', e.message);
   }
   return peta;
 }
 
 module.exports = {
   tulisBoqTamkur, bacaHargaBoqTamkur, bangunBoqTamkur,
-  PATH_XLSX, NAMA_SHEET, bacaShared, lepasTeks, indeksSheet, cariBaris
+  PATH_XLSX, NAMA_SHEET, PATH_XLSX_AMD5, NAMA_SHEET_AMD5,
+  bacaShared, lepasTeks, indeksSheet, cariBaris
 };

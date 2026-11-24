@@ -212,6 +212,14 @@ async function muatMasterGoogle(kunci) {
 
   const lokasi = susunLokasi(baris4, baris5);
   isiItem(lokasi, dataRows, (row, i) => row[i]);
+  // Sheet bisa saja sedang dikosongkan/diedit. Kalau baris datanya cuma
+  // sisa header/total (atau tidak ada volume yang terbaca), jangan simpan
+  // cache kosong — langsung pakai fallback file lokal.
+  const lokasiBeriisi = lokasi.filter(l => l.items.length).length;
+  if (dataRows.length < 20 || lokasiBeriisi < 10) {
+    throw new Error('Google Sheet BOQ DRM ALL belum memuat data volume (' +
+      dataRows.length + ' baris, ' + lokasiBeriisi + ' lokasi terisi).');
+  }
   return {
     sheet: NAMA_SHEET,
     sumber: 'google',

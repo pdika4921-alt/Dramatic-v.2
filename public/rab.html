@@ -274,6 +274,11 @@
         <div class="rkb-groups">
           <div class="rkb-group rkb-sumber">
             <span class="rkb-caption">SUMBER DATA</span>
+            <label class="rkb-pilih" for="drm_master_source">VLOOKUP</label>
+            <select id="drm_master_source" class="rkb-select" onchange="gantiSumberMaster(this.value)" title="Pilih master VLOOKUP Jasa/Material sebelum Upload Excel atau Cek Data Master">
+              <option value="amd4">BOQ TAMKUR (AMD4)</option>
+              <option value="amd5">BOQ TAMKUR AMD 5</option>
+            </select>
             <button class="btn rkb-btn rkb-upload" onclick="document.getElementById('drm_file').click()" title="Upload BOQ DRM .xlsx — hanya designator M-/J- dan kolom TOTAL VOLUME yang diambil">
               <i class="fa-solid fa-file-excel"></i><span>Upload Excel</span>
             </button>
@@ -332,6 +337,11 @@
         <div class="rkb-groups">
           <div class="rkb-group rkb-sumber">
             <span class="rkb-caption">SUMBER DATA</span>
+            <label class="rkb-pilih" for="rekon_master_source">VLOOKUP</label>
+            <select id="rekon_master_source" class="rkb-select" onchange="gantiSumberMaster(this.value)" title="Pilih master VLOOKUP Jasa/Material sebelum Upload Excel atau Cek Data Master">
+              <option value="amd4">BOQ TAMKUR (AMD4)</option>
+              <option value="amd5">BOQ TAMKUR AMD 5</option>
+            </select>
             <button class="btn rkb-btn rkb-upload" onclick="document.getElementById('rekon_file').click()" title="Upload BOQ REKON .xlsx — hanya designator M-/J- dan nilai REKON yang diambil">
               <i class="fa-solid fa-file-excel"></i><span>Upload Excel</span>
             </button>
@@ -658,21 +668,53 @@ let allLokasi   = [];
 let lokasiDdOpen = false;
 let lastParseReport = null;
 let lastRekonReport = null;
-let boqHargaMap = {};   // harga satuan dari templates/BOQ TAMKUR.xlsx
+let boqHargaMap = {};   // harga satuan dari master VLOOKUP yang sedang dipilih
+let sumberMaster = 'amd4'; // DEFAULT = alur lama (BOQ TAMKUR AMD4 PAKET 5)
+let boqHargaCache = {};    // cache per sumber supaya ganti bolak-balik tetap cepat
 
-// Muat sekali harga BOQ TAMKUR: M- → kolom G (material), J- → kolom H (jasa).
+// Muat harga sesuai master yang dipilih di toolbar:
+//   amd4 → templates/BOQ TAMKUR.xlsx        (sheet BOQ TAMKUR)
+//   amd5 → templates/BOQ TAMKUR AMD 5 PAKET 5.xlsx (sheet AMD 5 Paket5)
+// M- → kolom G (material), J- → kolom H (jasa). Alur/hitungan lama tidak diubah.
 async function muatHargaBoqTamkur() {
-  if (Object.keys(boqHargaMap).length) return boqHargaMap;
+  const sumber = sumberMaster === 'amd5' ? 'amd5' : 'amd4';
+  if (boqHargaCache[sumber]) {
+    boqHargaMap = boqHargaCache[sumber];
+    return boqHargaMap;
+  }
   try {
-    const r = await fetch('/api/boq-tamkur/harga', { credentials: 'same-origin' });
+    const r = await fetch('/api/boq-tamkur/harga?sumber_master=' + encodeURIComponent(sumber),
+      { credentials: 'same-origin' });
     const j = await r.json();
-    if (j && j.success && j.harga) boqHargaMap = j.harga;
-  } catch (e) { console.warn('Gagal memuat harga BOQ TAMKUR:', e); }
+    if (j && j.success && j.harga) {
+      boqHargaCache[sumber] = j.harga;
+      boqHargaMap = j.harga;
+    }
+  } catch (e) { console.warn('Gagal memuat harga BOQ TAMKUR (' + sumber + '):', e); }
   return boqHargaMap;
 }
 function hargaBoq(des) {
   if (!des) return 0;
   return Number(boqHargaMap[String(des).toUpperCase().trim()] || 0);
+}
+
+// Dipanggil select "VLOOKUP" di toolbar DRM/REKON, SEBELUM Upload Excel / Cek Data Master.
+function gantiSumberMaster(sumber) {
+  sumberMaster = String(sumber || '').toLowerCase() === 'amd5' ? 'amd5' : 'amd4';
+  ['drm', 'rekon'].forEach(function (tipe) {
+    const select = document.getElementById(tipe + '_master_source');
+    if (select) select.value = sumberMaster;
+  });
+  boqHargaMap = boqHargaCache[sumberMaster] || {};
+  if (typeof window.resetMasterCek === 'function') window.resetMasterCek();
+  // Isi ulang cache sumber baru di latar belakang; Upload/Cek tetap memakai
+  // master yang sedang aktif karena muatHargaBoqTamkur() memakai sumberMaster.
+  muatHargaBoqTamkur();
+  if (typeof showToast === 'function') {
+    showToast('info', 'Master VLOOKUP: ' +
+      (sumberMaster === 'amd5' ? 'BOQ TAMKUR AMD 5 PAKET 5' : 'BOQ TAMKUR (AMD4 PAKET 5)') +
+      '. Silakan Upload Excel / Cek Data Master.');
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2397,7 +2439,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setStatus(tipe, '', '<i class="fa-solid fa-spinner fa-spin"></i> Mencari <b>' + esc(nama) + '</b> di data master BOQ DRM ALL…');
 
     try {
-      const res = await fetch(API_CEK_MASTER + '?nama_lokasi=' + encodeURIComponent(nama), { credentials: 'same-origin' });
+      const sumber = typeof sumberMaster === 'string' && sumberMaster.toLowerCase() === 'amd5' ? 'amd5' : 'amd4';
+      const res = await fetch(API_CEK_MASTER + '?nama_lokasi=' + encodeURIComponent(nama) +
+        '&sumber_master=' + encodeURIComponent(sumber), { credentials: 'same-origin' });
       const j = await res.json().catch(() => ({}));
       if (!res.ok || !j.success) throw new Error(j.message || 'Gagal mengecek data master.');
 
@@ -2411,7 +2455,8 @@ document.addEventListener('DOMContentLoaded', () => {
           '<i class="fa-solid fa-circle-exclamation"></i> Lokasi <b>' + esc(nama) + '</b> <b>belum ada</b> di master BOQ DRM ALL' +
           (j.jumlahMaster ? ' (' + j.jumlahMaster + ' lokasi)' : '') + '. Silakan upload file Excel ' + labelTipe + ' seperti biasa.' +
           (saran ? '<br><span style="opacity:.8">Mungkin maksudnya: ' + saran + '</span>' : '') +
-          '<br><span style="opacity:.7">Sumber: ' + (j.sumber === 'google' ? 'Google Sheet' : 'file lokal') + ' · ' + esc(j.sheet || '') + '</span>');
+          '<br><span style="opacity:.7">Sumber: ' + (j.sumber === 'google' ? 'Google Sheet' : 'file lokal') + ' · ' + esc(j.sheet || '') + '</span>' +
+          '<br><span style="opacity:.7">VLOOKUP: ' + esc(j.sheet_harga || '-') + ' (' + esc(j.sumber_master || 'amd4').toUpperCase() + ')</span>');
         if (typeof showToast === 'function') showToast('info', 'Lokasi belum ada di master — silakan upload Excel.');
         return;
       }
@@ -2440,7 +2485,8 @@ document.addEventListener('DOMContentLoaded', () => {
       let html = '<i class="fa-solid fa-circle-check"></i> Data <b>' + labelTipe + '</b> lokasi <b>' + esc(j.nama_master) +
         '</b> sudah ada di master — <b>' + bagian.jumlah + ' item</b> otomatis terisi' +
         ' (sheet <b>' + esc(j.sheet) + '</b>, kolom <b>' + esc((j.blok || {})[tipe] || '-') + '</b>).' +
-        '<br><span style="opacity:.7">Sumber: ' + (j.sumber === 'google' ? 'Google Sheet' : 'file lokal') + '</span>';
+        '<br><span style="opacity:.7">Sumber: ' + (j.sumber === 'google' ? 'Google Sheet' : 'file lokal') + '</span>' +
+        '<br><span style="opacity:.7">VLOOKUP Jasa/Material: <b>' + esc(j.sheet_harga || '-') + '</b> (' + esc(j.sumber_master || 'amd4').toUpperCase() + ')</span>';
       if (!bagianLain.adaData) {
         html += '<br><span style="opacity:.8">Data ' + (tipe === 'drm' ? 'REKON' : 'DRM') + ' belum ada di master — silakan upload Excel ' +
           (tipe === 'drm' ? 'REKON' : 'DRM') + ' bila diperlukan.</span>';

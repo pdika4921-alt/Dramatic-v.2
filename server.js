@@ -5846,8 +5846,15 @@ app.delete('/api/users/:id', checkAuth('admin'), checkPengguna, async (req, res)
 // ─────────────────────────────────────────────────────────────────────────────
 app.get('/api/boq-tamkur/harga', checkAuth('admin'), (req, res) => {
   try {
-    const harga = bacaHargaBoqTamkur();
-    res.json({ success: true, harga, jumlah: Object.keys(harga).length });
+    // DEFAULT 'amd4' = alur lama. 'amd5' → BOQ TAMKUR AMD 5 PAKET 5.xlsx.
+    const sumberMaster = String(req.query.sumber_master || 'amd4').toLowerCase() === 'amd5'
+      ? 'amd5' : 'amd4';
+    const harga = bacaHargaBoqTamkur(sumberMaster);
+    res.json({
+      success: true, harga, jumlah: Object.keys(harga).length,
+      sumber_master: sumberMaster,
+      sheet_master: sumberMaster === 'amd5' ? 'AMD 5 Paket5' : 'BOQ TAMKUR'
+    });
   } catch (e) {
     res.status(500).json({ message: 'Gagal membaca harga BOQ TAMKUR.', detail: e.message });
   }
@@ -5862,7 +5869,34 @@ app.get('/api/boq-drm-all/cek', checkAuth('admin'), async (req, res) => {
   try {
     const nama = String(req.query.nama_lokasi || '').trim();
     if (!nama) return res.status(400).json({ message: 'Nama lokasi belum dipilih.' });
+    // Pilihan VLOOKUP harga: amd4 = alur lama (harga dari master DRM),
+    // amd5 = harga jasa/material diambil dari BOQ TAMKUR AMD 5 PAKET 5.
+    // Volume lokasi TETAP berasal dari BOQ DRM ALL (tidak diubah).
+    const sumberMaster = String(req.query.sumber_master || 'amd4').toLowerCase() === 'amd5'
+      ? 'amd5' : 'amd4';
     const hasil = await cariLokasiDiMasterDrm(nama);
+    hasil.sumber_master = sumberMaster;
+
+    if (sumberMaster === 'amd5') {
+      const harga = bacaHargaBoqTamkur('amd5');
+      ['drm', 'rekon'].forEach(kunci => {
+        const bagian = hasil[kunci];
+        if (!bagian || !Array.isArray(bagian.items)) return;
+        bagian.items = bagian.items.map(it => {
+          const h = harga[String(it.designator || '').toUpperCase().trim()];
+          if (typeof h !== 'number') return it; // designator tidak ada → biarkan apa adanya
+          const salinan = Object.assign({}, it);
+          if (/^J-/.test(salinan.designator)) salinan.jasa = h;
+          else if (/^M-/.test(salinan.designator)) salinan.material = h;
+          return salinan;
+        });
+      });
+      hasil.sumber_harga = 'file';
+      hasil.sheet_harga = 'AMD 5 Paket5';
+    } else {
+      hasil.sumber_harga = 'master DRM (AMD4)';
+      hasil.sheet_harga = hasil.sheet;
+    }
     res.json({ success: true, ...hasil });
   } catch (e) {
     res.status(500).json({ message: 'Gagal membaca data master BOQ DRM ALL.', detail: e.message });
