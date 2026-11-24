@@ -250,14 +250,16 @@
           <div class="rekon-hint">5 kolom, dipisah <b>Tab</b> dari Excel · contoh di bawah bisa langsung dipakai</div>
         </div>
       </div>
-      <div class="rekon-format">
-        <div class="rf-head"><i class="fa-solid fa-circle-info" style="margin-right:5px;"></i>FORMAT INPUT — <b>designator ⇥ jasa ⇥ material ⇥ volume ⇥ satuan</b></div>
-        <div class="rf-cols rf-grid"><span>designator</span><span>jasa</span><span>material</span><span>volume</span><span>satuan</span></div>
-        <div class="rf-row rf-grid"><code>M-DC-OF-SM-144D</code><code>42.500</code><code class="rf-kosong">—</code><code>272</code><code>Mtr</code></div>
-        <div class="rf-row rf-grid"><code>J-CO-OF</code><code class="rf-kosong">—</code><code>32.150</code><code>727</code><code>Core</code></div>
-        <div class="rf-row rf-grid"><code>M-PROT-SLV</code><code>750</code><code class="rf-kosong">—</code><code>480</code><code>Pcs</code></div>
-        <div class="rf-note">Tanda <b>—</b> = kolom dikosongkan tapi <b>tetap dipisah Tab</b>. Jangan diganti spasi.</div>
-      </div>
+      <details class="rekon-format" id="drm_format" title="Klik untuk lihat / sembunyikan contoh format input">
+        <summary class="rf-head"><i class="fa-solid fa-circle-info" style="margin-right:5px;"></i>FORMAT INPUT — <b>designator ⇥ jasa ⇥ material ⇥ volume ⇥ satuan</b><i class="fa-solid fa-chevron-down rf-panah"></i></summary>
+        <div class="rf-isi">
+          <div class="rf-cols rf-grid"><span>designator</span><span>jasa</span><span>material</span><span>volume</span><span>satuan</span></div>
+          <div class="rf-row rf-grid"><code>M-DC-OF-SM-144D</code><code>42.500</code><code class="rf-kosong">—</code><code>272</code><code>Mtr</code></div>
+          <div class="rf-row rf-grid"><code>J-CO-OF</code><code class="rf-kosong">—</code><code>32.150</code><code>727</code><code>Core</code></div>
+          <div class="rf-row rf-grid"><code>M-PROT-SLV</code><code>750</code><code class="rf-kosong">—</code><code>480</code><code>Pcs</code></div>
+          <div class="rf-note">Tanda <b>—</b> = kolom dikosongkan tapi <b>tetap dipisah Tab</b>. Jangan diganti spasi.</div>
+        </div>
+      </details>
       <textarea id="drm_input" class="input-area" rows="6" oninput="previewRekon(this.value,'drm'); sinkronTeksKeTabel('drm')"
         placeholder="Paste 5 kolom dari Excel di sini…&#10;Atau klik tombol &quot;Isi Contoh&quot; untuk mencoba sekarang."></textarea>
       <div id="drm_tabel_wrap" class="rekon-tabel-wrap" style="display:none;">
@@ -314,13 +316,15 @@
           <div class="rekon-hint">5 kolom, dipisah <b>Tab</b> dari Excel · contoh di bawah bisa langsung dipakai</div>
         </div>
       </div>
-      <div class="rekon-format">
-        <div class="rf-head"><i class="fa-solid fa-circle-info" style="margin-right:5px;"></i>FORMAT INPUT — <b>designator ⇥ jasa ⇥ material ⇥ volume ⇥ satuan</b></div>
-        <div class="rf-cols rf-grid"><span>designator</span><span>jasa</span><span>material</span><span>volume</span><span>satuan</span></div>
-        <div class="rf-row rf-grid"><code>M-DC-OF-SM-144D</code><code>42.500</code><code class="rf-kosong">—</code><code>290</code><code>Mtr</code></div>
-        <div class="rf-row rf-grid"><code>J-CO-OF</code><code class="rf-kosong">—</code><code>32.150</code><code>700</code><code>Core</code></div>
-        <div class="rf-note">Volume REKON boleh berbeda dari DRM → dihitung sebagai Tambah / Kurang.</div>
-      </div>
+      <details class="rekon-format" id="rekon_format" title="Klik untuk lihat / sembunyikan contoh format input">
+        <summary class="rf-head"><i class="fa-solid fa-circle-info" style="margin-right:5px;"></i>FORMAT INPUT — <b>designator ⇥ jasa ⇥ material ⇥ volume ⇥ satuan</b><i class="fa-solid fa-chevron-down rf-panah"></i></summary>
+        <div class="rf-isi">
+          <div class="rf-cols rf-grid"><span>designator</span><span>jasa</span><span>material</span><span>volume</span><span>satuan</span></div>
+          <div class="rf-row rf-grid"><code>M-DC-OF-SM-144D</code><code>42.500</code><code class="rf-kosong">—</code><code>290</code><code>Mtr</code></div>
+          <div class="rf-row rf-grid"><code>J-CO-OF</code><code class="rf-kosong">—</code><code>32.150</code><code>700</code><code>Core</code></div>
+          <div class="rf-note">Volume REKON boleh berbeda dari DRM → dihitung sebagai Tambah / Kurang.</div>
+        </div>
+      </details>
       <textarea id="rekon_input" class="input-area" rows="6" oninput="previewRekon(this.value,'rekon'); sinkronTeksKeTabel('rekon')"
         placeholder="Paste 5 kolom dari Excel di sini…&#10;Atau klik tombol &quot;Isi Contoh&quot; untuk mencoba sekarang."></textarea>
       <div id="rekon_tabel_wrap" class="rekon-tabel-wrap" style="display:none;">

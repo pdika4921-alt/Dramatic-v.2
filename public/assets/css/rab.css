@@ -503,7 +503,7 @@ textarea.input-area::placeholder { color: var(--text-faint); }
 .rekon-hint { font-size: 8px; color: var(--text-sub); margin-top: 2px; }
 .rekon-count { font-size: 8px; color: var(--text-sub); }
 
-/* Contoh format input DRM/REKON — selalu terlihat, bukan sekadar placeholder */
+/* Contoh format input DRM/REKON — default tertutup, klik judul untuk membuka */
 .rekon-format {
   border: 1px solid var(--border);
   border-left: 3px solid var(--brand);
@@ -512,7 +512,23 @@ textarea.input-area::placeholder { color: var(--text-faint); }
   padding: 7px 9px;
   margin-bottom: 8px;
 }
-.rf-head { font-size: 7px; font-weight: 700; color: var(--brand-fg); margin-bottom: 5px; letter-spacing: .02em; }
+.rekon-format > .rf-head {
+  display:flex; align-items:center; cursor:pointer; list-style:none;
+  user-select:none;
+  font-size:7px; font-weight:700; color:var(--brand-fg);
+  margin-bottom:0; letter-spacing:.02em;
+}
+.rekon-format > .rf-head::-webkit-details-marker { display:none; }
+.rekon-format > .rf-head::marker { content:""; }
+.rekon-format > .rf-head:focus-visible {
+  outline:2px solid rgba(124,58,237,.45); outline-offset:2px; border-radius:5px;
+}
+.rekon-format[open] > .rf-head { margin-bottom:6px; }
+.rf-panah {
+  margin-left:auto; font-size:8px; color:var(--text-faint);
+  transition:transform .15s;
+}
+.rekon-format[open] .rf-panah { transform:rotate(180deg); }
 .rf-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr .8fr .8fr; gap: 4px; align-items: center; }
 .rf-cols span {
   font-size: 6.5px; font-weight: 700; text-transform: uppercase;
