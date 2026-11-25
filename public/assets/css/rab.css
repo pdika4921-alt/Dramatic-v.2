@@ -80,7 +80,7 @@
   background: var(--bg-main);
   min-height: 100vh;
   color: var(--text-main);
-  padding: 14px;
+  padding: 14px 14px 14px 224px;
 }
 /* Mode gelap: latar foto + overlay navy — sama dgn .app-bg dashboard */
 :root[data-theme="dark"] .rab-body {
@@ -89,6 +89,74 @@
     url('../bctelkomakses.jpg') center / cover no-repeat fixed,
     var(--bg-main);
 }
+
+/* ── SIDEBAR MENU — menu dipindah dari header atas ─────────────── */
+.rab-sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0;
+  width: 210px; z-index: 160;
+  background: linear-gradient(180deg, #B71C1C 0%, #8E1414 55%, #6D0F0F 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+}
+.rab-sidebar-inner {
+  display: flex; flex-direction: column;
+  height: 100%; padding: 14px 12px;
+  overflow-y: auto;
+}
+.rab-sidebar-inner::-webkit-scrollbar { width: 5px; }
+.rab-sidebar-inner::-webkit-scrollbar-thumb { background: rgba(255,255,255,.35); border-radius: 99px; }
+.rab-sidebar-brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 2px 4px 12px; margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.20);
+}
+.rab-sidebar-brand img {
+  width: 46px; height: 30px; object-fit: contain;
+  filter: brightness(0) invert(1); flex-shrink: 0;
+}
+.rab-sidebar-title { font-size: 11px; font-weight: 800; color: #fff; line-height: 1.2; }
+.rab-sidebar-sub { font-size: 7px; color: rgba(255,255,255,.75); margin-top: 2px; }
+.rab-nav { display: flex; flex-direction: column; gap: 7px; }
+.rab-nav-label {
+  font-size: 7px; font-weight: 700; letter-spacing: 0.10em;
+  color: rgba(255, 255, 255, 0.62); margin: 8px 4px 1px;
+}
+.rab-sidebar .tab-wrap { display: flex; flex-direction: column; width: 100%; gap: 5px; padding: 0; background: transparent; border: none; }
+.rab-sidebar .tab-btn {
+  width: 100%; justify-content: flex-start; min-height: 30px;
+  padding: 6px 10px; font-size: 9px; border-radius: 8px;
+  color: rgba(255, 255, 255, 0.88); background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.20); white-space: normal;
+}
+.rab-sidebar .tab-btn:hover { background: rgba(255, 255, 255, 0.20); }
+.rab-sidebar .tab-btn.active { background: #fff; color: #C62828; box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+.rab-sidebar #btns_rab,
+.rab-sidebar #btns_rekon,
+.rab-sidebar #btns_boq_smile { flex-direction: column; gap: 6px; }
+.rab-sidebar .btn {
+  width: 100%; justify-content: flex-start; white-space: normal;
+  min-height: 30px; padding: 6px 10px; font-size: 9px; border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff; box-shadow: none; transform: none;
+}
+.rab-sidebar .btn:hover { background: rgba(255, 255, 255, 0.24); box-shadow: none; transform: none; }
+.rab-sidebar .btn-back { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.28); color: #fff; }
+.rab-sidebar .btn-back:hover { background: rgba(255,255,255,.24); color: #fff; }
+.rab-sidebar #lokasi_aktif {
+  margin-top: 8px; padding: 8px 10px; border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18); text-align: left !important;
+}
+.rab-sidebar .aktif-label { color: rgba(255,255,255,.72); }
+.rab-sidebar .aktif-nama { color: #fff; font-size: 9px; word-break: break-word; }
+.rab-sidebar-toggle {
+  display: none; align-items: center; justify-content: center;
+  width: 34px; height: 30px; flex-shrink: 0; cursor: pointer;
+  border-radius: 8px; border: 1px solid rgba(255,255,255,.35);
+  background: rgba(255,255,255,.16); color: #fff; font-size: 12px;
+}
+.rab-sidebar-bg { display: none; }
 
 .mono { font-family: var(--font-mono); }
 
@@ -1113,11 +1181,23 @@ table.rt-table input.rt-des { font-weight: 700; color: var(--brand-fg); }
 /* ── PRINT ─────────────────────────────────────── */
 @media print {
   .rab-body { background: #fff !important; color: #000 !important; padding: 0; }
-  .rab-header, .summary-grid, .rab-wrap, .rekon-section, .toast, .modal-overlay { display: none !important; }
+  .rab-header, .rab-sidebar, .rab-sidebar-bg, .summary-grid, .rab-wrap, .rekon-section, .toast, .modal-overlay { display: none !important; }
   .ba-preview { display: block !important; box-shadow: none; }
 }
 
 /* ── RESPONSIVE ─────────────────────────────────── */
+@media (max-width: 900px) {
+  .rab-body { padding-left: 12px; }
+  .rab-sidebar { transform: translateX(-105%); transition: transform .25s ease; }
+  .rab-sidebar.open { transform: translateX(0); }
+  .rab-sidebar-bg {
+    display: block; position: fixed; inset: 0;
+    background: rgba(2, 6, 23, 0.6); opacity: 0; pointer-events: none;
+    transition: opacity .25s ease; z-index: 150;
+  }
+  .rab-sidebar-bg.show { opacity: 1; pointer-events: auto; }
+  .rab-sidebar-toggle { display: inline-flex; }
+}
 @media (max-width: 640px) {
   .rab-body { padding: 12px; }
   .rab-header-top { padding: 14px 16px 12px; }
