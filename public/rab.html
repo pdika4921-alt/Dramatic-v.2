@@ -35,27 +35,27 @@
      tombol aksinya sudah dipindah ke dalam tab masing-masing. -->
 <aside id="rab_sidebar" class="rab-sidebar" aria-label="Menu RAB">
   <div class="rab-sidebar-inner">
-    <div class="rab-sidebar-brand">
-      <img src="assets/img/logo-ta.png" alt="Telkom Akses">
-      <div>
-        <div class="rab-sidebar-title">Menu RAB</div>
-        <div class="rab-sidebar-sub">RAB · REKON · BOQ SMILE</div>
+    <div class="rab-brand">
+      <div class="rab-brand-logo" id="rab_brand_logo">
+        <img src="assets/img/logo-ta.png" alt="Telkom Akses" onerror="document.getElementById('rab_brand_logo').classList.add('no-img')">
+        <i class="fa-solid fa-chart-network"></i>
       </div>
     </div>
 
     <nav class="rab-nav">
+      <p class="rab-nav-label">Menu Utama</p>
       <div class="tab-wrap">
         <button type="button" class="tab-btn active" id="tab_rab" onclick="setMode('rab')">
-          <i class="fa-solid fa-file-invoice-dollar" style="font-size: 8px;"></i> Input RAB
+          <i class="fa-solid fa-file-invoice-dollar"></i><span>Input RAB</span>
         </button>
         <button type="button" class="tab-btn" id="tab_rekon" onclick="setMode('rekon')">
-          <i class="fa-solid fa-arrows-left-right" style="font-size: 8px;"></i> DRM vs REKON
+          <i class="fa-solid fa-arrows-left-right"></i><span>DRM vs REKON</span>
         </button>
         <button type="button" class="tab-btn" id="tab_smile" onclick="bukaPanelBOQSmile()">
-          <i class="fa-solid fa-file-excel" style="font-size: 8px;"></i> BOQ SMILE
+          <i class="fa-solid fa-file-excel"></i><span>BOQ SMILE</span>
         </button>
-        <a href="/admin.html" class="tab-btn">
-          <i class="fa-solid fa-arrow-left" style="font-size: 8px;"></i> Kembali
+        <a href="/admin.html" class="tab-btn nav-link">
+          <i class="fa-solid fa-arrow-left"></i><span>Kembali</span>
         </a>
       </div>
 
@@ -65,10 +65,13 @@
       <div id="btns_rekon" style="display:none;"></div>
       <div id="btns_boq_smile" style="display:none;"></div>
 
-      <p class="rab-nav-label">LOKASI AKTIF</p>
-      <div id="lokasi_aktif" style="display:none;text-align:left;">
-        <div class="aktif-label">Lokasi Aktif</div>
-        <div id="lokasi_aktif_nama" class="aktif-nama"></div>
+      <div class="rab-nav-foot">
+        <p class="rab-nav-label" style="padding-top:4px;">Lokasi Aktif</p>
+        <div id="lokasi_aktif" style="display:none;text-align:left;">
+          <div class="aktif-label">Lokasi Aktif</div>
+          <div id="lokasi_aktif_nama" class="aktif-nama"></div>
+        </div>
+        <p class="rab-app-ver">v2026 · PT Telkom Akses</p>
       </div>
     </nav>
   </div>

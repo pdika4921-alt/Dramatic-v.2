@@ -80,7 +80,7 @@
   background: var(--bg-main);
   min-height: 100vh;
   color: var(--text-main);
-  padding: 14px 14px 14px 224px;
+  padding: 14px 14px 14px 184px;
 }
 /* Mode gelap: latar foto + overlay navy — sama dgn .app-bg dashboard */
 :root[data-theme="dark"] .rab-body {
@@ -90,47 +90,76 @@
     var(--bg-main);
 }
 
-/* ── SIDEBAR MENU — menu dipindah dari header atas ─────────────── */
+/* ── SIDEBAR — tema SAMA PERSIS dengan dashboard (admin.html) ──── */
+@keyframes rabSideArtDrift {
+  from { transform: scale(1.05) translate3d(0, -1.8%, 0); }
+  to   { transform: scale(1.05) translate3d(0, 1.8%, 0); }
+}
 .rab-sidebar {
-  position: fixed; left: 0; top: 0; bottom: 0;
-  width: 210px; z-index: 160;
-  background: linear-gradient(180deg, #B71C1C 0%, #8E1414 55%, #6D0F0F 100%);
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.28);
+  width: 170px; flex-shrink: 0;
+  background: linear-gradient(180deg, #B71C1C 0%, #D32F2F 46%, #A31515 100%);
+  color: #ffffff;
+  border-right: none;
+  display: flex; flex-direction: column; position: fixed;
+  left: 0; top: 0; bottom: 0; z-index: 200;
   overflow: hidden;
+}
+/* Artwork sidebar.jpg — sama seperti dashboard, bergerak pelan. */
+.rab-sidebar::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: url('../../sidebar.jpg') 0 0 / 100% 100% no-repeat;
+  pointer-events: none;
+  z-index: -1;
+  animation: rabSideArtDrift 36s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rab-sidebar::before { animation: none; }
 }
 .rab-sidebar-inner {
   display: flex; flex-direction: column;
-  height: 100%; padding: 14px 12px;
+  height: 100%; padding: 16px 12px 14px;
   overflow-y: auto;
 }
 .rab-sidebar-inner::-webkit-scrollbar { width: 5px; }
-.rab-sidebar-inner::-webkit-scrollbar-thumb { background: rgba(255,255,255,.35); border-radius: 99px; }
-.rab-sidebar-brand {
-  display: flex; align-items: center; gap: 10px;
-  padding: 2px 4px 12px; margin-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.20);
+.rab-sidebar-inner::-webkit-scrollbar-thumb { background: rgba(255,255,255,.42); border-radius: 99px; }
+.rab-brand { display: flex; align-items: center; padding: 2px 4px 14px; border-bottom: none; margin-bottom: 8px; }
+.rab-brand-logo {
+  position: relative; width: 100%; height: 3.2rem; flex: 0 0 auto;
+  border-radius: 0; overflow: hidden; background: transparent;
+  border: none; box-shadow: none;
+  display: flex; align-items: center; justify-content: center;
+  padding: 2px 0;
 }
-.rab-sidebar-brand img {
-  width: 46px; height: 30px; object-fit: contain;
-  filter: brightness(0) invert(1); flex-shrink: 0;
+.rab-brand-logo img {
+  display: block; width: 100%; height: 100%; object-fit: contain;
+  background: transparent; filter: brightness(0) invert(1);
 }
-.rab-sidebar-title { font-size: 11px; font-weight: 800; color: #fff; line-height: 1.2; }
-.rab-sidebar-sub { font-size: 7px; color: rgba(255,255,255,.75); margin-top: 2px; }
-.rab-nav { display: flex; flex-direction: column; gap: 7px; }
+.rab-brand-logo i { display: none; font-size: 1.15rem; color: #ffffff; }
+.rab-brand-logo.no-img img { display: none; }
+.rab-brand-logo.no-img i { display: block; color: #ffffff; }
+.rab-nav { display: flex; flex-direction: column; gap: 3px; flex: 1; }
 .rab-nav-label {
-  font-size: 7px; font-weight: 700; letter-spacing: 0.10em;
-  color: rgba(255, 255, 255, 0.62); margin: 8px 4px 1px;
+  font-size: 7px; font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: rgba(255,255,255,.7);
+  padding: 10px 10px 4px;
 }
-.rab-sidebar .tab-wrap { display: flex; flex-direction: column; width: 100%; gap: 5px; padding: 0; background: transparent; border: none; }
+.rab-sidebar .tab-wrap { display: flex; flex-direction: column; width: 100%; gap: 3px; padding: 0; background: transparent; border: none; }
+/* Menu memakai gaya .nav-btn dashboard (class lama tab-btn tetap dipertahankan
+   karena dipakai setMode). */
 .rab-sidebar .tab-btn {
-  width: 100%; justify-content: flex-start; min-height: 30px;
-  padding: 6px 10px; font-size: 9px; border-radius: 8px;
-  color: rgba(255, 255, 255, 0.88); background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.20); white-space: normal;
+  display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+  padding: 9px 11px; border-radius: 8px; min-height: 0;
+  font-size: 10px; font-weight: 500; line-height: 1.25;
+  color: #ffffff; background: transparent; border: none;
+  cursor: pointer; white-space: normal;
+  transition: background .15s ease, color .15s ease;
 }
-.rab-sidebar .tab-btn:hover { background: rgba(255, 255, 255, 0.20); }
-.rab-sidebar .tab-btn.active { background: #fff; color: #C62828; box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+.rab-sidebar .tab-btn i { width: 18px; text-align: center; color: #ffffff; font-size: 11px; }
+.rab-sidebar .tab-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
+.rab-sidebar .tab-btn.active { background: #ffffff; color: #263238; box-shadow: none; }
+.rab-sidebar .tab-btn.active i { color: #C62828; }
+.rab-sidebar .tab-btn.nav-link { text-decoration: none; }
 .rab-sidebar #btns_rab,
 .rab-sidebar #btns_rekon,
 .rab-sidebar #btns_boq_smile { flex-direction: column; gap: 6px; }
@@ -142,19 +171,22 @@
   color: #fff; box-shadow: none; transform: none;
 }
 .rab-sidebar .btn:hover { background: rgba(255, 255, 255, 0.24); box-shadow: none; transform: none; }
-.rab-sidebar .btn-back { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.28); color: #fff; }
-.rab-sidebar .btn-back:hover { background: rgba(255,255,255,.24); color: #fff; }
+.rab-nav-foot {
+  margin-top: 14px; border-top: 1px solid rgba(255,255,255,.18);
+  padding-top: 12px; display: flex; flex-direction: column; gap: 3px;
+}
 .rab-sidebar #lokasi_aktif {
-  margin-top: 8px; padding: 8px 10px; border-radius: 8px;
+  margin: 0 8px 4px; padding: 8px 10px; border-radius: 8px;
   background: rgba(0, 0, 0, 0.18); text-align: left !important;
 }
-.rab-sidebar .aktif-label { color: rgba(255,255,255,.72); }
+.rab-sidebar .aktif-label { color: rgba(255,255,255,.72); font-size: 7px; }
 .rab-sidebar .aktif-nama { color: #fff; font-size: 9px; word-break: break-word; }
+.rab-app-ver { font-size: 7px; color: rgba(255,255,255,.6); text-align: center; padding-top: 10px; margin-bottom: 0; }
 .rab-sidebar-toggle {
   display: none; align-items: center; justify-content: center;
-  width: 34px; height: 30px; flex-shrink: 0; cursor: pointer;
-  border-radius: 8px; border: 1px solid rgba(255,255,255,.35);
-  background: rgba(255,255,255,.16); color: #fff; font-size: 12px;
+  width: 38px; height: 38px; flex-shrink: 0; cursor: pointer;
+  border-radius: 10px; border: 1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.1); color: #fff; font-size: 11px;
 }
 .rab-sidebar-bg { display: none; }
 
