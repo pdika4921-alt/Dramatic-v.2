@@ -425,6 +425,15 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
+/* ── AKSI DI DALAM TAB ─────────────────────────── */
+.rab-tab-actions,
+.rekon-tab-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  margin-bottom: 10px;
+}
+.rekon-tab-actions { justify-content: flex-start; }
+.rekon-tab-actions #rekon_badge { margin-left: auto; }
+
 /* ── SUMMARY CARDS ─────────────────────────────── */
 .summary-grid {
   display: grid;
