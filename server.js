@@ -18,6 +18,8 @@ const rekapOpmService = require('./services/rekapOpm');
 // Sinkronisasi nilai BA Tambah Kurang ke BOQ TAMKUR.xlsx (tidak mengubah hitungan)
 const { tulisBoqTamkur, bacaHargaBoqTamkur } = require('./services/boqTamkur');
 const { bacaRekonDariExcel, bacaDrmDariExcel } = require('./services/boqRekonUpload');
+// Fitur BOQ SMILE (NEW BOW SMILE) — modul baru, tidak menyentuh alur lama.
+const { daftarPaket: daftarPaketBOQSmile, bangunBOQSmile } = require('./services/boqSmile');
 // Data master BOQ DRM ALL — baca saja (dipakai tombol "CEK DATA MASTER BOQ").
 const { cariLokasiDiMasterDrm } = require('./services/boqDrmMaster');
 // Modul laporan MITRATEL berdiri sendiri; tidak mengubah alur dokumen lama.
@@ -6348,6 +6350,84 @@ app.get('/api/generate/boq_tambahkurang/:lokasi_id', checkAuth('admin'), async (
     res.status(500).json({ message: 'Gagal generate Excel BOQ Tambah Kurang.', detail: err.message });
   }
 });
+// ─────────────────────────────────────────────────────────────────────────────
+// [API] BOQ SMILE — pilih paket dari kolom A master NEW BOW SMILE.xlsx,
+// lalu VLOOKUP volume REKON (designator kolom C) ke kolom F.
+// Endpoint BARU; tidak mengganti /api/generate/* maupun alur BA/BOQ lama.
+// ─────────────────────────────────────────────────────────────────────────────
+app.get('/api/boq-smile/paket', checkAuth('admin'), (req, res) => {
+  try {
+    res.json({ success: true, paket: daftarPaketBOQSmile() });
+  } catch (err) {
+    console.error('Error baca paket BOQ SMILE:', err);
+    res.status(500).json({ message: 'Gagal membaca master BOQ SMILE.', detail: err.message });
+  }
+});
+
+function bacaPayloadBOQSmile(req) {
+  const paket  = String((req.body || {}).paket  || '').trim();
+  const lokasi = String((req.body || {}).lokasi || '').trim();
+  const items  = Array.isArray((req.body || {}).items)
+    ? (req.body.items || []).map(x => ({
+        designator: String((x && x.designator) || '').trim(),
+        volume: Number((x && x.volume) || 0) || 0
+      })).filter(x => x.designator)
+    : [];
+  return { paket, lokasi, items };
+}
+
+function paketSmileValid(paket) {
+  return daftarPaketBOQSmile().indexOf(paket) >= 0;
+}
+
+app.post('/api/boq-smile/preview', checkAuth('admin'), (req, res) => {
+  try {
+    const payload = bacaPayloadBOQSmile(req);
+    if (!paketSmileValid(payload.paket)) {
+      return res.status(400).json({ message: 'Pilih paket BOQ SMILE yang tersedia dulu.' });
+    }
+    const hasil = bangunBOQSmile(payload);
+    if (!hasil.ok) return res.status(500).json({ message: hasil.alasan || 'Gagal menyusun preview.' });
+    res.json({
+      success: true,
+      paket: payload.paket,
+      lokasi: payload.lokasi,
+      sheet: hasil.sheet,
+      totalBaris: hasil.totalBaris,
+      cocok: hasil.cocok,
+      baris: hasil.baris.filter(b => Number(b.f) || 0),
+      preliminary: hasil.preliminary
+    });
+  } catch (err) {
+    console.error('Error preview BOQ SMILE:', err);
+    res.status(500).json({ message: 'Gagal preview BOQ SMILE.', detail: err.message });
+  }
+});
+
+app.post('/api/boq-smile/generate', checkAuth('admin'), (req, res) => {
+  try {
+    const payload = bacaPayloadBOQSmile(req);
+    if (!paketSmileValid(payload.paket)) {
+      return res.status(400).json({ message: 'Pilih paket BOQ SMILE yang tersedia dulu.' });
+    }
+    const hasil = bangunBOQSmile(payload);
+    if (!hasil.ok || !hasil.buffer) {
+      return res.status(500).json({ message: hasil.alasan || 'Gagal menyusun BOQ SMILE.' });
+    }
+    const nama = 'NEW BOW SMILE_' + payload.paket + '_' + (payload.lokasi || 'lokasi') + '.xlsx';
+    const ascii = nama.replace(/[^A-Za-z0-9._-]/g, '_');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition',
+      'attachment; filename="' + ascii + '"; filename*=UTF-8\'\'' + encodeURIComponent(nama));
+    res.send(hasil.buffer);
+    console.log('[BOQ SMILE] generate: paket=' + payload.paket + ', lokasi=' + payload.lokasi +
+      ', baris=' + hasil.totalBaris + ', cocok=' + hasil.cocok + ', sheet=' + hasil.sheet);
+  } catch (err) {
+    console.error('Error generate BOQ SMILE:', err);
+    res.status(500).json({ message: 'Gagal generate BOQ SMILE.', detail: err.message });
+  }
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // [API] Generate Dokumen — mapping jenis → template
 // ─────────────────────────────────────────────────────────────────────────────

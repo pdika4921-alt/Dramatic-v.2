@@ -106,6 +106,13 @@
       </button>
     </div>
 
+    <!-- Tombol BARU — berdiri sendiri, tidak mengubah setMode()/tombol lama -->
+    <div id="btns_boq_smile" style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-purple" onclick="bukaPanelBOQSmile()">
+        <i class="fa-solid fa-file-excel" style="font-size: 9px;"></i> BOQ SMILE
+      </button>
+    </div>
+
     <div style="margin-left:auto;">
       <div id="lokasi_aktif" style="display:none;text-align:right;">
         <div class="aktif-label">Lokasi Aktif</div>
@@ -191,6 +198,38 @@
     </button>
   </div>
   <div id="acuan_content"></div>
+</div>
+
+<!-- ═══ BOQ SMILE (BARU) ═══ -->
+<div id="smile_panel" class="acuan-panel smile-panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div>
+      <div class="acuan-title">
+        <i class="fa-solid fa-sheet-plastic" style="margin-right:6px;"></i>BOQ SMILE — NEW BOW SMILE
+      </div>
+      <div class="acuan-sub">Pilih paket dari kolom A master, lalu VLOOKUP designator kolom C → kolom F</div>
+    </div>
+    <button onclick="tutupPanelBOQSmile()" style="background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:15px;" aria-label="Tutup panel BOQ SMILE">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <div class="smile-langkah">
+    <label for="smile_paket" class="smile-label">1. Pilih BOQ (kolom A master smile)</label>
+    <select id="smile_paket" class="smile-select" onchange="previewBOQSmile()">
+      <option value="">— Memuat daftar paket… —</option>
+    </select>
+  </div>
+
+  <div id="smile_info" class="smile-info">Pilih paket untuk melihat data upload yang akan di-VLOOKUP.</div>
+  <div id="smile_preview" class="smile-preview"></div>
+
+  <div class="smile-footer">
+    <span id="smile_status" class="smile-status"></span>
+    <button class="btn btn-green" onclick="generateBOQSmile()">
+      <i class="fa-solid fa-download" style="font-size:9px;"></i> Generate BOQ SMILE
+    </button>
+  </div>
 </div>
 
 <!-- ═══ TABEL RAB ═══ -->
@@ -2420,6 +2459,144 @@ function showToast(type, msg) {
   toast.classList.add('active');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove('active'), 3500);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  BOQ SMILE (BARU) — tidak mengganti fungsi RAB/DRM/REKON lama
+//  Tombol → panel → pilih paket kolom A → VLOOKUP kolom C ke kolom F.
+// ══════════════════════════════════════════════════════════════
+let smilePaketList = [];
+let smileHasil = null;
+
+function smileEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function smileKunci(des) {
+  return String(des == null ? '' : des).toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+function smileLokasi() {
+  if (!selectedLokasi) return '';
+  return String(selectedLokasi.nama_lokasi || selectedLokasi.nama || '').trim();
+}
+function smileItemsVolume() {
+  // Sumber utama = REKON hasil upload admin. Fallback = hasil hitung rekon,
+  // supaya panel tetap bisa dipakai walau textarea belum diproses ulang.
+  if (!rekonData.length) {
+    const el = document.getElementById('rekon_input');
+    if (el && el.value.trim()) rekonData = parseRekonPaste(el.value);
+  }
+  let sumber = rekonData;
+  if (!sumber.length && rekonResult.length) {
+    sumber = rekonResult.map(r => ({ designator: r.designator, volume: r.rekon }));
+  }
+  return sumber
+    .filter(it => it && smileKunci(it.designator))
+    .map(it => ({ designator: String(it.designator), volume: Number(it.volume) || 0 }))
+    .filter(it => it.volume !== 0);
+}
+function smileEl(id) { return document.getElementById(id); }
+
+async function bukaPanelBOQSmile() {
+  const panel = smileEl('smile_panel');
+  if (!panel) return;
+  panel.classList.add('active');
+  try {
+    if (!smilePaketList.length) await muatPaketBOQSmile();
+    else await previewBOQSmile();
+  } catch (e) {
+    smileEl('smile_status').textContent = e.message || String(e);
+  }
+}
+function tutupPanelBOQSmile() {
+  const panel = smileEl('smile_panel');
+  if (panel) panel.classList.remove('active');
+}
+async function muatPaketBOQSmile() {
+  const select = smileEl('smile_paket');
+  const status = smileEl('smile_status');
+  status.textContent = 'Memuat daftar paket…';
+  const r = await fetch('/api/boq-smile/paket', { credentials: 'same-origin' });
+  const j = await r.json();
+  if (!r.ok || !j.success) throw new Error(j.message || 'Gagal memuat paket BOQ SMILE.');
+  smilePaketList = j.paket || [];
+  select.innerHTML = '<option value="">— Pilih paket (kolom A master) —</option>' +
+    smilePaketList.map(p => '<option value="' + smileEsc(p) + '">' + smileEsc(p) + '</option>').join('');
+  status.textContent = smilePaketList.length + ' paket tersedia.';
+  await previewBOQSmile();
+}
+async function previewBOQSmile() {
+  const select = smileEl('smile_paket');
+  const info = smileEl('smile_info');
+  const preview = smileEl('smile_preview');
+  const status = smileEl('smile_status');
+  const paket = select ? select.value : '';
+  smileHasil = null;
+  if (!paket) {
+    info.textContent = 'Pilih paket untuk melihat data upload yang akan di-VLOOKUP.';
+    preview.innerHTML = '';
+    status.textContent = '';
+    return;
+  }
+  const items = smileItemsVolume();
+  const lokasi = smileLokasi();
+  status.textContent = 'Menyusun preview…';
+  const r = await fetch('/api/boq-smile/preview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    body: JSON.stringify({ paket, items, lokasi })
+  });
+  const j = await r.json();
+  if (!r.ok || !j.success) throw new Error(j.message || 'Gagal preview BOQ SMILE.');
+  smileHasil = j;
+  info.innerHTML = 'Paket <b>' + smileEsc(paket) + '</b> · Lokasi <b>' + smileEsc(lokasi || '-') +
+    '</b><br>' + j.cocok + ' baris terisi dari ' + items.length +
+    ' designator upload · ' + j.totalBaris + ' baris total · sheet ' + smileEsc(j.sheet);
+  const baris = j.baris || [];
+  preview.innerHTML = baris.length
+    ? '<table><thead><tr><th>No</th><th>no_doc</th><th>kd_harga</th><th>designator</th><th>uraian</th><th>satuan</th><th>F / volume</th></tr></thead><tbody>' +
+      baris.map(b => '<tr' + (String(b.c).indexOf('Prelim-000000001') >= 0 ? ' class="khusus"' : '') + '>' +
+        '<td>' + b.no + '</td><td>' + smileEsc(b.a) + '</td><td>' + smileEsc(b.b) + '</td><td>' +
+        smileEsc(b.c) + '</td><td>' + smileEsc(String(b.d).slice(0, 55)) + '</td><td>' +
+        smileEsc(b.e) + '</td><td><b>' + smileEsc(b.f) + '</b></td></tr>').join('') +
+      '</tbody></table>'
+    : '<div style="padding:10px;font-size:9px;color:var(--text-faint);">Belum ada designator upload yang cocok dengan paket ini.</div>';
+  status.textContent = 'Preview siap.';
+}
+async function generateBOQSmile() {
+  const select = smileEl('smile_paket');
+  const paket = select ? select.value : '';
+  if (!paket) { showToast('error', 'Pilih paket BOQ SMILE dulu.'); return; }
+  const items = smileItemsVolume();
+  const lokasi = smileLokasi();
+  const status = smileEl('smile_status');
+  status.textContent = 'Menyiapkan file…';
+  try {
+    const r = await fetch('/api/boq-smile/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ paket, items, lokasi })
+    });
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      throw new Error(e.message || ('HTTP ' + r.status));
+    }
+    const blob = await r.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'NEW BOW SMILE_' + paket + '_' + (lokasi || 'lokasi') + '.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    showToast('success', 'BOQ SMILE berhasil diunduh.');
+    status.textContent = 'Selesai.';
+  } catch (e) {
+    status.textContent = e.message || String(e);
+    showToast('error', 'Gagal generate BOQ SMILE: ' + (e.message || e));
+  }
 }
 
 // ══════════════════════════════════════════════════════════════

@@ -806,6 +806,39 @@ table.rt-table input.rt-des { font-weight: 700; color: var(--brand-fg); }
 }
 .acuan-item:last-child { border-bottom: none; }
 
+/* ── BOQ SMILE (BARU) ─────────────────────────── */
+.smile-panel { border-left-color: #7c3aed; }
+.smile-langkah { display: flex; flex-direction: column; gap: 5px; }
+.smile-label { font-size: 9px; font-weight: 700; color: var(--text-sub); }
+.smile-select {
+  width: 100%; font-size: 10px; padding: 7px 9px;
+  border: 1px solid var(--border); border-radius: 7px;
+  background: var(--bg-card); color: var(--text-main);
+}
+.smile-info {
+  margin-top: 9px; font-size: 9px; color: var(--text-sub);
+  padding: 7px 9px; border-radius: 7px; background: rgba(124, 58, 237, 0.06);
+}
+.smile-preview {
+  margin-top: 9px; max-height: 270px; overflow: auto; overscroll-behavior: contain;
+  border: 1px solid var(--border); border-radius: 8px;
+}
+.smile-preview table { width: 100%; border-collapse: collapse; font-size: 8px; }
+.smile-preview th, .smile-preview td {
+  padding: 5px 6px; text-align: left; border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.smile-preview th {
+  position: sticky; top: 0; background: var(--bg-card);
+  font-weight: 700; color: var(--text-sub); z-index: 1;
+}
+.smile-preview tr.khusus td { background: rgba(124, 58, 237, 0.08); font-weight: 700; }
+.smile-footer {
+  margin-top: 10px; display: flex; align-items: center;
+  justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+.smile-status { font-size: 8px; color: var(--text-faint); }
+
 /* ── TAGS ──────────────────────────────────────── */
 .tag {
   display: inline-block; font-size: 7px; font-weight: 600;
