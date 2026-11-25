@@ -366,6 +366,11 @@
 /* Kartu TOTAL MATERIAL / JASA / GRAND TOTAL hanya dipakai tab Input RAB.
    Memakai :has() supaya setMode() tidak perlu diubah. */
 .rab-body:has(#tab_rekon.active) .summary-grid { display: none; }
+/* Saat panel BOQ SMILE aktif, sembunyikan empty-state "Belum ada item RAB"
+   dan ketiga kartu ringkasan. Murni visual — renderRAB() tetap jalan.
+   !important diperlukan karena renderRAB() menulis inline display. */
+.rab-body:has(#smile_panel.active) .summary-grid,
+.rab-body:has(#smile_panel.active) #rab_empty { display: none !important; }
 .summary-card {
   border-radius: var(--radius-lg); padding: 11px 14px;
   color: #fff; position: relative; overflow: hidden;
