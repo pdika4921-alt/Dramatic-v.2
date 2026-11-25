@@ -221,7 +221,19 @@
     </select>
   </div>
 
-  <div id="smile_info" class="smile-info">Pilih paket untuk melihat data upload yang akan di-VLOOKUP.</div>
+  <div class="smile-next-row">
+    <button class="btn btn-purple" onclick="smileLanjutUpload()">
+      <i class="fa-solid fa-arrow-right" style="font-size:9px;"></i> Next — Upload Excel
+    </button>
+  </div>
+
+  <div id="smile_upload" class="smile-upload">
+    <label for="smile_file" class="smile-label">2. Upload Excel REKON (.xlsx / .xls)</label>
+    <input type="file" id="smile_file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onchange="uploadBOQSmileExcel(this)">
+    <div id="smile_file_info" class="smile-file-info">Belum ada file. Designer kolom C akan di-VLOOKUP ke kolom F.</div>
+  </div>
+
+  <div id="smile_info" class="smile-info">Pilih paket, lalu klik <b>Next — Upload Excel</b>.</div>
   <div id="smile_preview" class="smile-preview"></div>
 
   <div class="smile-footer">
@@ -2463,10 +2475,12 @@ function showToast(type, msg) {
 
 // ══════════════════════════════════════════════════════════════
 //  BOQ SMILE (BARU) — tidak mengganti fungsi RAB/DRM/REKON lama
-//  Tombol → panel → pilih paket kolom A → VLOOKUP kolom C ke kolom F.
+//  Tombol → panel → pilih paket → Next → upload Excel REKON → preview → generate.
 // ══════════════════════════════════════════════════════════════
 let smilePaketList = [];
 let smileHasil = null;
+let smileItems = null;      // hasil upload Excel khusus panel BOQ SMILE
+let smileNamaFile = '';
 
 function smileEsc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
@@ -2480,22 +2494,84 @@ function smileLokasi() {
   return String(selectedLokasi.nama_lokasi || selectedLokasi.nama || '').trim();
 }
 function smileItemsVolume() {
-  // Sumber utama = REKON hasil upload admin. Fallback = hasil hitung rekon,
-  // supaya panel tetap bisa dipakai walau textarea belum diproses ulang.
-  if (!rekonData.length) {
-    const el = document.getElementById('rekon_input');
-    if (el && el.value.trim()) rekonData = parseRekonPaste(el.value);
-  }
-  let sumber = rekonData;
-  if (!sumber.length && rekonResult.length) {
-    sumber = rekonResult.map(r => ({ designator: r.designator, volume: r.rekon }));
-  }
-  return sumber
+  // Hanya memakai file yang di-upload lewat tombol Next pada panel ini.
+  // Tidak membaca rekonData/rekonResult lama — alur lama tetap untouched.
+  if (!Array.isArray(smileItems)) return [];
+  return smileItems
     .filter(it => it && smileKunci(it.designator))
     .map(it => ({ designator: String(it.designator), volume: Number(it.volume) || 0 }))
     .filter(it => it.volume !== 0);
 }
 function smileEl(id) { return document.getElementById(id); }
+
+function smileLanjutUpload() {
+  const paket = smileEl('smile_paket') ? smileEl('smile_paket').value : '';
+  if (!paket) {
+    showToast('error', 'Pilih paket BOQ SMILE dulu, lalu klik Next.');
+    return;
+  }
+  const area = smileEl('smile_upload');
+  if (area) area.classList.add('active');
+  const info = smileEl('smile_info');
+  if (info) {
+    info.innerHTML = 'Paket <b>' + smileEsc(paket) + '</b> dipilih. ' +
+      'Upload file Excel REKON pada langkah ke-2 untuk melanjutkan.';
+  }
+  const status = smileEl('smile_status');
+  if (status) status.textContent = 'Menunggu upload Excel.';
+  const preview = smileEl('smile_preview');
+  if (preview) preview.innerHTML = '';
+  smileHasil = null;
+}
+
+async function uploadBOQSmileExcel(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const ekst = (file.name.split('.').pop() || '').toLowerCase();
+  if (ekst !== 'xlsx' && ekst !== 'xls') {
+    showToast('error', 'File harus berformat .xlsx atau .xls.');
+    input.value = '';
+    return;
+  }
+  const status = smileEl('smile_status');
+  status.textContent = 'Membaca ' + file.name + '…';
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    // Memakai endpoint REKON yang sudah ada — parser dan aturan designator
+    // sama persis dengan upload Excel di alur admin. Endpoint lama tidak diubah.
+    const res = await fetch('/api/upload-rekon-excel', {
+      method: 'POST', body: fd, credentials: 'same-origin'
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || !j.success) throw new Error(j.message || 'Gagal membaca file Excel REKON.');
+
+    const items = (j.items || [])
+      .map(it => ({ designator: String(it.designator || '').trim(), volume: Number(it.rekon) || 0 }))
+      .filter(it => smileKunci(it.designator) && it.volume !== 0);
+    if (!items.length) throw new Error('Tidak ada designator dengan nilai REKON > 0 di file ini.');
+
+    smileItems = items;
+    smileNamaFile = file.name;
+    const infoFile = smileEl('smile_file_info');
+    if (infoFile) {
+      const l = j.laporan || {};
+      infoFile.innerHTML = '<b>' + smileEsc(file.name) + '</b> — ' + items.length +
+        ' designator (sheet ' + smileEsc(j.sheet || '-') + ', header baris ' +
+        smileEsc(l.headerBaris || '-') + ').';
+    }
+    showToast('success', items.length + ' designator REKON siap di-VLOOKUP ke BOQ SMILE.');
+    await previewBOQSmile();
+  } catch (e) {
+    smileItems = null;
+    smileNamaFile = '';
+    status.textContent = e.message || String(e);
+    showToast('error', 'Gagal upload Excel BOQ SMILE: ' + (e.message || e));
+  } finally {
+    input.value = '';
+  }
+}
 
 async function bukaPanelBOQSmile() {
   const panel = smileEl('smile_panel');
@@ -2533,12 +2609,18 @@ async function previewBOQSmile() {
   const paket = select ? select.value : '';
   smileHasil = null;
   if (!paket) {
-    info.textContent = 'Pilih paket untuk melihat data upload yang akan di-VLOOKUP.';
+    info.innerHTML = 'Pilih paket, lalu klik <b>Next — Upload Excel</b>.';
     preview.innerHTML = '';
     status.textContent = '';
     return;
   }
   const items = smileItemsVolume();
+  if (!items.length) {
+    info.innerHTML = 'Paket <b>' + smileEsc(paket) + '</b> dipilih. Klik <b>Next — Upload Excel</b> untuk memilih file .xlsx/.xls.';
+    preview.innerHTML = '<div style="padding:10px;font-size:9px;color:var(--text-faint);">Belum ada file Excel yang di-upload untuk paket ini.</div>';
+    status.textContent = 'Menunggu upload Excel.';
+    return;
+  }
   const lokasi = smileLokasi();
   status.textContent = 'Menyusun preview…';
   const r = await fetch('/api/boq-smile/preview', {
@@ -2551,8 +2633,9 @@ async function previewBOQSmile() {
   if (!r.ok || !j.success) throw new Error(j.message || 'Gagal preview BOQ SMILE.');
   smileHasil = j;
   info.innerHTML = 'Paket <b>' + smileEsc(paket) + '</b> · Lokasi <b>' + smileEsc(lokasi || '-') +
-    '</b><br>' + j.cocok + ' baris terisi dari ' + items.length +
-    ' designator upload · ' + j.totalBaris + ' baris total · sheet ' + smileEsc(j.sheet);
+    '</b><br>File <b>' + smileEsc(smileNamaFile || '-') + '</b> · ' + j.cocok +
+    ' baris terisi dari ' + items.length + ' designator upload · ' + j.totalBaris +
+    ' baris total · sheet ' + smileEsc(j.sheet);
   const baris = j.baris || [];
   preview.innerHTML = baris.length
     ? '<table><thead><tr><th>No</th><th>no_doc</th><th>kd_harga</th><th>designator</th><th>uraian</th><th>satuan</th><th>F / volume</th></tr></thead><tbody>' +
@@ -2567,10 +2650,15 @@ async function previewBOQSmile() {
 async function generateBOQSmile() {
   const select = smileEl('smile_paket');
   const paket = select ? select.value : '';
+  const status = smileEl('smile_status');
   if (!paket) { showToast('error', 'Pilih paket BOQ SMILE dulu.'); return; }
   const items = smileItemsVolume();
+  if (!items.length) {
+    status.textContent = 'Menunggu upload Excel.';
+    showToast('error', 'Klik Next — Upload Excel dulu sebelum generate.');
+    return;
+  }
   const lokasi = smileLokasi();
-  const status = smileEl('smile_status');
   status.textContent = 'Menyiapkan file…';
   try {
     const r = await fetch('/api/boq-smile/generate', {

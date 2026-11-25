@@ -815,6 +815,19 @@ table.rt-table input.rt-des { font-weight: 700; color: var(--brand-fg); }
   border: 1px solid var(--border); border-radius: 7px;
   background: var(--bg-card); color: var(--text-main);
 }
+.smile-next-row { margin-top: 9px; display: flex; justify-content: flex-end; }
+.smile-next-row .btn { font-size: 9px; padding: 6px 12px; }
+.smile-upload {
+  margin-top: 9px; padding: 9px; display: none;
+  border: 1px dashed var(--border); border-radius: 8px;
+  background: rgba(124, 58, 237, 0.03);
+}
+.smile-upload.active { display: block; }
+.smile-upload input[type="file"] {
+  width: 100%; margin-top: 5px; font-size: 9px;
+  color: var(--text-sub);
+}
+.smile-file-info { margin-top: 5px; font-size: 8px; color: var(--text-faint); }
 .smile-info {
   margin-top: 9px; font-size: 9px; color: var(--text-sub);
   padding: 7px 9px; border-radius: 7px; background: rgba(124, 58, 237, 0.06);
