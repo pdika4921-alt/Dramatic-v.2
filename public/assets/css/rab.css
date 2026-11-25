@@ -828,6 +828,16 @@ table.rt-table input.rt-des { font-weight: 700; color: var(--brand-fg); }
   color: var(--text-sub);
 }
 .smile-file-info { margin-top: 5px; font-size: 8px; color: var(--text-faint); }
+.smile-file-row {
+  margin-top: 7px; display: flex; align-items: center;
+  justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  font-size: 8px; color: var(--text-faint);
+}
+.smile-file-row button {
+  font-size: 8px; padding: 3px 8px; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg-card); color: var(--text-sub);
+}
 .smile-info {
   margin-top: 9px; font-size: 9px; color: var(--text-sub);
   padding: 7px 9px; border-radius: 7px; background: rgba(124, 58, 237, 0.06);

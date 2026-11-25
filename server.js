@@ -6364,21 +6364,109 @@ app.get('/api/boq-smile/paket', checkAuth('admin'), (req, res) => {
   }
 });
 
-function bacaPayloadBOQSmile(req) {
-  const paket  = String((req.body || {}).paket  || '').trim();
-  const lokasi = String((req.body || {}).lokasi || '').trim();
-  const items  = Array.isArray((req.body || {}).items)
+// ── SESI KHUSUS BOQ SMILE ────────────────────────────────────────────────────
+// Tidak memakai rekonData/drmData/RAB, tidak menimpa /api/upload-rekon-excel,
+// dan tidak berbagi kunci dengan sesi fitur lain. Semua data upload BOQ SMILE
+// hidup di req.session.boqSmile.
+function sesiSmile(req) {
+  if (!req.session) req.session = {};
+  if (!req.session.boqSmile || typeof req.session.boqSmile !== 'object') {
+    req.session.boqSmile = {};
+  }
+  return req.session.boqSmile;
+}
+
+function ringkasanSesiSmile(s) {
+  return {
+    fileName: String((s && s.fileName) || ''),
+    sheet: String((s && s.sheet) || ''),
+    headerBaris: (s && s.headerBaris) || null,
+    jumlah: Array.isArray(s && s.items) ? s.items.length : 0,
+    paket: String((s && s.paket) || ''),
+    lokasi: String((s && s.lokasi) || ''),
+    diunggahPada: (s && s.diunggahPada) || null
+  };
+}
+
+function itemsSmileDariBody(req) {
+  return Array.isArray((req.body || {}).items)
     ? (req.body.items || []).map(x => ({
         designator: String((x && x.designator) || '').trim(),
         volume: Number((x && x.volume) || 0) || 0
-      })).filter(x => x.designator)
+      })).filter(x => x.designator && x.volume !== 0)
     : [];
-  return { paket, lokasi, items };
+}
+
+function bacaPayloadBOQSmile(req) {
+  const s = req.session && req.session.boqSmile;
+  const sesiItems = Array.isArray(s && s.items) ? s.items : [];
+  // Sesi BOQ SMILE yang beroji. Body dipakai hanya bila sesi masih kosong
+  // (kompatibel dengan pemanggilan langsung/lama — tidak mengubah alur lain).
+  const items = sesiItems.length ? sesiItems : itemsSmileDariBody(req);
+  return {
+    paket: String((req.body || {}).paket || (s && s.paket) || '').trim(),
+    lokasi: String((req.body || {}).lokasi || (s && s.lokasi) || '').trim(),
+    items
+  };
+}
+
+function simpanSesiBOQSmile(req, paket, lokasi) {
+  const s = sesiSmile(req);
+  if (paket)  s.paket  = paket;
+  if (lokasi) s.lokasi = lokasi;
+  // Assignment tingkat atas supaya expect-session jelas mendeteksi perubahan.
+  req.session.boqSmile = s;
+  return s;
 }
 
 function paketSmileValid(paket) {
   return daftarPaketBOQSmile().indexOf(paket) >= 0;
 }
+
+// Upload khusus BOQ SMILE — memakai parser REKON yang sama, tetapi hasilnya
+// disimpan HANYA di sesi boqSmile. Tidak menyentuh rekon_input / rekonData.
+app.post('/api/boq-smile/upload', checkAuth('admin'), upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'Pilih file Excel REKON untuk BOQ SMILE.' });
+  try {
+    const hasil = bacaRekonDariExcel(req.file.buffer);
+    const items = (hasil.items || [])
+      .map(it => ({
+        designator: String(it.designator || '').trim(),
+        volume: Number(it.rekon) || 0
+      }))
+      .filter(it => it.designator && it.volume !== 0);
+    if (!items.length) {
+      return res.status(400).json({
+        message: 'Tidak ada designator dengan nilai REKON > 0 di file ini.',
+        sheet: hasil.sheet, laporan: hasil.laporan
+      });
+    }
+    const s = sesiSmile(req);
+    s.items = items;
+    s.fileName = req.file.originalname || '';
+    s.sheet = hasil.sheet || '';
+    s.headerBaris = hasil.headerBaris || null;
+    s.laporan = hasil.laporan || {};
+    s.diunggahPada = Date.now();
+    req.session.boqSmile = s;
+    res.json({
+      success: true, sheet: s.sheet, laporan: s.laporan,
+      items, sesi: ringkasanSesiSmile(s)
+    });
+  } catch (err) {
+    console.error('Error upload BOQ SMILE:', err);
+    res.status(500).json({ message: 'Gagal membaca file Excel BOQ SMILE.', detail: err.message });
+  }
+});
+
+app.get('/api/boq-smile/sesi', checkAuth('admin'), (req, res) => {
+  res.json({ success: true, sesi: ringkasanSesiSmile(req.session && req.session.boqSmile) });
+});
+
+app.post('/api/boq-smile/reset', checkAuth('admin'), (req, res) => {
+  req.session.boqSmile = {};
+  res.json({ success: true, sesi: ringkasanSesiSmile({}) });
+});
 
 app.post('/api/boq-smile/preview', checkAuth('admin'), (req, res) => {
   try {
@@ -6386,6 +6474,10 @@ app.post('/api/boq-smile/preview', checkAuth('admin'), (req, res) => {
     if (!paketSmileValid(payload.paket)) {
       return res.status(400).json({ message: 'Pilih paket BOQ SMILE yang tersedia dulu.' });
     }
+    if (!payload.items.length) {
+      return res.status(400).json({ message: 'Upload Excel pada sesi BOQ SMILE dulu.' });
+    }
+    simpanSesiBOQSmile(req, payload.paket, payload.lokasi);
     const hasil = bangunBOQSmile(payload);
     if (!hasil.ok) return res.status(500).json({ message: hasil.alasan || 'Gagal menyusun preview.' });
     res.json({
@@ -6396,7 +6488,8 @@ app.post('/api/boq-smile/preview', checkAuth('admin'), (req, res) => {
       totalBaris: hasil.totalBaris,
       cocok: hasil.cocok,
       baris: hasil.baris.filter(b => Number(b.f) || 0),
-      preliminary: hasil.preliminary
+      preliminary: hasil.preliminary,
+      sesi: ringkasanSesiSmile(req.session.boqSmile)
     });
   } catch (err) {
     console.error('Error preview BOQ SMILE:', err);
@@ -6410,6 +6503,10 @@ app.post('/api/boq-smile/generate', checkAuth('admin'), (req, res) => {
     if (!paketSmileValid(payload.paket)) {
       return res.status(400).json({ message: 'Pilih paket BOQ SMILE yang tersedia dulu.' });
     }
+    if (!payload.items.length) {
+      return res.status(400).json({ message: 'Upload Excel pada sesi BOQ SMILE dulu.' });
+    }
+    simpanSesiBOQSmile(req, payload.paket, payload.lokasi);
     const hasil = bangunBOQSmile(payload);
     if (!hasil.ok || !hasil.buffer) {
       return res.status(500).json({ message: hasil.alasan || 'Gagal menyusun BOQ SMILE.' });
