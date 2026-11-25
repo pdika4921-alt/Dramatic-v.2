@@ -51,7 +51,7 @@
         <button type="button" class="tab-btn" id="tab_rekon" onclick="setMode('rekon')">
           <i class="fa-solid fa-arrows-left-right" style="font-size: 8px;"></i> DRM vs REKON
         </button>
-        <button type="button" class="tab-btn" onclick="bukaPanelBOQSmile()">
+        <button type="button" class="tab-btn" id="tab_smile" onclick="bukaPanelBOQSmile()">
           <i class="fa-solid fa-file-excel" style="font-size: 8px;"></i> BOQ SMILE
         </button>
         <a href="/admin.html" class="tab-btn">
@@ -196,8 +196,9 @@
   <div id="acuan_content"></div>
 </div>
 
-<!-- ═══ BOQ SMILE (BARU) ═══ -->
-<div id="smile_panel" class="acuan-panel smile-panel">
+<!-- ═══ BOQ SMILE — SECTION / TAB TERSENDIRI ═══ -->
+<!-- Tidak menimpa RAB/REKON: setMode('smile') menyembunyikan section lain. -->
+<div id="smile_panel" class="acuan-panel smile-panel smile-section">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
     <div>
       <div class="acuan-title">
@@ -1829,17 +1830,33 @@ function toggleRabSidebar(force) {
 }
 
 let currentMode = 'rab';
+let modeSebelumSmile = 'rab'; // dipakai tombol tutup pada section BOQ SMILE
 function setMode(mode) {
+  const modeLama = currentMode;
   currentMode = mode;
-  const isRab = mode === 'rab';
-  document.getElementById('tab_rab').className   = 'tab-btn' + (isRab?' active':'');
-  document.getElementById('tab_rekon').className = 'tab-btn' + (!isRab?' active':'');
-  document.getElementById('btns_rab').style.display    = isRab ? 'flex' : 'none';
-  document.getElementById('btns_rekon').style.display  = !isRab ? 'flex' : 'none';
-  document.getElementById('rekon_section').className   = 'rekon-section' + (!isRab ? ' active' : '');
+  const isSmile = mode === 'smile';
+  const isRab   = mode === 'rab';
+  // Fallback mode selain rab/smile tetap diperlakukan sebagai rekon (seperti lama).
+  const isRekon = !isRab && !isSmile;
+  if (isSmile && modeLama !== 'smile') modeSebelumSmile = modeLama;
+
+  document.getElementById('tab_rab').className   = 'tab-btn' + (isRab   ? ' active' : '');
+  document.getElementById('tab_rekon').className = 'tab-btn' + (isRekon ? ' active' : '');
+  const tabSmile = document.getElementById('tab_smile');
+  if (tabSmile) tabSmile.className = 'tab-btn' + (isSmile ? ' active' : '');
+
+  document.getElementById('btns_rab').style.display    = isRab   ? 'flex' : 'none';
+  document.getElementById('btns_rekon').style.display  = isRekon ? 'flex' : 'none';
+  document.getElementById('rekon_section').className   = 'rekon-section' + (isRekon ? ' active' : '');
   document.getElementById('rab_section').style.display = isRab ? 'block' : 'none';
   document.getElementById('acuan_panel').classList[isRab ? 'add' : 'remove']('active');
+
+  // BOQ SMILE kini section tersendiri, bukan panel overlay di atas tab lain.
+  const smilePanel = document.getElementById('smile_panel');
+  if (smilePanel) smilePanel.classList[isSmile ? 'add' : 'remove']('active');
+
   if (isRab) updateAcuan();
+  if (isSmile && modeLama !== 'smile') muatAwalBOQSmile();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2656,20 +2673,25 @@ async function uploadBOQSmileExcel(input) {
 }
 
 async function bukaPanelBOQSmile() {
+  // Buka sebagai mode/section ketiga — RAB dan REKON ikut disembunyikan.
+  setMode('smile');
+}
+function tutupPanelBOQSmile() {
+  // Kembali ke mode sebelum BOQ SMILE dibuka (default: Input RAB).
+  const kembali = modeSebelumSmile === 'smile' ? 'rab' : (modeSebelumSmile || 'rab');
+  setMode(kembali);
+}
+async function muatAwalBOQSmile() {
   const panel = smileEl('smile_panel');
   if (!panel) return;
-  panel.classList.add('active');
   try {
     if (!smileSesi) await muatSesiBOQSmile();
     if (!smilePaketList.length) await muatPaketBOQSmile();
     else await previewBOQSmile();
   } catch (e) {
-    smileEl('smile_status').textContent = e.message || String(e);
+    const status = smileEl('smile_status');
+    if (status) status.textContent = e.message || String(e);
   }
-}
-function tutupPanelBOQSmile() {
-  const panel = smileEl('smile_panel');
-  if (panel) panel.classList.remove('active');
 }
 async function muatPaketBOQSmile() {
   const select = smileEl('smile_paket');

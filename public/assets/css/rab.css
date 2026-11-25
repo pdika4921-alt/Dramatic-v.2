@@ -443,11 +443,17 @@
 /* Kartu TOTAL MATERIAL / JASA / GRAND TOTAL hanya dipakai tab Input RAB.
    Memakai :has() supaya setMode() tidak perlu diubah. */
 .rab-body:has(#tab_rekon.active) .summary-grid { display: none; }
-/* Saat panel BOQ SMILE aktif, sembunyikan empty-state "Belum ada item RAB"
+/* Saat mode BOQ SMILE aktif, sembunyikan empty-state "Belum ada item RAB"
    dan ketiga kartu ringkasan. Murni visual — renderRAB() tetap jalan.
    !important diperlukan karena renderRAB() menulis inline display. */
 .rab-body:has(#smile_panel.active) .summary-grid,
-.rab-body:has(#smile_panel.active) #rab_empty { display: none !important; }
+.rab-body:has(#smile_panel.active) #rab_empty,
+.rab-body:has(#tab_smile.active) .summary-grid,
+.rab-body:has(#tab_smile.active) #rab_empty { display: none !important; }
+/* Section tersendiri: pastikan panel lain tidak ikut muncul saat mode SMILE. */
+.rab-body:has(#tab_smile.active) #rab_section,
+.rab-body:has(#tab_smile.active) #rekon_section,
+.rab-body:has(#tab_smile.active) #acuan_panel { display: none !important; }
 .summary-card {
   border-radius: var(--radius-lg); padding: 11px 14px;
   color: #fff; position: relative; overflow: hidden;
@@ -888,8 +894,9 @@ table.rt-table input.rt-des { font-weight: 700; color: var(--brand-fg); }
 }
 .acuan-item:last-child { border-bottom: none; }
 
-/* ── BOQ SMILE (BARU) ─────────────────────────── */
+/* ── BOQ SMILE — SECTION / MODE TERSENDIRI ─────── */
 .smile-panel { border-left-color: #7c3aed; }
+.smile-panel.smile-section { min-height: 320px; }
 .smile-langkah { display: flex; flex-direction: column; gap: 5px; }
 .smile-label { font-size: 9px; font-weight: 700; color: var(--text-sub); }
 .smile-select {
