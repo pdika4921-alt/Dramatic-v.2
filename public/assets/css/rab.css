@@ -971,6 +971,8 @@ table.rt-table input.rt-des { font-weight: 700; color: var(--brand-fg); }
   justify-content: space-between; gap: 8px; flex-wrap: wrap;
 }
 .smile-status { font-size: 8px; color: var(--text-faint); }
+.smile-footer-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.smile-footer-actions .btn { font-size: 9px; padding: 7px 12px; }
 
 /* ── TAGS ──────────────────────────────────────── */
 .tag {

@@ -229,8 +229,7 @@
     <input type="file" id="smile_file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onchange="uploadBOQSmileExcel(this)">
     <div id="smile_file_info" class="smile-file-info">Belum ada file. Designer kolom C akan di-VLOOKUP ke kolom F.</div>
     <div class="smile-file-row">
-      <span>Sesi BOQ SMILE tersimpan terpisah dari DRM/REKON.</span>
-      <button type="button" onclick="resetSesiBOQSmile()">Reset sesi</button>
+      <span>Sesi BOQ SMILE tersimpan terpisah dari DRM/REKON. Klik <b>Refresh sesi</b> di bawah untuk memulai dengan file baru.</span>
     </div>
   </div>
 
@@ -239,9 +238,15 @@
 
   <div class="smile-footer">
     <span id="smile_status" class="smile-status"></span>
-    <button class="btn btn-green" onclick="generateBOQSmile()">
-      <i class="fa-solid fa-download" style="font-size:9px;"></i> Generate BOQ SMILE
-    </button>
+    <div class="smile-footer-actions">
+      <button class="btn btn-green" onclick="generateBOQSmile()">
+        <i class="fa-solid fa-download" style="font-size:9px;"></i> Generate BOQ SMILE
+      </button>
+      <button type="button" class="btn btn-ghost" onclick="resetSesiBOQSmile()"
+        title="Kosongkan sesi generate sebelumnya agar bisa upload file baru">
+        <i class="fa-solid fa-rotate-right" style="font-size:9px;"></i> Refresh sesi
+      </button>
+    </div>
   </div>
 </div>
 
@@ -2582,18 +2587,34 @@ async function resetSesiBOQSmile() {
     method: 'POST', credentials: 'same-origin'
   });
   const j = await r.json();
-  if (!r.ok || !j.success) { showToast('error', j.message || 'Gagal reset sesi.'); return; }
+  if (!r.ok || !j.success) { showToast('error', j.message || 'Gagal refresh sesi.'); return; }
+
+  // Bersihkan sesi server DAN cache lokal: tanpa ini, generate berikutnya
+  // bisa memakai file lama yang masih tersimpan di req.session.boqSmile.
   smileSesi = j.sesi || {};
   smileItems = null;
   smileNamaFile = '';
   smileHasil = null;
+
+  const inputFile = smileEl('smile_file');
+  if (inputFile) inputFile.value = '';
   const infoFile = smileEl('smile_file_info');
-  if (infoFile) infoFile.textContent = 'Sesi dikosongkan. Belum ada file.';
+  if (infoFile) infoFile.textContent = 'Belum ada file. Silakan upload file baru.';
   const preview = smileEl('smile_preview');
   if (preview) preview.innerHTML = '';
+
+  // Biarkan area upload terbuka bila paket sudah dipilih, supaya user langsung
+  // bisa memilih file baru setelah refresh.
+  const paket = smileEl('smile_paket') ? smileEl('smile_paket').value : '';
+  const areaUpload = smileEl('smile_upload');
+  if (areaUpload) areaUpload.classList.toggle('active', !!paket);
+
+  // Kembalikan teks langkah ke kondisi awal (info lama ikut terhapus).
+  try { await previewBOQSmile(); } catch (e) { /* preview kosong tidak masalah */ }
+
   const status = smileEl('smile_status');
-  if (status) status.textContent = 'Sesi BOQ SMILE dikosongkan.';
-  showToast('info', 'Sesi BOQ SMILE sudah dikosongkan.');
+  if (status) status.textContent = 'Sesi generate sebelumnya dibersihkan. Silakan upload file baru.';
+  showToast('info', 'Sesi BOQ SMILE di-refresh. Silakan upload file baru.');
 }
 
 function smileLanjutUpload() {
